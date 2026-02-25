@@ -28,8 +28,7 @@ Never Sleep is a lightweight application that prevents your computer from going 
 
 ---
 
-##Installation
-:
+## Installation
 1. הורד את קובץ ההתקנה `Never Sleep_...._x64-setup.exe` 📦 [Releases](https://github.com/netanel3000fine/NeverSleep-App/releases)  
 2. הרץ את ההתקנה
 3. פתח את האפליקציה
