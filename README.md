@@ -1,9 +1,7 @@
 # Never Sleep ☕
 
 ## Description
-
-
-Never Sleep היא אפליקציה קלת משקל שמונעת מהמחשב שלך להירדם או להיכנס למצב השהייה. האפליקציה כוללת טיימרים להחשכת מסך אוטומטית וכיבוי מתוזמן של המחשב, עם ממשק משתמש מודרני ונקי בעברית.
+Never Sleep היא אפליקציה קלת משקל שמונעת מהמחשב שלך להירדם או להיכנס למצב השהייה. האפליקציה כוללת טיימרים להחשכת מסך אוטומטית וטיימר עירנות עד…, עם ממשק משתמש מודרני ונקי בעברית.
  
 Never Sleep is a lightweight application that prevents your computer from going to sleep or entering standby mode. It features timers for automatic screen dimming and scheduled shutdowns, with a modern, clean Hebrew interface.
 
