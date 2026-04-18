@@ -16,6 +16,9 @@ Never Sleep is a lightweight application that prevents your computer from going 
 - 🔔 **התראות מערכת** - התראות על פעולות חשובות
 - 🚀 **הפעלה אוטומטית** - אופציה להפעלה עם הפעלת המחשב
 
+<img width="700" height="55" alt="image" src="https://github.com/user-attachments/assets/74590334-60d4-419b-8ea5-de22227161e5" />
+
+
 
 - ✅ **Keep Computer Awake** - Prevents sleep/standby mode
 - ⏱️ **Screen Darken Timer** - Auto-dim after specified time  
@@ -23,6 +26,12 @@ Never Sleep is a lightweight application that prevents your computer from going 
 - 🎨 **Color Themes** - Customize interface colors
 - 🔔 **System Notifications** - Alerts for important actions
 - 🚀 **Auto-start** - Launch on system startup
+
+
+<img width="627" height="788" alt="image" src="https://github.com/user-attachments/assets/8fa61b27-e2c3-4b4c-bd16-2df93c8f5e10" />
+======================================
+<img width="627" height="788" alt="image" src="https://github.com/user-attachments/assets/4873017d-a01c-4c09-afe5-c1ace3c52e6d" />
+
 
 ---
 
@@ -35,13 +44,14 @@ Never Sleep is a lightweight application that prevents your computer from going 
 ---
 
 ## Usage
-
+<img width="625" height="325" alt="image" src="https://github.com/user-attachments/assets/8c346c70-1d25-4079-8d27-2200359d7464" />
 
 - **פאנל שמאל (ירוק)**: שליטה על מצב "ער" והחשכת מסך
 - **פאנל ימין (כיבוי אוטומטי)**: הפעל טיימר לכיבוי המחשב
 - **הגדרות ⚙️**: התאמה של זמני ברירת מחדל, צבעים ועוד
 - **מזער למגש**: האפליקציה ממשיכה לעבוד ברקע
 
+<img width="625" height="325" alt="image" src="https://github.com/user-attachments/assets/d574e4ba-cd96-4767-996a-cd8157efd114" />
 
 - **Left Panel (Green)**: Controls "Awake" mode and screen dimming
 - **Right Panel (Auto Shutdown)**: Timer for computer shutdown
