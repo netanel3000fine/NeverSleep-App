@@ -59,14 +59,13 @@ Never Sleep a lightweight application that prevents your computer from going to 
 ---
 
 ## Usage
-<img width="625" height="325" alt="image" src="https://github.com/user-attachments/assets/8c346c70-1d25-4079-8d27-2200359d7464" />
+
 
 - **פאנל שמאל (ירוק)**: שליטה על מצב "ער" והחשכת מסך
 - **פאנל ימין (כיבוי אוטומטי)**: הפעל טיימר לכיבוי המחשב
 - **הגדרות ⚙️**: התאמה של זמני ברירת מחדל, צבעים ועוד
 - **מזער למגש**: האפליקציה ממשיכה לעבוד ברקע
 
-<img width="625" height="325" alt="image" src="https://github.com/user-attachments/assets/d574e4ba-cd96-4767-996a-cd8157efd114" />
 
 - **Left Panel (Green)**: Controls "Awake" mode and screen dimming
 - **Right Panel (Auto Shutdown)**: Timer for computer shutdown
