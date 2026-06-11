@@ -21,10 +21,10 @@ Never Sleep a lightweight application that prevents your computer from going to 
 ### Settings Window
 <img width="627" height="788" alt="image" src="https://github.com/user-attachments/assets/58806d01-caf1-47f2-917b-7e4e24600124" />
 
-### Sleep / Screen Darken Mode
+### Sleep mode
 <img width="625" height="325" alt="image" src="https://github.com/user-attachments/assets/a5f98005-abdb-41b1-8af8-0c6c9bae4116" />
 
-### Pause app/ Media is playing
+### Pause app / Media is playing
 <img width="625" height="325" alt="image" src="https://github.com/user-attachments/assets/cca666e8-75d2-467c-876f-88a264c30e03" />
 
 ---
