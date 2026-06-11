@@ -27,7 +27,7 @@ Never Sleep a lightweight application that prevents your computer from going to 
 
 - ✅ **שמירה על המחשב ער** - מונע מהמחשב להיכנס למצב שינה
 - ⏱️ **טיימר להחשכת מסך** - החשכה אוטומטית לאחר זמן מוגדר
-- 🔌 **כיבוי אוטומטי** - כיבוי מתוזמן של המחשב
+- 🔌 **כיבוי אוטומטי** - כיבוי מתוזמן של האפליקציה
 - 🎨 **ערכות נושא צבעוניות** - התאמה אישית של צבע הממשק
 - 🔔 **התראות מערכת** - התראות על פעולות חשובות
 - 🚀 **הפעלה אוטומטית** - אופציה להפעלה עם הפעלת המחשב
@@ -38,7 +38,7 @@ Never Sleep a lightweight application that prevents your computer from going to 
 
 - ✅ **Keep Computer Awake** - Prevents sleep/standby mode
 - ⏱️ **Screen Darken Timer** - Auto-dim after specified time  
-- 🔌 **Auto Shutdown** - Scheduled computer shutdown
+- 🔌 **Auto Shutdown** - Scheduled shutdown
 - 🎨 **Color Themes** - Customize interface colors
 - 🔔 **System Notifications** - Alerts for important actions
 - 🚀 **Auto-start** - Launch on system startup
@@ -55,22 +55,6 @@ Never Sleep a lightweight application that prevents your computer from going to 
 2. הרץ את ההתקנה
 3. פתח את האפליקציה
 
-
----
-
-## Usage
-
-
-- **פאנל שמאל (ירוק)**: שליטה על מצב "ער" והחשכת מסך
-- **פאנל ימין (כיבוי אוטומטי)**: הפעל טיימר לכיבוי המחשב
-- **הגדרות ⚙️**: התאמה של זמני ברירת מחדל, צבעים ועוד
-- **מזער למגש**: האפליקציה ממשיכה לעבוד ברקע
-
-
-- **Left Panel (Green)**: Controls "Awake" mode and screen dimming
-- **Right Panel (Auto Shutdown)**: Timer for computer shutdown
-- **Settings ⚙️**: Configure default times, colors, and more
-- **Minimize to Tray**: App continues running in background
 
 ---
 <img width="320" height="124" alt="68747470733a2f2f692e6962622e636f2f71306d6463345a2f6765742d69742d6f6e2d6769746875622e706e67" src="https://github.com/user-attachments/assets/a8681235-4c97-46f2-acfc-26e294ea133d" />
@@ -208,7 +192,6 @@ Never Sleep can now detect when you're watching a video and **automatically paus
 | File | Description |
 |---|---|
 | `Never Sleep_10.0.0_x64-setup.exe` | Windows installer (recommended) |
-| `Never Sleep_10.0.0_x64.msi` | MSI package for enterprise/manual install |
 
 **Requirements:** Windows 10 1903+ / Windows 11 · 64-bit · ~8 MB
 
