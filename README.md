@@ -7,6 +7,22 @@ Never Sleep a lightweight application that prevents your computer from going to 
 
 ---
 
+## 🖼️ Screenshots
+
+### Main Window
+<img width="625" height="325" alt="image" src="https://github.com/user-attachments/assets/b1d7fc71-c0ff-449e-8e4e-3397045ba270" />
+
+### Settings Window
+<img width="627" height="788" alt="image" src="https://github.com/user-attachments/assets/58806d01-caf1-47f2-917b-7e4e24600124" />
+
+### Sleep / Screen Darken Mode
+<img width="625" height="325" alt="image" src="https://github.com/user-attachments/assets/a5f98005-abdb-41b1-8af8-0c6c9bae4116" />
+
+### Pause app/ Media is playing
+<img width="625" height="325" alt="image" src="https://github.com/user-attachments/assets/cca666e8-75d2-467c-876f-88a264c30e03" />
+
+---
+
 ## Key Features
 
 - ✅ **שמירה על המחשב ער** - מונע מהמחשב להיכנס למצב שינה
@@ -16,7 +32,7 @@ Never Sleep a lightweight application that prevents your computer from going to 
 - 🔔 **התראות מערכת** - התראות על פעולות חשובות
 - 🚀 **הפעלה אוטומטית** - אופציה להפעלה עם הפעלת המחשב
 
-<img width="700" height="55" alt="image" src="https://github.com/user-attachments/assets/74590334-60d4-419b-8ea5-de22227161e5" />
+
 
 
 
@@ -28,9 +44,8 @@ Never Sleep a lightweight application that prevents your computer from going to 
 - 🚀 **Auto-start** - Launch on system startup
 
 
-<img width="627" height="788" alt="image" src="https://github.com/user-attachments/assets/8fa61b27-e2c3-4b4c-bd16-2df93c8f5e10" />
 ======================================
-<img width="627" height="788" alt="image" src="https://github.com/user-attachments/assets/4873017d-a01c-4c09-afe5-c1ace3c52e6d" />
+
 
 
 ---
@@ -78,26 +93,6 @@ Never Sleep a lightweight application that prevents your computer from going to 
 
 MIT License - חופשי לשימוש ושינוי / Free to use and modify
 # ☕ Never Sleep v13.0.0
-
-> **A major update packed with new features — the biggest release yet!**
-
----
-
-## 🖼️ Screenshots
-
-### Main Window
-<img width="625" height="325" alt="image" src="https://github.com/user-attachments/assets/b1d7fc71-c0ff-449e-8e4e-3397045ba270" />
-
-### Settings Window
-<img width="627" height="788" alt="image" src="https://github.com/user-attachments/assets/58806d01-caf1-47f2-917b-7e4e24600124" />
-
-### Sleep / Screen Darken Mode
-<img width="625" height="325" alt="image" src="https://github.com/user-attachments/assets/a5f98005-abdb-41b1-8af8-0c6c9bae4116" />
-
-### Pause app/ Media is playing
-<img width="625" height="325" alt="image" src="https://github.com/user-attachments/assets/cca666e8-75d2-467c-876f-88a264c30e03" />
-
----
 
 ## 🌍 Multi-Language Support (NEW)
 
