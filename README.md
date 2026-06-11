@@ -12,6 +12,8 @@ Never Sleep a lightweight application that prevents your computer from going to 
 ### Main Window
 <img width="625" height="325" alt="image" src="https://github.com/user-attachments/assets/b1d7fc71-c0ff-449e-8e4e-3397045ba270" />
 
+<img width="700" height="55" alt="image" src="https://github.com/user-attachments/assets/fcd74ebf-a48a-4e80-816d-bbb40b951114" />
+
 ### Settings Window
 <img width="627" height="788" alt="image" src="https://github.com/user-attachments/assets/58806d01-caf1-47f2-917b-7e4e24600124" />
 
