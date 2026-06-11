@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sleep Mode</title>
+    <script src="lang.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background: black;
+            background-image: url('coffe2.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+            user-select: none;
+            cursor: none;
+        }
+
+        .message {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px 40px;
+            border-radius: 10px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 32px;
+        }
+
+        p {
+            margin: 0;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="message">
+        <h1 data-i18n="sleep_mode">Sleep Mode</h1>
+        <p data-i18n="move_mouse">Move mouse to wake</p>
+    </div>
+    <script>
+        // Copy to dist version
+        const { invoke } = window.__TAURI__.tauri;
+        
+        try {
+            const s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+            const lang = s.language || 'en';
+            if(typeof applyLanguage === 'function') applyLanguage(lang);
+        } catch(e) {}
+
+        let active = false;
+        function wake() {
+            if (active) return;
+            active = true;
+            invoke('close_screen_overlay').catch(console.error);
+        }
+        window.addEventListener('mousemove', wake);
+        window.addEventListener('keydown', wake);
+        window.addEventListener('mousedown', wake);
+        window.addEventListener('touchstart', wake);
+    </script>
+</body>
+
+</html>

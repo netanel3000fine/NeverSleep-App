@@ -1,0 +1,1830 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <script src="lang.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="settings_title">Settings</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --theme-color: #f97316;
+            --theme-glow: rgba(249, 115, 22, 0.35);
+            --bg-color: #0b0f1a;
+            --surface: rgba(255, 255, 255, 0.04);
+            --surface-hover: rgba(255, 255, 255, 0.07);
+            --surface-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f1f5f9;
+            --text-secondary: rgba(241, 245, 249, 0.5);
+            --text-muted: rgba(241, 245, 249, 0.3);
+            --input-bg: rgba(255, 255, 255, 0.06);
+            --input-border: rgba(255, 255, 255, 0.1);
+            --scrollbar-thumb: rgba(255, 255, 255, 0.12);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: transparent;
+            font-family: 'Inter', 'Fredoka', 'Segoe UI', sans-serif;
+            color: var(--text-primary);
+            user-select: none;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        /* ===== WHITE MODE ===== */
+        body.white-mode {
+            --bg-color: #f0f2f7;
+            --surface: rgba(255, 255, 255, 0.8);
+            --surface-hover: rgba(255, 255, 255, 0.95);
+            --surface-border: rgba(0, 0, 0, 0.07);
+            --text-primary: #0f172a;
+            --text-secondary: rgba(15, 23, 42, 0.5);
+            --text-muted: rgba(15, 23, 42, 0.3);
+            --input-bg: rgba(0, 0, 0, 0.04);
+            --input-border: rgba(0, 0, 0, 0.12);
+            --scrollbar-thumb: rgba(0, 0, 0, 0.12);
+        }
+
+        body.white-mode .app-container {
+            background: linear-gradient(145deg, #e8ecf4, #f5f7fc) !important;
+        }
+
+        body.white-mode .category-block {
+            background: rgba(255, 255, 255, 0.75);
+            border-color: rgba(0, 0, 0, 0.06);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        body.white-mode .settings-item {
+            border-bottom-color: rgba(0, 0, 0, 0.05);
+        }
+
+        body.white-mode .toggle {
+            background: rgba(0, 0, 0, 0.12);
+        }
+
+        body.white-mode .input-field,
+        body.white-mode .select-field,
+        body.white-mode input[type="time"] {
+            background: rgba(0, 0, 0, 0.04);
+            color: #0f172a;
+            border-color: rgba(0, 0, 0, 0.12);
+        }
+
+        body.white-mode .version-badge {
+            background: rgba(0, 0, 0, 0.07);
+            border-color: rgba(0, 0, 0, 0.12);
+        }
+
+        body.white-mode .credit-link a {
+            color: #0f172a;
+        }
+
+        body.white-mode .header-icon-wrap {
+            background: rgba(0, 0, 0, 0.06);
+        }
+
+        body.white-mode .category-icon {
+            color: var(--text-secondary);
+        }
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 99px;
+        }
+
+        /* ===== APP CONTAINER ===== */
+        .app-container {
+            background: linear-gradient(145deg, #0b0f1a 0%, #111827 50%, #0f172a 100%);
+            height: 100%;
+            width: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: relative;
+            padding: 24px 20px 60px;
+        }
+
+        /* Ambient glow orb */
+        .app-container::before {
+            content: '';
+            position: fixed;
+            top: -80px;
+            right: -80px;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, var(--theme-glow) 0%, transparent 70%);
+            pointer-events: none;
+            transition: background 0.5s;
+            z-index: 0;
+        }
+
+        .app-container > * { position: relative; z-index: 1; }
+
+        /* Liquid Glass mode overrides */
+        .app-container.liquid-glass-mode {
+            background: linear-gradient(135deg, #0d1117 0%, #1a1a2e 50%, #16213e 100%);
+        }
+
+        /* Coffee-mode overrides */
+        .app-container.coffee-mode {
+            background: linear-gradient(135deg, #0d0a06 0%, #1a1208 50%, #0d1117 100%);
+        }
+
+        body.coffee-mode .category-block {
+            background: rgba(20, 12, 4, 0.55) !important;
+            border-color: rgba(196, 116, 64, 0.2) !important;
+            box-shadow: 0 4px 30px rgba(196, 116, 64, 0.05) !important;
+        }
+
+        body.liquid-glass-mode .category-block {
+            background: rgba(20, 30, 50, 0.45) !important;
+            border-color: rgba(255, 255, 255, 0.12) !important;
+            transition: all 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+        }
+
+        body.liquid-glass-mode .category-block:hover {
+            border-color: rgba(255, 255, 255, 0.45) !important;
+            box-shadow: 
+                0 15px 45px rgba(0, 0, 0, 0.45),
+                0 0 0 1px rgba(255, 255, 255, 0.15) !important;
+            transform: translateY(-2px);
+        }
+
+        /* Hyper-Glass dynamic layers for settings */
+        body.liquid-glass-mode .category-block::before,
+        body.liquid-glass-mode .toggle::before,
+        body.liquid-glass-mode .header-icon-wrap::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.4), inset 0 0 15px rgba(0, 0, 0, 0.25);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            -webkit-mask-image: radial-gradient(circle 140px at calc(100% - var(--mouse-x, -200px)) calc(100% - var(--mouse-y, -200px)), black 10%, transparent 100%);
+            mask-image: radial-gradient(circle 140px at calc(100% - var(--mouse-x, -200px)) calc(100% - var(--mouse-y, -200px)), black 10%, transparent 100%);
+            z-index: 0;
+        }
+
+        body.liquid-glass-mode .category-block::after,
+        body.liquid-glass-mode .toggle::after,
+        body.liquid-glass-mode .header-icon-wrap::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            box-shadow: 
+                inset 0 2.5px 4px rgba(255, 255, 255, 0.9),
+                inset 1.5px 0 2px rgba(255, 255, 255, 0.6),
+                inset -1.5px 0 2px rgba(255, 255, 255, 0.6),
+                inset 0 -1.5px 3px rgba(0, 0, 0, 0.2);
+            border: 0.5px solid rgba(255, 255, 255, 0.7);
+            opacity: 0;
+            transition: opacity 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            -webkit-mask-image: radial-gradient(circle 100px at var(--mouse-x, -200px) var(--mouse-y, -200px), black 10%, transparent 100%);
+            mask-image: radial-gradient(circle 100px at var(--mouse-x, -200px) var(--mouse-y, -200px), black 10%, transparent 100%);
+            z-index: 10;
+        }
+
+        body.liquid-glass-mode .category-block:hover::before,
+        body.liquid-glass-mode .toggle:hover::before,
+        body.liquid-glass-mode .header-icon-wrap:hover::before,
+        body.liquid-glass-mode .category-block:hover::after,
+        body.liquid-glass-mode .toggle:hover::after,
+        body.liquid-glass-mode .header-icon-wrap:hover::after {
+            opacity: 1;
+        }
+
+        body.liquid-glass-mode .toggle {
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+        }
+
+        body.liquid-glass-mode .toggle:hover {
+            border-color: rgba(255, 255, 255, 0.55) !important;
+        }
+
+        body.liquid-glass-mode .toggle.active {
+            box-shadow: 0 0 22px rgba(var(--theme-color-rgb, 249, 115, 22), 0.55);
+        }
+
+        body.liquid-glass-mode .toggle.active:hover {
+            border-color: rgba(255, 255, 255, 0.65) !important;
+            box-shadow: 0 0 28px rgba(var(--theme-color-rgb, 249, 115, 22), 0.65) !important;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--surface-border);
+        }
+
+        .header-icon-wrap {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--surface-border);
+            flex-shrink: 0;
+        }
+
+        .header-icon-wrap svg { width: 18px; height: 18px; }
+
+        .header-text h2 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            color: var(--text-primary);
+        }
+
+        .header-text p {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 1px;
+            font-weight: 400;
+        }
+
+        /* ===== CATEGORY BLOCK ===== */
+        .settings-content {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .category-block {
+            background: var(--surface);
+            border: 1px solid var(--surface-border);
+            border-radius: 14px;
+            padding: 16px;
+            backdrop-filter: blur(20px);
+            transition: border-color 0.25s, box-shadow 0.25s;
+        }
+
+        .category-block:hover {
+            border-color: rgba(var(--theme-color-rgb, 249, 115, 22), 0.25);
+        }
+
+        .category-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--theme-color);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .category-icon {
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        .category-icon svg { width: 13px; height: 13px; }
+
+        /* ===== SETTINGS ITEMS ===== */
+        .settings-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--surface-border);
+            transition: opacity 0.2s;
+            gap: 12px;
+        }
+
+        .settings-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .settings-item:first-of-type { padding-top: 0; }
+
+        .label-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .item-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .item-sub {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+            font-weight: 400;
+        }
+
+        /* ===== TOGGLE ===== */
+        .toggle {
+            position: relative;
+            width: 42px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 99px;
+            cursor: pointer;
+            transition: background 0.25s, box-shadow 0.25s;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .toggle.active {
+            background: var(--theme-color);
+            border-color: transparent;
+        }
+
+        .toggle-knob {
+            position: absolute;
+            right: 3px;
+            top: 3px;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.25s cubic-bezier(0.34, 1.46, 0.64, 1);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .toggle.active .toggle-knob {
+            transform: translateX(-18px);
+        }
+
+        /* ===== INPUTS ===== */
+        .input-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .input-field {
+            width: 46px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            padding: 5px 4px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Inter', monospace;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        .input-field:focus {
+            border-color: var(--theme-color);
+            box-shadow: 0 0 0 3px var(--theme-glow);
+        }
+
+        .input-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .input-sep {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* ===== SELECT ===== */
+        .select-field {
+            background: var(--input-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: 'Inter', inherit;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            flex-shrink: 0;
+        }
+
+        .select-field:focus {
+            border-color: var(--theme-color);
+            box-shadow: 0 0 0 3px var(--theme-glow);
+        }
+
+        .select-field option {
+            background: #1e2535;
+            color: #f1f5f9;
+            font-weight: 500;
+        }
+
+        body.white-mode .select-field option {
+            background: #f0f4fb;
+            color: #0f172a;
+        }
+
+        /* ===== TIME INPUT ===== */
+        input[type="time"] {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-primary);
+            padding: 5px 8px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: 'Inter', monospace;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="time"]:not([disabled]):focus {
+            border-color: var(--theme-color);
+            box-shadow: 0 0 0 3px var(--theme-glow);
+        }
+
+        /* ===== UPTIME ===== */
+        .uptime-display {
+            font-family: 'Inter', monospace;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--theme-color);
+            letter-spacing: 1px;
+            padding: 4px 10px;
+            background: rgba(var(--theme-color-rgb, 249,115,22), 0.1);
+            border: 1px solid rgba(var(--theme-color-rgb, 249,115,22), 0.2);
+            border-radius: 8px;
+        }
+
+        /* ===== ICON BUTTON ===== */
+        .icon-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #94a3b8;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            outline: none;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--theme-color);
+        }
+
+        .icon-btn svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* ===== COLOR PICKER ===== */
+        .color-section-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            margin: 14px 0 10px;
+        }
+
+        .color-picker-container {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .color-option {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s cubic-bezier(0.34, 1.46, 0.64, 1);
+            position: relative;
+        }
+
+        .color-option:hover {
+            transform: scale(1.15);
+        }
+
+        .color-option.selected {
+            transform: scale(1.2);
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.2), 0 0 12px var(--theme-color);
+        }
+
+        .color-option.selected::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .bg-orange { background-color: #f97316; }
+        .bg-true-yellow { background-color: #FACC15; }
+        .bg-yellow { background-color: #eab308; }
+        .bg-red { background-color: #ef4444; }
+        .bg-pink { background-color: #ec4899; }
+        .bg-violet { background-color: #8b5cf6; }
+        .bg-blue { background-color: #3b82f6; }
+        .bg-teal { background-color: #14b8a6; }
+        .bg-lime { background-color: #84cc16; }
+        .bg-brown { background-color: #C47440; }
+
+        /* ===== CREDIT / FOOTER ===== */
+        .credit-link {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: linear-gradient(to top, rgba(11,15,26,0.95) 60%, transparent);
+            pointer-events: none;
+        }
+
+        body.white-mode .credit-link {
+            background: linear-gradient(to top, rgba(240,242,247,0.97) 60%, transparent);
+        }
+
+        .version-badge {
+            font-family: 'Inter', monospace;
+            font-size: 10px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 6px;
+            padding: 2px 7px;
+            color: var(--theme-color);
+            letter-spacing: 0.06em;
+            font-weight: 600;
+            pointer-events: none;
+        }
+
+        .credit-link button {
+            border: 0;
+            background: transparent;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 11px;
+            font-weight: 500;
+            pointer-events: auto;
+            transition: color 0.2s;
+            cursor: pointer;
+            padding: 0;
+            font-family: inherit;
+        }
+
+        .credit-link button:hover {
+            color: var(--theme-color);
+        }
+
+        .credit-dot {
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            pointer-events: none;
+        }
+
+        /* ===== FADE-IN ANIMATION ===== */
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .category-block {
+            animation: fadeSlideIn 0.3s ease both;
+        }
+
+        .category-block:nth-child(1) { animation-delay: 0.04s; }
+        .category-block:nth-child(2) { animation-delay: 0.08s; }
+        .category-block:nth-child(3) { animation-delay: 0.12s; }
+        .category-block:nth-child(4) { animation-delay: 0.16s; }
+        .category-block:nth-child(5) { animation-delay: 0.20s; }
+
+        /* remove number input arrows */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+        }
+
+        /* ===== TIME PROFILES PREMIUM STYLING ===== */
+        .time-profiles-section {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--surface-border);
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+        }
+
+        .profile-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            padding: 8px 12px;
+            border-radius: 10px;
+            gap: 12px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .profile-item:hover {
+            border-color: rgba(var(--theme-color-rgb, 249, 115, 22), 0.25);
+            background: var(--surface-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* ===== ACTIVE / RUNNING PROFILE GLOW ===== */
+        @keyframes profilePulse {
+            0%   { box-shadow: 0 0 0 0 rgba(var(--theme-color-rgb, 249, 115, 22), 0.55),
+                               0 0 10px rgba(var(--theme-color-rgb, 249, 115, 22), 0.2); }
+            50%  { box-shadow: 0 0 0 5px rgba(var(--theme-color-rgb, 249, 115, 22), 0),
+                               0 0 22px rgba(var(--theme-color-rgb, 249, 115, 22), 0.35); }
+            100% { box-shadow: 0 0 0 0 rgba(var(--theme-color-rgb, 249, 115, 22), 0),
+                               0 0 10px rgba(var(--theme-color-rgb, 249, 115, 22), 0.2); }
+        }
+
+        .profile-item.profile-active-now {
+            border-color: rgba(var(--theme-color-rgb, 249, 115, 22), 0.6) !important;
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.07) !important;
+            animation: profilePulse 2.4s ease-in-out infinite;
+        }
+
+        .profile-item.profile-active-now:hover {
+            transform: translateY(-1px);
+        }
+
+        /* Live indicator dot */
+        .profile-live-dot {
+            display: none;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--theme-color);
+            flex-shrink: 0;
+            animation: profilePulse 2.4s ease-in-out infinite;
+        }
+
+        .profile-item.profile-active-now .profile-live-dot {
+            display: block;
+        }
+
+        .profile-times {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            direction: ltr;
+        }
+
+        .profile-arrow {
+            opacity: 0.5;
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .profile-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Fixed constraints for icon buttons to prevent layout stretching */
+        .icon-btn {
+            width: 28px !important;
+            height: 28px !important;
+            flex-shrink: 0 !important;
+            flex-grow: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 !important;
+            border-radius: 8px !important;
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            color: #94a3b8 !important;
+            transition: all 0.2s ease !important;
+            outline: none !important;
+        }
+
+        body.white-mode .icon-btn {
+            background: rgba(0, 0, 0, 0.03) !important;
+            border: 1px solid rgba(0, 0, 0, 0.06) !important;
+            color: #475569 !important;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: var(--theme-color) !important;
+            border-color: rgba(var(--theme-color-rgb, 249, 115, 22), 0.25) !important;
+            transform: scale(1.05);
+        }
+
+        body.white-mode .icon-btn:hover {
+            background: rgba(0, 0, 0, 0.06) !important;
+            color: var(--theme-color) !important;
+        }
+
+        .icon-btn.remove-btn:hover {
+            color: #ef4444 !important;
+            border-color: rgba(239, 68, 68, 0.25) !important;
+            background: rgba(239, 68, 68, 0.08) !important;
+        }
+
+        /* Strict constraints for SVGs inside icon buttons */
+        .icon-btn svg {
+            width: 14px !important;
+            height: 14px !important;
+            flex-shrink: 0 !important;
+            display: block !important;
+        }
+
+        /* Compact time pickers for schedule profiles */
+        .profile-time-picker {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            padding: 3px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+            direction: ltr;
+        }
+
+        .profile-time-picker:focus-within {
+            border-color: var(--theme-color);
+            box-shadow: 0 0 0 2px var(--theme-glow);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .profile-time-select {
+            appearance: auto;
+            -webkit-appearance: menulist;
+            width: 46px;
+            background: transparent;
+            border: 0;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: 'Inter', monospace;
+            font-weight: 700;
+            outline: none !important;
+            cursor: pointer;
+            padding: 3px 2px;
+            border-radius: 5px;
+            text-align: center;
+            text-align-last: center;
+        }
+
+        .profile-time-select:hover,
+        .profile-time-select:focus {
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        .profile-time-select option {
+            background: #1e2535;
+            color: #f1f5f9;
+            font-weight: 600;
+        }
+
+        .profile-time-sep {
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 800;
+            padding-bottom: 1px;
+        }
+
+        body.white-mode .profile-time-picker {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body.white-mode .profile-time-picker:focus-within {
+            background: rgba(0, 0, 0, 0.06);
+        }
+
+        body.white-mode .profile-time-select {
+            color: #0f172a;
+        }
+
+        body.white-mode .profile-time-select:hover,
+        body.white-mode .profile-time-select:focus {
+            background: rgba(0, 0, 0, 0.06);
+        }
+
+        body.white-mode .profile-time-select option {
+            background: #f0f4fb;
+            color: #0f172a;
+        }
+
+        /* ===== APP ICON PICKER ===== */
+        .icon-section-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            margin: 14px 0 10px;
+        }
+
+        .app-icon-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+        }
+
+        .app-icon-option {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.22s cubic-bezier(0.34, 1.46, 0.64, 1);
+            position: relative;
+            background: var(--input-bg);
+        }
+
+        .app-icon-option img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            pointer-events: none;
+        }
+
+        .app-icon-option:hover {
+            transform: scale(1.08);
+            border-color: rgba(var(--theme-color-rgb, 249, 115, 22), 0.5);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+
+        .app-icon-option.selected {
+            border-color: var(--theme-color);
+            box-shadow: 0 0 0 3px rgba(var(--theme-color-rgb, 249, 115, 22), 0.25),
+                        0 4px 20px rgba(var(--theme-color-rgb, 249, 115, 22), 0.3);
+            transform: scale(1.1);
+        }
+
+        .app-icon-option.selected::after {
+            content: '✓';
+            position: absolute;
+            bottom: 3px;
+            right: 4px;
+            font-size: 9px;
+            font-weight: 800;
+            color: white;
+            background: var(--theme-color);
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            font-size: 9px;
+            font-weight: 800;
+            color: white;
+            background: var(--theme-color);
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 14px;
+            text-align: center;
+        }
+
+        .app-icon-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 12px;
+            min-height: 34px;
+        }
+
+        .app-icon-apply-btn {
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 0 12px;
+            border: 1px solid rgba(var(--theme-color-rgb, 249, 115, 22), 0.35);
+            border-radius: 8px;
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.12);
+            color: var(--text-main);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            white-space: nowrap;
+        }
+
+        .app-icon-apply-btn:hover:not(:disabled) {
+            border-color: rgba(var(--theme-color-rgb, 249, 115, 22), 0.65);
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.2);
+            transform: translateY(-1px);
+        }
+
+        .app-icon-apply-btn:disabled {
+            cursor: default;
+            opacity: 0.62;
+            transform: none;
+        }
+
+        .app-icon-apply-btn svg {
+            width: 15px;
+            height: 15px;
+            flex: 0 0 auto;
+        }
+
+        .app-icon-status {
+            min-width: 0;
+            color: var(--text-muted);
+            font-size: 11px;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+
+        body.white-mode .app-icon-apply-btn {
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.1);
+            color: #0f172a;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container" id="appContainer">
+
+        <!-- Header -->
+        <div class="header">
+            <div class="header-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--theme-color)">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07M8.46 8.46a5 5 0 0 0 0 7.07"/>
+                </svg>
+            </div>
+            <div class="header-text">
+                <h2 data-i18n="settings_title">Settings</h2>
+                <p data-i18n="app_title_text">Never Sleep App</p>
+            </div>
+        </div>
+
+        <div class="settings-content">
+
+            <!-- Category: System -->
+            <div class="category-block">
+                <div class="category-title">
+                    <span class="category-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                    </span>
+                    <span data-i18n="category_system">System</span>
+                </div>
+                <div class="settings-item">
+                    <div class="label-group"><span class="item-label" data-i18n="autostart">Start with Windows</span></div>
+                    <div class="toggle" id="autostartToggle"><div class="toggle-knob"></div></div>
+                </div>
+                <div class="settings-item">
+                    <div class="label-group"><span class="item-label" data-i18n="pin_window">Pin window to front</span></div>
+                    <div class="toggle" id="pinToggle"><div class="toggle-knob"></div></div>
+                </div>
+                <div class="settings-item">
+                    <div class="label-group">
+                        <span class="item-label" data-i18n="disable_on_video">Disable during video</span>
+                        <span class="item-sub" data-i18n="disable_on_video_sub">Pauses when video is playing (no music)</span>
+                    </div>
+                    <div class="toggle" id="disableOnVideoToggle"><div class="toggle-knob"></div></div>
+                </div>
+                <div class="settings-item" style="border-bottom:none;padding-bottom:0">
+                    <div class="label-group">
+                        <span class="item-label" data-i18n="uptime">Uptime</span>
+                        <span class="item-sub" data-i18n="uptime_sub">Since app started</span>
+                    </div>
+                    <div class="uptime-display" id="uptimeCounter">00:00:00</div>
+                </div>
+            </div>
+
+            <!-- Category: Black Screen -->
+            <div class="category-block">
+                <div class="category-title">
+                    <span class="category-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                    </span>
+                    <span data-i18n="category_black_screen">Black Screen (Darken)</span>
+                </div>
+                <div class="settings-item">
+                    <div class="label-group"><span class="item-label" data-i18n="default_darken">Default Darken Time</span></div>
+                    <div class="input-row">
+                        <div class="input-wrapper">
+                            <input id="defaultDarkenHours" type="number" class="input-field" min="0">
+                            <span class="input-label" data-i18n="hours">hrs</span>
+                        </div>
+                        <span class="input-sep">:</span>
+                        <div class="input-wrapper">
+                            <input id="defaultDarkenMinutes" type="number" class="input-field" min="1">
+                            <span class="input-label" data-i18n="minutes">min</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <div class="label-group">
+                        <span class="item-label" data-i18n="focus_countdown">Pop up window before darken</span>
+                        <span class="item-sub" data-i18n="focus_countdown_sub">10 seconds before darkening</span>
+                    </div>
+                    <div class="toggle" id="focusToggle"><div class="toggle-knob"></div></div>
+                </div>
+                <div class="settings-item">
+                    <div class="label-group">
+                        <span class="item-label" data-i18n="minimize_window">Minimize Window</span>
+                        <span class="item-sub" data-i18n="minimize_window_sub">10 seconds after start</span>
+                    </div>
+                    <div class="toggle" id="minimizeToggle"><div class="toggle-knob"></div></div>
+                </div>
+            </div>
+
+            <!-- Category: Auto Quit -->
+            <div class="category-block">
+                <div class="category-title">
+                    <span class="category-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </span>
+                    <span data-i18n="category_auto_quit">Schedule</span>
+                </div>
+                <div class="settings-item" style="border-bottom:none; padding-bottom:8px;">
+                    <div class="label-group">
+                        <span class="item-label" data-i18n="enable_schedule">Enable Schedule Mode</span>
+                        <span class="item-sub" data-i18n="enable_schedule_sub">Keep PC awake only during specified time profiles</span>
+                    </div>
+                    <div class="toggle" id="timeProfilesEnabledToggle"><div class="toggle-knob"></div></div>
+                </div>
+                <div class="time-profiles-section">
+                    <div style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:12px;">
+                        <div class="label-group" style="min-width: 0; flex: 1;">
+                            <span class="item-label" data-i18n="time_profiles">Time Profiles</span>
+                            <span class="item-sub" data-i18n="time_profiles_sub" style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Keep PC awake only during these hours. Outside these hours, sleep prevention pauses.</span>
+                        </div>
+                        <button id="addProfileBtn" class="icon-btn" data-i18n-title="add_profile">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        </button>
+                    </div>
+                    <div id="timeProfilesContainer" style="display:flex; flex-direction:column; gap:8px;">
+                        <!-- Profiles injected by JS -->
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <div class="label-group">
+                        <span class="item-label" data-i18n="pop_window">Pop up window when done</span>
+                        <span class="item-sub" data-i18n="pop_window_sub">When app is not in front</span>
+                    </div>
+                    <div class="toggle" id="quitFocusToggle"><div class="toggle-knob"></div></div>
+                </div>
+            </div>
+
+            <!-- Category: Notifications -->
+            <div class="category-block">
+                <div class="category-title">
+                    <span class="category-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    </span>
+                    <span data-i18n="category_notifications">Notifications</span>
+                </div>
+                <div class="settings-item">
+                    <div class="label-group"><span class="item-label" data-i18n="enable_notifications">Enable notifications</span></div>
+                    <div class="toggle" id="notificationsToggle"><div class="toggle-knob"></div></div>
+                </div>
+                <div class="settings-item">
+                    <div class="label-group"><span class="item-label" data-i18n="system_sounds">Play system sounds</span></div>
+                    <div class="toggle" id="soundToggle"><div class="toggle-knob"></div></div>
+                </div>
+                <div class="settings-item">
+                    <div class="label-group"><span class="item-label" data-i18n="break_reminder">Break reminder</span></div>
+                    <div class="input-row">
+                        <div class="input-wrapper">
+                            <input id="breakHours" type="number" class="input-field" min="0">
+                            <span class="input-label" data-i18n="hours">hrs</span>
+                        </div>
+                        <span class="input-sep">:</span>
+                        <div class="input-wrapper">
+                            <input id="breakMinutes" type="number" class="input-field" min="1" max="59">
+                            <span class="input-label" data-i18n="minutes">min</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category: Design -->
+            <div class="category-block">
+                <div class="category-title">
+                    <span class="category-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M20.39 7.57a9 9 0 1 0 0 8.86"/></svg>
+                    </span>
+                    <span data-i18n="category_design">Design</span>
+                </div>
+                <div class="settings-item">
+                    <div class="label-group">
+                        <span class="item-label" data-i18n="language">Language</span>
+                    </div>
+                    <select id="languageSelect" class="select-field">
+                        <option value="en" data-i18n="lang_en">English</option>
+                        <option value="he" data-i18n="lang_he">עברית</option>
+                        <option value="ru" data-i18n="lang_ru">Русский</option>
+                    </select>
+                </div>
+
+                <div class="settings-item">
+                    <div class="label-group">
+                        <span class="item-label" data-i18n="view_mode">View Mode</span>
+                        <span class="item-sub" data-i18n="view_mode_sub">Classic / Liquid Glass / Coffee</span>
+                    </div>
+                    <select id="viewModeSelect" class="select-field">
+                        <option value="classic" data-i18n="mode_classic">Classic</option>
+                        <option value="liquid-glass" data-i18n="mode_liquid">Liquid Glass</option>
+                        <option value="coffee" data-i18n="mode_coffee">Coffee ☕</option>
+                    </select>
+                </div>
+                <div class="settings-item">
+                    <div class="label-group">
+                        <span class="item-label" data-i18n="white_mode">White Mode</span>
+                        <span class="item-sub" data-i18n="white_mode_sub">Turns black backgrounds to white</span>
+                    </div>
+                    <div class="toggle" id="whiteModeToggle"><div class="toggle-knob"></div></div>
+                </div>
+                <div class="color-section-label" data-i18n="theme_color">Theme Color</div>
+                <div class="color-picker-container">
+                    <div class="color-option bg-orange selected" data-color="#f97316"></div>
+                    <div class="color-option bg-true-yellow" data-color="#FACC15" title="True Yellow"></div>
+                    <div class="color-option bg-yellow" data-color="#eab308"></div>
+                    <div class="color-option bg-red" data-color="#ef4444"></div>
+                    <div class="color-option bg-pink" data-color="#ec4899"></div>
+                    <div class="color-option bg-violet" data-color="#8b5cf6"></div>
+                    <div class="color-option bg-blue" data-color="#3b82f6"></div>
+                    <div class="color-option bg-teal" data-color="#14b8a6"></div>
+                    <div class="color-option bg-lime" data-color="#84cc16"></div>
+                    <div class="color-option bg-brown" data-color="#C47440" title="Fancy Brown"></div>
+                </div>
+
+                <div class="icon-section-label" data-i18n="app_icon">App Icon</div>
+                <div class="app-icon-grid" id="appIconGrid">
+                    <div class="app-icon-option" data-icon="IMG_6276.png" title="Coffee Cup Classic">
+                        <img src="IMG_6276.png" alt="Coffee Cup Classic">
+                    </div>
+                    <div class="app-icon-option" data-icon="Stylish 3D Coffee Cup Icon with Steam Effect - Woopicx.png" title="3D Coffee Steam">
+                        <img src="Stylish 3D Coffee Cup Icon with Steam Effect - Woopicx.png" alt="3D Coffee Steam">
+                    </div>
+                    <div class="app-icon-option" data-icon="Stylish 3D Coffee Cup Icon with Steam and Isometric Design.png" title="Isometric Coffee">
+                        <img src="Stylish 3D Coffee Cup Icon with Steam and Isometric Design.png" alt="Isometric Coffee">
+                    </div>
+                    <div class="app-icon-option" data-icon="Stylized Coffee Machine Icon with White Cup - Woopicx.png" title="Coffee Machine">
+                        <img src="Stylized Coffee Machine Icon with White Cup - Woopicx.png" alt="Coffee Machine">
+                    </div>
+                    <div class="app-icon-option" data-icon="A visually striking illustration.png" title="Energy Can">
+                        <img src="A visually striking illustration.png" alt="Energy Can">
+                    </div>
+                    <div class="app-icon-option" data-icon="3D Battery Icon with Lightning Bolt in Isometric View.png" title="Battery">
+                        <img src="3D Battery Icon with Lightning Bolt in Isometric View.png" alt="Battery">
+                    </div>
+                </div>
+                <div class="app-icon-actions">
+                    <button type="button" id="hardApplyIconBtn" class="app-icon-apply-btn" data-i18n-title="apply_to_windows" title="Apply to Windows shortcuts">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 12a9 9 0 0 1-9 9 8.7 8.7 0 0 1-6.3-2.7"/>
+                            <path d="M3 12a9 9 0 0 1 15.3-6.3"/>
+                            <path d="M3 5v7h7"/>
+                            <path d="M21 19v-7h-7"/>
+                        </svg>
+                        <span data-i18n="apply_to_windows">Apply to Windows</span>
+                    </button>
+                    <span id="appIconStatus" class="app-icon-status"></span>
+                </div>
+            </div>
+
+        </div><!-- /settings-content -->
+
+        <!-- Footer -->
+        <div class="credit-link">
+            <span id="appVersion" class="version-badge"></span>
+            <div class="credit-dot"></div>
+            <button type="button" id="githubReleasesLink">
+                NeverSleep-App Releases
+            </button>
+        </div>
+
+    </div><!-- /app-container -->
+
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            alert("JS Error: " + message + " at line " + lineno + ":" + colno);
+            return false;
+        };
+
+        let settings = {};
+        let themeColor = '#f97316';
+        let isInitializing = true;
+
+        function applySettingsViewMode(mode) {
+            const container = document.getElementById('appContainer');
+            container.classList.remove('liquid-glass-mode', 'coffee-mode');
+            if (mode === 'liquid-glass') container.classList.add('liquid-glass-mode');
+            else if (mode === 'coffee') container.classList.add('coffee-mode');
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '249, 115, 22';
+        }
+
+        function applyTheme(c) {
+            themeColor = c;
+            document.documentElement.style.setProperty('--theme-color', c);
+            document.documentElement.style.setProperty('--theme-color-rgb', hexToRgb(c));
+            document.documentElement.style.setProperty('--theme-glow', `rgba(${hexToRgb(c)}, 0.35)`);
+            document.querySelectorAll('.color-option').forEach(o => {
+                o.classList.toggle('selected', o.dataset.color === c);
+            });
+            if (window.__TAURI__) window.__TAURI__.invoke('set_border_color', { color: c }).catch(() => {});
+        }
+
+        function applyWhiteMode(active) {
+            document.body.classList.toggle('white-mode', !!active);
+        }
+
+        function setupToggle(id, key, defaultVal, callback) {
+            const el = document.getElementById(id);
+            const val = settings[key] !== undefined ? settings[key] : defaultVal;
+            el.classList.toggle('active', val);
+            el.dataset.val = val;
+            el.onclick = () => {
+                const n = el.dataset.val === 'true' ? 'false' : 'true';
+                el.dataset.val = n;
+                el.classList.toggle('active', n === 'true');
+                if (callback) callback(n === 'true');
+            };
+            if (callback) callback(val);
+        }
+
+        function setupInput(id, key, defaultVal) {
+            const el = document.getElementById(id);
+            el.value = settings[key] !== undefined ? settings[key] : defaultVal;
+        }
+
+        window.refreshSettingsFromStorage = function() {
+            try {
+                const fresh = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+                settings = { ...settings, ...fresh };
+                const scheduleToggle = document.getElementById('timeProfilesEnabledToggle');
+                if (scheduleToggle && fresh.timeProfilesEnabled !== undefined) {
+                    const enabled = !!fresh.timeProfilesEnabled;
+                    scheduleToggle.dataset.val = enabled ? 'true' : 'false';
+                    scheduleToggle.classList.toggle('active', enabled);
+                }
+            } catch (e) { }
+        };
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'neverSleepSettings') {
+                window.refreshSettingsFromStorage();
+            }
+        });
+
+        function openExternalUrl(url) {
+            if (!window.__TAURI__) return;
+            window.__TAURI__.invoke('open_url', { url }).catch(console.error);
+        }
+
+        document.getElementById('githubReleasesLink')?.addEventListener('click', () => {
+            openExternalUrl('https://github.com/netanel3000fine/NeverSleep-App/releases');
+        });
+
+        document.addEventListener('click', (event) => {
+            const link = event.target.closest?.('a[href^="http://"], a[href^="https://"]');
+            if (!link) return;
+            event.preventDefault();
+            openExternalUrl(link.href);
+        }, true);
+
+        async function init() {
+            // Load version
+            try {
+                if (window.__TAURI__ && window.__TAURI__.app && window.__TAURI__.app.getVersion) {
+                    const ver = await window.__TAURI__.app.getVersion();
+                    document.getElementById('appVersion').textContent = 'v' + ver;
+                } else {
+                    document.getElementById('appVersion').textContent = 'v10.0.0';
+                }
+            } catch(e) {
+                document.getElementById('appVersion').textContent = 'v10.0.0';
+            }
+
+            // Load from backend
+            if (window.__TAURI__) {
+                try {
+                    const saved = await window.__TAURI__.invoke('load_settings');
+                    settings = JSON.parse(saved || '{}');
+                } catch (e) { console.error(e); }
+
+                window.__TAURI__.invoke('check_autostart').then(res => {
+                    const el = document.getElementById('autostartToggle');
+                    el.classList.toggle('active', res);
+                    el.dataset.val = res;
+                }).catch(() => {});
+            } else {
+                settings = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+            }
+
+            if (settings.themeColor) applyTheme(settings.themeColor);
+            applyWhiteMode(!!settings.whiteMode);
+            if (settings.appIcon) applyAppIcon(settings.appIcon, false);
+
+            const langSelect = document.getElementById('languageSelect');
+            langSelect.value = settings.language || 'en';
+            if(typeof applyLanguage === 'function') applyLanguage(langSelect.value);
+            langSelect.addEventListener('change', () => {
+                if(typeof applyLanguage === 'function') applyLanguage(langSelect.value);
+                saveSettings();
+            });
+
+            setupToggle('autostartToggle', 'autostart', false);
+            setupToggle('pinToggle', 'pinned', false, (val) => {
+                if (window.__TAURI__) window.__TAURI__.invoke('set_pinned', { pinned: val });
+            });
+            setupToggle('disableOnVideoToggle', 'disableOnVideo', false);
+
+            const vmSelect = document.getElementById('viewModeSelect');
+            
+            // Migration: modern -> liquid-glass
+            let currentMode = settings.viewMode || 'liquid-glass';
+            if (currentMode === 'modern') currentMode = 'liquid-glass';
+            
+            vmSelect.value = currentMode;
+            applySettingsViewMode(vmSelect.value);
+            vmSelect.addEventListener('change', () => {
+                applySettingsViewMode(vmSelect.value);
+                saveSettings();
+            });
+
+            setupToggle('whiteModeToggle', 'whiteMode', false, (val) => applyWhiteMode(val));
+            setupToggle('focusToggle', 'focusOnCountdown', false);
+            setupToggle('minimizeToggle', 'minimizeOnDarken', false);
+            setupToggle('notificationsToggle', 'notificationsEnabled', true);
+            setupToggle('soundToggle', 'soundEnabled', false);
+            setupToggle('quitFocusToggle', 'quitFocusOnCountdown', true);
+
+            setupInput('defaultDarkenHours', 'darkenHours', 0);
+            setupInput('defaultDarkenMinutes', 'darkenMinutes', 10);
+            setupInput('breakHours', 'breakHours', 1);
+            setupInput('breakMinutes', 'breakMinutes', 0);
+
+            // Time Profiles logic
+            let loadedProfiles = settings.timeProfiles || [];
+            window.timeProfiles = loadedProfiles.map(p => {
+                if (p.time && (!p.startTime || !p.endTime)) {
+                    const [h, m] = p.time.split(':').map(Number);
+                    const endH = (h + 1) % 24;
+                    const pad = (n) => String(n).padStart(2, '0');
+                    return {
+                        startTime: p.time,
+                        endTime: `${pad(endH)}:${pad(m)}`,
+                        enabled: p.enabled !== false
+                    };
+                }
+                if (!p.startTime) p.startTime = "08:00";
+                if (!p.endTime) p.endTime = "17:00";
+                return p;
+            });
+
+            function updateParentToggleState(active) {
+                const parentToggle = document.getElementById('timeProfilesEnabledToggle');
+                if (parentToggle) {
+                    parentToggle.dataset.val = active ? 'true' : 'false';
+                    parentToggle.classList.toggle('active', active);
+                }
+            }
+
+            const defaultEnabled = settings.timeProfilesEnabled !== undefined ? !!settings.timeProfilesEnabled : (window.timeProfiles.length > 0 && window.timeProfiles.some(p => p.enabled !== false));
+            setupToggle('timeProfilesEnabledToggle', 'timeProfilesEnabled', defaultEnabled, (val) => {
+                if (val) {
+                    const anyEnabled = window.timeProfiles.some(p => p.enabled !== false);
+                    if (!anyEnabled && window.timeProfiles.length > 0) {
+                        window.timeProfiles.forEach(p => p.enabled = true);
+                        renderTimeProfiles();
+                    }
+                }
+            });
+
+            const padTimePart = (n) => String(n).padStart(2, '0');
+
+            function parseTimeParts(value, fallback = '08:00') {
+                const source = /^\d{2}:\d{2}$/.test(value || '') ? value : fallback;
+                const [h, m] = source.split(':').map(Number);
+                return {
+                    hour: Number.isFinite(h) ? Math.max(0, Math.min(23, h)) : 8,
+                    minute: Number.isFinite(m) ? Math.max(0, Math.min(59, m)) : 0
+                };
+            }
+
+            function timeOptions(max, selected) {
+                let html = '';
+                for (let i = 0; i <= max; i++) {
+                    const value = padTimePart(i);
+                    html += `<option value="${value}" ${i === selected ? 'selected' : ''}>${value}</option>`;
+                }
+                return html;
+            }
+
+            function timePickerMarkup(kind, value) {
+                const parts = parseTimeParts(value);
+                const label = kind === 'start' ? 'Start time' : 'End time';
+                return `
+                    <div class="profile-time-picker" data-kind="${kind}" title="${label}">
+                        <select class="profile-time-select profile-hour-select" aria-label="${label} hour">
+                            ${timeOptions(23, parts.hour)}
+                        </select>
+                        <span class="profile-time-sep">:</span>
+                        <select class="profile-time-select profile-minute-select" aria-label="${label} minute">
+                            ${timeOptions(59, parts.minute)}
+                        </select>
+                    </div>
+                `;
+            }
+
+            function bindTimePicker(item, index, kind) {
+                const picker = item.querySelector(`.profile-time-picker[data-kind="${kind}"]`);
+                const hourSelect = picker.querySelector('.profile-hour-select');
+                const minuteSelect = picker.querySelector('.profile-minute-select');
+                const key = kind === 'start' ? 'startTime' : 'endTime';
+                const update = () => {
+                    window.timeProfiles[index][key] = `${hourSelect.value}:${minuteSelect.value}`;
+                    refreshProfileGlow();
+                    saveSettings();
+                };
+                hourSelect.addEventListener('change', update);
+                minuteSelect.addEventListener('change', update);
+            }
+            
+            function renderTimeProfiles() {
+                const container = document.getElementById('timeProfilesContainer');
+                container.innerHTML = '';
+                if (window.timeProfiles.length === 0) {
+                    const lang = document.getElementById('languageSelect').value || 'en';
+                    const text = (translations[lang] && translations[lang].no_profiles) ? translations[lang].no_profiles : 'No profiles added';
+                    container.innerHTML = `<div style="text-align:center; opacity:0.5; font-size:13px; padding:10px 0;" data-i18n="no_profiles">${text}</div>`;
+                    return;
+                }
+                
+                window.timeProfiles.forEach((profile, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'profile-item';
+                    item.dataset.profileIndex = index;
+                    
+                    item.innerHTML = `
+                        <div class="profile-times">
+                            <div class="profile-live-dot" title="Running now"></div>
+                            ${timePickerMarkup('start', profile.startTime)}
+                            <span class="profile-arrow">→</span>
+                            ${timePickerMarkup('end', profile.endTime)}
+                        </div>
+                        <div class="profile-actions">
+                            <div class="toggle ${profile.enabled ? 'active' : ''}" style="transform:scale(0.85)"><div class="toggle-knob"></div></div>
+                            <button class="icon-btn remove-btn" title="Remove">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                        </div>
+                    `;
+                    
+                    bindTimePicker(item, index, 'start');
+                    bindTimePicker(item, index, 'end');
+                    
+                    const toggle = item.querySelector('.toggle');
+                    toggle.addEventListener('click', () => {
+                        window.timeProfiles[index].enabled = !window.timeProfiles[index].enabled;
+                        toggle.classList.toggle('active', window.timeProfiles[index].enabled);
+                        
+                        const anyEnabled = window.timeProfiles.some(p => p.enabled !== false);
+                        updateParentToggleState(anyEnabled);
+                        
+                        saveSettings();
+                    });
+                    const removeBtn = item.querySelector('.remove-btn');
+                    removeBtn.addEventListener('click', () => {
+                        window.timeProfiles.splice(index, 1);
+                        
+                        const anyEnabled = window.timeProfiles.some(p => p.enabled !== false);
+                        updateParentToggleState(anyEnabled);
+                        
+                        renderTimeProfiles();
+                        saveSettings();
+                    });
+                    
+                    container.appendChild(item);
+                });
+            }
+
+            document.getElementById('addProfileBtn').addEventListener('click', () => {
+                const now = new Date();
+                const start = new Date(now);
+                start.setMinutes(Math.ceil(now.getMinutes() / 5) * 5, 0, 0);
+                if (start <= now) start.setMinutes(start.getMinutes() + 5);
+                const end = new Date(start);
+                end.setHours(end.getHours() + 1);
+                const h = padTimePart(start.getHours());
+                const m = padTimePart(start.getMinutes());
+                const endH = padTimePart(end.getHours());
+                const newIndex = window.timeProfiles.push({ startTime: `${h}:${m}`, endTime: `${endH}:${m}`, enabled: true }) - 1;
+                
+                updateParentToggleState(true);
+                
+                renderTimeProfiles();
+                setTimeout(() => {
+                    const newHourSelect = document.querySelector(`.profile-item[data-profile-index="${newIndex}"] .profile-hour-select`);
+                    if (newHourSelect) newHourSelect.focus();
+                }, 0);
+                saveSettings();
+            });
+            
+            renderTimeProfiles();
+
+            // ===== Active-profile glow ticker =====
+            function isProfileRunningNow(profile) {
+                if (!profile.enabled) return false;
+                const schedEnabled = document.getElementById('timeProfilesEnabledToggle')?.dataset.val === 'true';
+                if (!schedEnabled) return false;
+                const now = new Date();
+                const nowMins = now.getHours() * 60 + now.getMinutes();
+                const [sh, sm] = (profile.startTime || '00:00').split(':').map(Number);
+                const [eh, em] = (profile.endTime   || '00:00').split(':').map(Number);
+                const startMins = sh * 60 + sm;
+                const endMins   = eh * 60 + em;
+                if (startMins <= endMins) {
+                    return nowMins >= startMins && nowMins < endMins;
+                } else {
+                    // overnight: e.g. 22:00 → 06:00
+                    return nowMins >= startMins || nowMins < endMins;
+                }
+            }
+
+            function refreshProfileGlow() {
+                document.querySelectorAll('.profile-item[data-profile-index]').forEach(item => {
+                    const idx = parseInt(item.dataset.profileIndex, 10);
+                    const profile = window.timeProfiles[idx];
+                    if (!profile) return;
+                    const active = isProfileRunningNow(profile);
+                    item.classList.toggle('profile-active-now', active);
+                });
+            }
+
+            refreshProfileGlow();
+            setInterval(refreshProfileGlow, 5000);
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const sectionParam = urlParams.get('section');
+            if (sectionParam) {
+                window.showOnlySection(sectionParam);
+            }
+
+            setTimeout(() => { isInitializing = false; }, 500);
+        }
+
+        window.showOnlySection = function(section) {
+            if (section === 'schedule') {
+                document.querySelectorAll('.category-block').forEach(block => {
+                    const isSchedule = block.querySelector('[data-i18n="category_auto_quit"]') || block.querySelector('.time-profiles-section');
+                    if (!isSchedule) {
+                        block.style.display = 'none';
+                    } else {
+                        block.style.display = 'block';
+                    }
+                });
+            }
+        };
+
+        window.showAllSections = function() {
+            document.querySelectorAll('.category-block').forEach(block => {
+                block.style.display = 'block';
+            });
+        };
+
+        init();
+
+        // Icon picker
+        async function applyAppIcon(filename, invokeBackend) {
+            document.querySelectorAll('.app-icon-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.icon === filename);
+            });
+            if (invokeBackend) {
+                if (!window.__TAURI__) {
+                    return true;
+                }
+                try {
+                    await window.__TAURI__.invoke('set_app_icon', { filename });
+                } catch (err) {
+                    console.error('set_app_icon error:', err);
+                    alert('Error changing icon: ' + err);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        document.querySelectorAll('.app-icon-option').forEach(el => {
+            el.addEventListener('click', async () => {
+                const filename = el.dataset.icon;
+                const previousIcon = settings.appIcon || null;
+                const changed = await applyAppIcon(filename, true);
+                if (!changed) {
+                    if (previousIcon) applyAppIcon(previousIcon, false);
+                    return;
+                }
+                settings.appIcon = filename;
+                await saveSettings();
+            });
+        });
+
+        const hardApplyIconBtn = document.getElementById('hardApplyIconBtn');
+        const appIconStatus = document.getElementById('appIconStatus');
+        hardApplyIconBtn?.addEventListener('click', async () => {
+            const selectedIcon = settings.appIcon || document.querySelector('.app-icon-option.selected')?.dataset.icon || 'IMG_6276.png';
+            if (!window.__TAURI__) {
+                appIconStatus.textContent = 'Available in the desktop app';
+                return;
+            }
+
+            hardApplyIconBtn.disabled = true;
+            appIconStatus.textContent = 'Applying...';
+
+            try {
+                const report = await window.__TAURI__.invoke('hard_apply_app_icon', { filename: selectedIcon });
+                const updated = report?.updated_shortcuts?.length || 0;
+                const failed = report?.failed_shortcuts?.length || 0;
+                if (updated > 0) {
+                    appIconStatus.textContent = failed > 0
+                        ? `Updated ${updated}; ${failed} warning${failed === 1 ? '' : 's'}`
+                        : `Updated ${updated} shortcut${updated === 1 ? '' : 's'}`;
+                } else {
+                    appIconStatus.textContent = 'Live icon applied; no shortcuts found';
+                }
+                console.info('hard_apply_app_icon report:', report);
+                const shouldRestart = confirm('Restart Never Sleep now to reload the Windows icon?');
+                if (shouldRestart) {
+                    appIconStatus.textContent = 'Restarting...';
+                    await window.__TAURI__.invoke('restart_app');
+                    return;
+                }
+            } catch (err) {
+                console.error('hard_apply_app_icon error:', err);
+                appIconStatus.textContent = 'Could not apply';
+                alert('Could not apply Windows icon: ' + err);
+            } finally {
+                hardApplyIconBtn.disabled = false;
+            }
+        });
+
+        // Theme Clicks
+        document.querySelectorAll('.color-option').forEach(el => {
+            el.addEventListener('click', () => applyTheme(el.dataset.color));
+        });
+
+        // Auto-Save Logic
+        const saveSettings = async () => {
+            if (isInitializing) return;
+            const getVal = (id) => parseInt(document.getElementById(id).value) || 0;
+            const getToggle = (id) => document.getElementById(id).dataset.val === 'true';
+
+            const enforceMin = (id, min) => {
+                const el = document.getElementById(id);
+                let val = parseInt(el.value) || 0;
+                if (val < min) { val = min; el.value = val; }
+                return val;
+            };
+
+            const newSettings = {
+                ...settings,
+                themeColor: themeColor,
+                appIcon: settings.appIcon || null,
+                timeProfiles: window.timeProfiles,
+                timeProfilesEnabled: getToggle('timeProfilesEnabledToggle'),
+                darkenHours: getVal('defaultDarkenHours'),
+                darkenMinutes: enforceMin('defaultDarkenMinutes', 1),
+                breakHours: getVal('breakHours'),
+                breakMinutes: enforceMin('breakMinutes', 1),
+                pinned: getToggle('pinToggle'),
+                disableOnVideo: getToggle('disableOnVideoToggle'),
+                viewMode: document.getElementById('viewModeSelect').value,
+                language: document.getElementById('languageSelect').value,
+                whiteMode: getToggle('whiteModeToggle'),
+                focusOnCountdown: getToggle('focusToggle'),
+                minimizeOnDarken: getToggle('minimizeToggle'),
+                notificationsEnabled: getToggle('notificationsToggle'),
+                soundEnabled: getToggle('soundToggle'),
+                quitFocusOnCountdown: getToggle('quitFocusToggle')
+            };
+
+            const autostart = getToggle('autostartToggle');
+
+            if (window.__TAURI__) {
+                await window.__TAURI__.invoke('set_autostart', { enable: autostart }).catch(err => {
+                    console.error('set_autostart error:', err);
+                });
+                await window.__TAURI__.invoke('save_settings', { settings: JSON.stringify(newSettings) });
+            }
+            localStorage.setItem('neverSleepSettings', JSON.stringify(newSettings));
+            
+            // Trigger recalculate in the main window
+            localStorage.setItem('neverSleepCommand', JSON.stringify({ type: 'recalculateProfiles', timestamp: Date.now() }));
+        };
+
+        // Attach Listeners
+        function attachListeners() {
+            document.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', saveSettings);
+                input.addEventListener('change', saveSettings);
+            });
+        }
+
+        const originalSetupToggle = setupToggle;
+        setupToggle = (id, key, defaultVal, callback) => {
+            originalSetupToggle(id, key, defaultVal, (val) => {
+                if (callback) callback(val);
+                saveSettings();
+            });
+        };
+
+        const originalApplyTheme = applyTheme;
+        applyTheme = (c) => {
+            originalApplyTheme(c);
+            settings.themeColor = c;
+            saveSettings();
+        };
+
+        attachListeners();
+
+        // Uptime
+        function updateUptime() {
+            const start = parseInt(localStorage.getItem('app_start_timestamp'));
+            if (start) {
+                const diff = Math.floor((Date.now() - start) / 1000);
+                const h = Math.floor(diff / 3600);
+                const m = Math.floor((diff % 3600) / 60);
+                const s = diff % 60;
+                document.getElementById('uptimeCounter').textContent =
+                    `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            }
+        }
+        setInterval(updateUptime, 1000);
+        updateUptime();
+
+        // Cursor-following spotlight reflection
+        document.addEventListener('mousemove', (e) => {
+            if (document.body.classList.contains('liquid-glass-mode')) {
+                const els = document.querySelectorAll('.category-block, .toggle, .header-icon-wrap');
+                els.forEach(el => {
+                    const rect = el.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    el.style.setProperty('--mouse-x', `${x}px`);
+                    el.style.setProperty('--mouse-y', `${y}px`);
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

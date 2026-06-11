@@ -1,0 +1,6464 @@
+﻿<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <script src="lang.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Never Sleep</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Sora:wght@400;500;600;700&display=swap');
+
+    :root {
+      --theme-color: #f97316;
+      --bg-color: #1a2332;
+      --panel-bg: #232d3d;
+      --text-color: white;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: transparent;
+      font-family: 'Fredoka', 'Segoe UI', sans-serif;
+      color: var(--text-color);
+      overflow: hidden;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-color);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+      border: 2px solid var(--bg-color);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--theme-color);
+    }
+
+    .app {
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-color);
+      border: 1px solid var(--theme-color);
+      border-radius: 12px;
+      overflow: hidden;
+      box-sizing: border-box;
+      background-clip: padding-box;
+      clip-path: inset(0 round 12px);
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      background: var(--panel-bg);
+      border-bottom: 2px solid var(--theme-color);
+      transition: border-color 0.3s;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      flex-shrink: 0;
+    }
+
+    body.liquid-glass-mode .header,
+    body.coffee-mode .header {
+      border-bottom: none !important;
+      box-shadow: none !important;
+      position: relative;
+    }
+
+    body.liquid-glass-mode .header::after,
+    body.coffee-mode .header::after {
+      display: none;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Disable Toggle (hover-reveal, replaces logo on hover) ── */
+    .disable-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      -webkit-app-region: no-drag;
+      cursor: default;
+    }
+
+    /* Logo fades + shrinks on hover, or when app is disabled */
+    .disable-wrap .logo {
+      transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+
+    .disable-wrap:hover .logo,
+    body.app-disabled .disable-wrap .logo {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.92);
+    }
+
+    /* Pill is absolutely positioned to fill the exact same footprint as the logo */
+    .disable-toggle-pill {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 20px;
+      padding: 3px 12px;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease, background 0.2s, transform 0.22s ease;
+      white-space: nowrap;
+      user-select: none;
+      transform: scale(0.92);
+    }
+
+    /* Reveal pill on hover or when disabled (always visible) */
+    .disable-wrap:hover .disable-toggle-pill,
+    body.app-disabled .disable-toggle-pill {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    .disable-toggle-pill:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    /* Enabled state dot */
+    .disable-toggle-pill .pill-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 7px #22c55e;
+      flex-shrink: 0;
+      transition: background 0.25s, box-shadow 0.25s;
+    }
+
+    .disable-toggle-pill .pill-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.8);
+      letter-spacing: 0.3px;
+      transition: color 0.2s;
+    }
+
+    /* Disabled state — red styling */
+    body.app-disabled .disable-toggle-pill {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    body.app-disabled .disable-toggle-pill .pill-dot {
+      background: #ef4444;
+      box-shadow: 0 0 7px #ef4444;
+    }
+
+    body.app-disabled .disable-toggle-pill .pill-label {
+      color: #ef4444;
+    }
+
+    /* Dim main content when disabled */
+    body.app-disabled .main {
+      opacity: 0.42;
+      pointer-events: none;
+      filter: grayscale(55%);
+      transition: opacity 0.4s, filter 0.4s;
+    }
+
+    body:not(.app-disabled) .main {
+      transition: opacity 0.4s, filter 0.4s;
+    }
+
+    /* Disabled banner */
+    .disabled-banner {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 100;
+      transition: opacity 0.35s;
+    }
+
+    body.app-disabled .disabled-banner {
+      opacity: 1;
+    }
+
+    .disabled-banner-inner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(20, 28, 44, 0.88);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      border-radius: 10px;
+      padding: 6px 14px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 4px 20px rgba(239, 68, 68, 0.15);
+    }
+
+    .disabled-banner-inner svg {
+      flex-shrink: 0;
+    }
+
+    .disabled-banner-inner span {
+      font-size: 13px;
+      font-weight: 600;
+      color: #ef4444;
+      letter-spacing: 0.3px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 500;
+      min-width: 110px;
+      justify-content: flex-end;
+      margin-left: 5px;
+      white-space: nowrap;
+    }
+
+    #statusText {
+      white-space: nowrap;
+      display: inline-block;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #22c55e;
+      margin-left: 2px;
+      display: none;
+    }
+
+    .status-dot.show {
+      display: block;
+    }
+
+
+
+    .activity-icon {
+      width: 18px;
+      height: 18px;
+      display: none;
+      fill: var(--theme-color);
+      animation: popIn 0.3s;
+    }
+
+    .activity-icon.show {
+      display: block;
+    }
+
+    @keyframes popIn {
+      0% {
+        transform: scale(0);
+      }
+
+      70% {
+        transform: scale(1.2);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .icon-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      padding: 6px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #94a3b8;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+    }
+
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--theme-color);
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      gap: 15px;
+      padding: 15px;
+      min-height: 0;
+    }
+
+    .panel {
+      position: relative;
+      flex: 1;
+      background: var(--panel-bg);
+      border-radius: 16px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.3s;
+    }
+
+    .panel {
+      position: relative;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      border-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .panel:hover {
+      border-color: var(--theme-color);
+      box-shadow: 0 0 30px rgba(var(--theme-color-rgb), 0.15), inset 0 0 10px rgba(255, 255, 255, 0.02);
+    }
+
+    .panel-bg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 50%;
+      height: auto;
+      opacity: 0.18;
+      pointer-events: none;
+      transition: all 0.3s;
+    }
+
+    .panel:hover .panel-bg:not(.heartbeat-icon) {
+      opacity: 0.25;
+      transform: translate(-50%, -50%) scale(1.05);
+      filter: drop-shadow(0 0 10px var(--theme-color));
+    }
+
+    .schedule-cover {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      background: inherit;
+      border-radius: inherit;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.28s ease;
+    }
+
+    .schedule-cover::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background:
+        radial-gradient(ellipse 120% 80% at 18% 0%, rgba(255,255,255,0.05), transparent 55%),
+        rgba(0, 0, 0, 0.02);
+      pointer-events: none;
+    }
+
+    .schedule-cover-content {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 18px;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.78);
+      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+    }
+
+    .schedule-cover-icon {
+      width: 24px;
+      height: 24px;
+      color: var(--theme-color);
+      opacity: 0.88;
+      filter: drop-shadow(0 0 8px rgba(var(--theme-color-rgb), 0.28));
+    }
+
+    .schedule-cover-title {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.15;
+    }
+
+    .schedule-cover-sub {
+      max-width: 190px;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1.35;
+      color: rgba(255, 255, 255, 0.56);
+    }
+
+    body.schedule-panel-hidden #panelRight .panel-content,
+    body.schedule-panel-hidden #coffeePourOverlay {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    body.schedule-panel-hidden #panelRight .schedule-cover {
+      opacity: 1;
+    }
+
+    body.classic-mode .schedule-cover-content {
+      flex-direction: row;
+      gap: 6px;
+      padding: 0 8px;
+    }
+
+    body.classic-mode .schedule-cover-icon,
+    body.classic-mode .schedule-cover-sub {
+      display: none;
+    }
+
+    body.classic-mode .schedule-cover-title {
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .coffee-mode .heartbeat-icon {
+      width: 40%;
+      z-index: 10;
+      opacity: 0.15;
+      /* Maintain base visibility */
+      pointer-events: none;
+      animation: heartbeat-pulse 7s infinite cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    body:not(.coffee-mode) #panelLeft .heartbeat-icon {
+      display: none !important;
+    }
+
+    body.coffee-mode #panelRight .heartbeat-icon {
+      display: none !important;
+    }
+
+    @keyframes heartbeat-pulse {
+
+      0%,
+      84% {
+        opacity: 0.15;
+        transform: translate(-50%, -50%) scale(0.8);
+      }
+
+      88% {
+        opacity: 0.8;
+        transform: translate(-50%, -50%) scale(1.1);
+        filter: drop-shadow(0 0 5px var(--theme-color));
+      }
+
+      92% {
+        opacity: 0.4;
+        transform: translate(-50%, -50%) scale(0.95);
+      }
+
+      96% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.2);
+        filter: drop-shadow(0 0 15px var(--theme-color));
+      }
+
+      100% {
+        opacity: 0.15;
+        transform: translate(-50%, -50%) scale(0.8);
+      }
+    }
+
+    .panel-content {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    body:not(.classic-mode) #panelRight .toggle-label {
+      font-size: 16px !important;
+      line-height: 1.1;
+    }
+
+    body:not(.classic-mode) #panelRight .timer-label {
+      font-size: 13px !important;
+      line-height: 1.1;
+    }
+
+    .toggle {
+      position: relative;
+      width: 52px;
+      height: 28px;
+      background: #475569;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+      flex-shrink: 0;
+    }
+
+    .toggle.active {
+      background: var(--theme-color);
+      box-shadow: 0 0 12px var(--theme-color);
+    }
+
+    .toggle-knob {
+      position: absolute;
+      right: 4px;
+      top: 4px;
+      width: 18px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle.active .toggle-knob {
+      transform: translateX(-24px);
+    }
+
+    .toggle.active .toggle-knob {
+      border: 2px solid var(--theme-color);
+    }
+
+    .timer-section {
+      overflow: hidden;
+
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+      border-radius: 8px;
+      position: relative;
+    }
+
+    .timer-label {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    .timer-value {
+      font-size: 38px;
+      font-family: 'Fredoka', monospace;
+      font-weight: 600;
+      color: var(--theme-color);
+      text-shadow: 0 0 20px rgba(var(--theme-color-rgb), 0.4);
+      margin: 0;
+      line-height: 1;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 5px;
+      align-items: flex-end;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .input-label {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    .input-field {
+      width: 50px;
+      background: #1a2332;
+      color: white;
+      border: 1px solid #3a4555;
+      border-radius: 8px;
+      padding: 4px;
+      text-align: center;
+      font-size: 18px;
+      border-bottom: 2px solid var(--theme-color);
+      transition: all 0.2s;
+      font-family: 'Fredoka', monospace;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: var(--theme-color);
+      box-shadow: 0 0 12px var(--theme-color);
+      transform: translateY(-1px);
+    }
+
+    .status-text {
+      white-space: nowrap;
+
+      text-align: center;
+      font-size: 16px;
+      line-height: 1.4;
+      padding: 5px;
+      border-radius: 8px;
+      transition: background 0.2s;
+      cursor: help;
+      position: relative;
+      min-width: 140px;
+      pointer-events: auto;
+    }
+
+    .status-text span {
+      display: block;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--theme-color);
+      pointer-events: none;
+    }
+
+    .tooltip-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(35, 45, 61, 0.98);
+      color: var(--text-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 15px;
+      border-radius: inherit;
+      z-index: 50;
+      animation: fadeIn 0.2s;
+      font-size: 16px;
+      line-height: 1.5;
+      font-weight: 500;
+      border: 2px solid var(--theme-color);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(5px);
+      pointer-events: none;
+    }
+
+    body:not(.classic-mode) #panelLeft .tooltip-overlay {
+      font-size: 16px;
+      line-height: 1.45;
+      padding: 15px;
+    }
+
+    body:not(.classic-mode) #panelRight .tooltip-overlay {
+      font-size: 12px;
+      line-height: 1.3;
+      padding: 10px;
+    }
+
+    .tooltip-target {
+      position: relative;
+      cursor: help;
+    }
+
+    body:not(.classic-mode) .tooltip-target {
+      -webkit-app-region: no-drag;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .sleep-overlay {
+      position: absolute;
+      inset: 0;
+      background: var(--bg-color);
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s;
+    }
+
+    .sleep-overlay.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .sleep-bg-icon {
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      opacity: 0.1;
+      background-image: url('coffe2.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      filter: grayscale(100%);
+    }
+
+    .sleep-content {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .sleep-icon-small {
+      width: 64px;
+      height: 64px;
+      background-image: url('coffe2.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      margin-bottom: 10px;
+      filter: drop-shadow(0 0 15px var(--theme-color));
+    }
+
+    .sleep-title {
+      font-size: 28px;
+      font-weight: 700;
+      text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    .sleep-subtitle-short {
+      display: none;
+    }
+
+    .sleep-next-profile {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border: 1px solid rgba(var(--theme-color-rgb), 0.34);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.07);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 8px 24px rgba(0, 0, 0, 0.22);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .sleep-next-profile.show {
+      display: flex;
+    }
+
+    .sleep-next-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.62);
+    }
+
+    .sleep-next-times {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .sleep-time-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 104px;
+      justify-content: center;
+      padding: 6px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.18);
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 15px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sleep-time-pill svg {
+      width: 15px;
+      height: 15px;
+      opacity: 0.72;
+      flex-shrink: 0;
+    }
+
+    .sleep-next-arrow {
+      color: rgba(255, 255, 255, 0.44);
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .sleep-next-countdown {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--theme-color);
+      text-shadow: 0 0 10px rgba(var(--theme-color-rgb), 0.35);
+    }
+
+    .sleep-overlay.has-next-profile .sleep-content {
+      gap: 10px;
+    }
+
+    .sleep-overlay.has-next-profile .sleep-icon-small {
+      display: none;
+    }
+
+    .sleep-overlay.has-next-profile .sleep-title {
+      font-size: 24px;
+    }
+
+    .sleep-overlay.has-next-profile .sleep-content > div[data-i18n="sleep_active_sub"] {
+      font-size: 15px !important;
+    }
+
+    .sleep-overlay.has-next-profile .sleep-next-profile {
+      padding: 8px 12px;
+      gap: 6px;
+    }
+
+    .sleep-overlay.has-next-profile .sleep-buttons-row {
+      margin-top: 0;
+    }
+
+    .sleep-overlay.has-next-profile .sleep-btn {
+      font-size: 16px;
+      padding: 8px 22px;
+    }
+
+    .sleep-btn {
+      background: var(--theme-color);
+      color: white;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 18px;
+      padding: 10px 25px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px var(--theme-color);
+      transition: all 0.3s;
+      font-weight: 600;
+    }
+
+    .sleep-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px var(--theme-color);
+    }
+
+    .sleep-buttons-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      -webkit-app-region: no-drag;
+    }
+
+    body.classic-mode .sleep-buttons-row {
+      margin-top: 0;
+      gap: 8px;
+    }
+
+    /* Classic mode sleep overlay - compact horizontal bar */
+    body.classic-mode .sleep-overlay {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+      border: 1px solid var(--theme-color);
+      border-radius: 10px;
+      background:
+        radial-gradient(ellipse 120% 60% at 20% 0%, rgba(255,255,255,0.08) 0%, transparent 60%),
+        linear-gradient(135deg,
+          rgba(20,20,20,0.85) 0%,
+          rgba(10,10,10,0.80) 50%,
+          rgba(15,15,15,0.85) 100%);
+      backdrop-filter: blur(32px) saturate(170%) brightness(108%);
+      -webkit-backdrop-filter: blur(32px) saturate(170%) brightness(108%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+      -webkit-app-region: drag;
+    }
+
+    body.classic-mode .sleep-bg-icon {
+      display: none;
+    }
+
+    body.classic-mode .sleep-icon-small {
+      display: none;
+    }
+
+    body.classic-mode .sleep-content {
+      flex-direction: row;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    body.classic-mode .sleep-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-shadow: none;
+      line-height: 1;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+
+    body.classic-mode .sleep-content>div {
+      font-size: 11px;
+    }
+
+    body.classic-mode .sleep-content > div[data-i18n="sleep_active_sub"] {
+      display: none;
+    }
+
+    body.classic-mode .sleep-subtitle-short {
+      display: block;
+      max-width: 88px;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 10px;
+      font-weight: 600;
+      line-height: 1.05;
+      white-space: normal;
+      text-align: left;
+      flex: 0 1 88px;
+    }
+
+    body.classic-mode .sleep-next-profile {
+      flex-direction: row;
+      gap: 5px;
+      padding: 2px 5px;
+      border-radius: 8px;
+      flex-shrink: 0;
+      max-width: 218px;
+    }
+
+    body.classic-mode .sleep-next-label,
+    body.classic-mode .sleep-next-countdown {
+      display: none;
+    }
+
+    body.classic-mode .sleep-next-times {
+      gap: 4px;
+    }
+
+    body.classic-mode .sleep-time-pill {
+      min-width: 64px;
+      padding: 2px 5px;
+      font-size: 10px;
+      border-radius: 6px;
+      gap: 3px;
+    }
+
+    body.classic-mode .sleep-time-pill svg {
+      width: 10px;
+      height: 10px;
+    }
+
+    body.classic-mode .sleep-btn {
+      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 50px;
+      flex-shrink: 0;
+      -webkit-app-region: no-drag;
+    }
+
+    body.classic-mode .sleep-overlay.has-next-profile .sleep-content {
+      gap: 6px;
+    }
+
+    body.classic-mode .sleep-overlay.has-next-profile .sleep-title {
+      font-size: 12px;
+      line-height: 1;
+      max-width: 128px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    body.classic-mode .sleep-overlay.has-next-profile .sleep-next-profile {
+      padding: 2px 5px;
+      gap: 4px;
+      max-width: 178px;
+    }
+
+    body.classic-mode .sleep-overlay.has-next-profile .sleep-time-pill {
+      min-width: 56px;
+      padding: 2px 4px;
+      font-size: 9px;
+    }
+
+    body.classic-mode .sleep-overlay.has-next-profile .sleep-time-pill svg {
+      display: none;
+    }
+
+    body.classic-mode .sleep-overlay.has-next-profile .sleep-btn {
+      font-size: 11px;
+      padding: 4px 10px;
+      min-width: 72px;
+      max-width: 82px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    svg {
+      display: block;
+    }
+
+    /* ===== CLASSIC MODE ===== */
+    body.classic-mode {
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
+    body.classic-mode .app {
+      position: relative;
+      background:
+        radial-gradient(ellipse 120% 60% at 20% 0%, rgba(255,255,255,0.08) 0%, transparent 60%),
+        linear-gradient(135deg,
+          rgba(20,20,20,0.85) 0%,
+          rgba(10,10,10,0.80) 50%,
+          rgba(15,15,15,0.85) 100%);
+
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      padding: 0;
+      padding-left: 75px;
+      padding-right: 4px;
+      gap: 8px;
+      justify-content: flex-start;
+      width: calc(100% - 1px);
+      height: calc(100% - 1px);
+      border: 0.5px solid var(--theme-color);
+      border-radius: 10px;
+      box-sizing: border-box;
+      box-shadow:
+        0 8px 28px rgba(0, 0, 0, 0.50),
+        inset 0 1px 0 rgba(255,255,255,0.1),
+        inset 0 -1px 0 rgba(0,0,0,0.3);
+      backdrop-filter: blur(32px) saturate(170%) brightness(108%);
+      -webkit-backdrop-filter: blur(32px) saturate(170%) brightness(108%);
+      /* Allow pill and banner to be fully visible */
+      overflow: visible;
+      clip-path: none;
+    }
+
+    /* Flatten layout to reorder elements freely */
+    body.classic-mode .header {
+      display: contents;
+    }
+
+    body.classic-mode .main {
+      display: contents;
+    }
+
+    body.classic-mode .header-right {
+      display: contents;
+    }
+
+    /* ── Classic mode: disable-wrap pill fixes ── */
+    /* disable-wrap is a flex item in the .app row; give it a stable size */
+    body.classic-mode .disable-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      order: 0;
+      flex-shrink: 0;
+      -webkit-app-region: no-drag;
+    }
+
+    /* Pill is smaller in classic mode, keeps original hover-only / disabled-only reveal */
+    body.classic-mode .disable-toggle-pill {
+      height: 22px;
+      padding: 2px 8px;
+      gap: 5px;
+      border-radius: 14px;
+    }
+
+    body.classic-mode .disable-toggle-pill .pill-dot {
+      width: 6px;
+      height: 6px;
+    }
+
+    body.classic-mode .disable-toggle-pill .pill-label {
+      font-size: 10px;
+      letter-spacing: 0.2px;
+    }
+
+    /* Disabled-banner: centered within the 44px classic bar */
+    body.classic-mode .disabled-banner {
+      position: absolute;
+      inset: unset;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 200;
+    }
+
+    body.classic-mode .disabled-banner-inner {
+      white-space: nowrap;
+      padding: 4px 10px;
+    }
+
+    body.classic-mode .disabled-banner-inner span {
+      font-size: 12px;
+    }
+
+    /* Exclude draggable for clickable controls */
+    body.classic-mode button,
+    body.classic-mode .toggle,
+    body.classic-mode input,
+    body.classic-mode .input-field {
+      -webkit-app-region: no-drag;
+    }
+
+    /* Set layout order (RTL: lower order appears further right) */
+    body.classic-mode .status {
+      position: absolute;
+      left: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      min-width: auto;
+      width: max-content;
+      text-align: right;
+      line-height: 1.1;
+      order: 5;
+      z-index: 1;
+      font-size: 11px;
+    }
+
+    body.classic-mode #statusText {
+      white-space: normal !important;
+      text-align: center;
+      line-height: 1.1;
+    }
+
+    body.classic-mode #settingsBtn {
+      order: 2;
+    }
+
+    body.classic-mode #trayBtn {
+      order: 1;
+    }
+
+    body.classic-mode #panelRight {
+      order: 3;
+    }
+
+    body.classic-mode #panelLeft {
+      order: 4;
+    }
+
+    /* Hide unneeded elements */
+    body.classic-mode .logo-text,
+    body.classic-mode .panel-bg,
+    body.classic-mode .status-text,
+    body.classic-mode .timer-label,
+    body.classic-mode #darkenLabel,
+    body.classic-mode .input-row {
+      display: none !important;
+    }
+
+    /* Styling */
+    body.classic-mode .icon-btn {
+      padding: 4px;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    body.classic-mode .panel {
+      position: relative;
+      padding: 0 6px;
+      border-radius: 8px;
+      flex-direction: row-reverse;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background:
+        linear-gradient(145deg,
+          rgba(30,30,35,0.80) 0%,
+          rgba(15,15,20,0.75) 50%,
+          rgba(25,25,30,0.80) 100%);
+
+      border: 1px solid var(--theme-color);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.1),
+        inset 0 -1px 0 rgba(0,0,0,0.2),
+        0 4px 14px rgba(0,0,0,0.40);
+      backdrop-filter: blur(32px) saturate(170%) brightness(108%);
+      -webkit-backdrop-filter: blur(32px) saturate(170%) brightness(108%);
+      height: 36px;
+      margin: 0;
+      min-width: 120px;
+      box-sizing: border-box;
+      transition: none !important;
+    }
+
+    body.classic-mode .panel:hover {
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.15),
+        0 6px 18px rgba(0,0,0,0.50);
+      border: 1px solid var(--theme-color);
+      transform: none;
+    }
+
+    body.classic-mode .panel-content {
+      display: flex;
+      flex-direction: row-reverse;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      flex: 0 0 auto;
+    }
+
+    body.classic-mode .toggle-row {
+      margin-bottom: 0;
+      gap: 8px;
+      align-items: center;
+      display: flex;
+      flex: 0 0 auto;
+    }
+
+    body.classic-mode .toggle-label {
+      font-size: 13px;
+      font-weight: 700 !important;
+      white-space: nowrap;
+      margin: 0;
+      padding: 0;
+      line-height: 1.15;
+      text-align: center;
+    }
+
+    body.classic-mode .timer-section {
+      overflow: hidden;
+
+      flex-direction: row-reverse;
+      align-items: center;
+      gap: 8px;
+      display: flex;
+      justify-content: flex-end;
+      flex: 0 0 auto;
+    }
+
+    body.classic-mode .timer-value {
+      font-size: 13px;
+      margin-top: 0;
+      margin-bottom: 0;
+      font-weight: 700;
+      letter-spacing: 0;
+      line-height: 1;
+      color: white !important;
+      min-width: 52px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      text-shadow: none;
+    }
+
+    /* Hide dot when icon is shown */
+    .status-dot.activity-active {
+      display: none !important;
+    }
+
+    body.classic-mode .toggle {
+      width: 34px;
+      height: 18px;
+      border-radius: 9px;
+    }
+
+    body.classic-mode .toggle-knob {
+      width: 12px;
+      height: 12px;
+      top: 3px;
+      right: 3px;
+    }
+
+    body.classic-mode .toggle.active .toggle-knob {
+      transform: translateX(-16px);
+    }
+
+    /* Classic mode app-disabled blur effects: blur out the rest of the window */
+    body.classic-mode .panel,
+    body.classic-mode .status,
+    body.classic-mode #settingsBtn,
+    body.classic-mode #trayBtn {
+      transition: filter 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                  opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                  transform 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    body.classic-mode.app-disabled .panel,
+    body.classic-mode.app-disabled .status,
+    body.classic-mode.app-disabled #settingsBtn,
+    body.classic-mode.app-disabled #trayBtn {
+      filter: blur(4px) grayscale(40%);
+      opacity: 0.25;
+      pointer-events: none;
+    }
+
+    body.classic-mode.app-disabled .panel {
+      transform: scale(0.96);
+    }
+
+    /* Hide input-row globally (except classic already hides it, this ensures it in all) */
+    body:not(.classic-mode) .input-row {
+      display: none !important;
+    }
+
+    /* ===== LIQUID GLASS MODE ===== */
+    body.liquid-glass-mode {
+      --bg-color: transparent;
+      --panel-bg: transparent;
+      --text-color: rgba(0, 0, 0, 0.9);
+      font-family: 'Sora', 'Fredoka', sans-serif;
+    }
+
+    /* ── App shell: frosted glass container ── */
+    body.liquid-glass-mode .app {
+      background:
+        radial-gradient(ellipse 130% 55% at 18% 0%, rgba(255, 255, 255, 0.18) 0%, transparent 62%),
+        radial-gradient(ellipse 70% 35% at 82% 105%, rgba(var(--theme-color-rgb), 0.08) 0%, transparent 65%),
+        linear-gradient(145deg,
+          rgba(255, 255, 255, 0.14) 0%,
+          rgba(255, 255, 255, 0.05) 50%,
+          rgba(255, 255, 255, 0.09) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.26);
+      box-shadow:
+        0 14px 40px rgba(0, 0, 0, 0.24),
+        0 0 0 0.5px rgba(255, 255, 255, 0.10),
+        inset 0 1px 0 rgba(255, 255, 255, 0.38),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+        0 0 60px rgba(var(--theme-color-rgb), 0.08);
+      backdrop-filter: blur(48px) saturate(210%) brightness(115%);
+      overflow: visible;
+      transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+      position: relative;
+    }
+
+    body.liquid-glass-mode .app:hover {
+      border-color: rgba(255, 255, 255, 0.45);
+      box-shadow:
+        0 20px 52px rgba(0, 0, 0, 0.30),
+        0 0 0 1px rgba(255, 255, 255, 0.22),
+        0 0 80px rgba(var(--theme-color-rgb), 0.14);
+    }
+
+    /* Liquid dynamic glass pseudo-elements — dark curved edge bands on hover */
+    body.liquid-glass-mode .app::before,
+    body.liquid-glass-mode .panel::before,
+    body.liquid-glass-mode .icon-btn::before,
+    body.liquid-glass-mode .toggle::before,
+    body.liquid-glass-mode .disable-toggle-pill::before,
+    body.liquid-glass-mode .sleep-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      /* Light edge shadows that appear on hover and curve around the glass rim */
+      box-shadow:
+        inset 0 0 0 1px rgba(0, 0, 0, 0.10),
+        inset 0 4px 20px rgba(0, 0, 0, 0.20),
+        inset 0 -5px 20px rgba(0, 0, 0, 0.20),
+        inset 5px 0 16px rgba(0, 0, 0, 0.14),
+        inset -5px 0 16px rgba(0, 0, 0, 0.14),
+        inset 0 0 32px rgba(0, 0, 0, 0.10);
+      opacity: 0;
+      transition: opacity 0.42s ease;
+      /* Shadow appears on the side opposite the cursor */
+      -webkit-mask-image: radial-gradient(ellipse 200px 160px at calc(100% - var(--mouse-x, -200px)) calc(100% - var(--mouse-y, -200px)), black 0%, transparent 100%);
+      mask-image: radial-gradient(ellipse 200px 160px at calc(100% - var(--mouse-x, -200px)) calc(100% - var(--mouse-y, -200px)), black 0%, transparent 100%);
+      z-index: 0;
+    }
+
+    body.liquid-glass-mode .app:hover::before,
+    body.liquid-glass-mode .panel:hover::before,
+    body.liquid-glass-mode .icon-btn:hover::before,
+    body.liquid-glass-mode .toggle:hover::before,
+    body.liquid-glass-mode .disable-toggle-pill:hover::before,
+    body.liquid-glass-mode .sleep-btn:hover::before {
+      opacity: 1;
+    }
+
+    /* ── Header: glass bar ── */
+    body.liquid-glass-mode .header {
+      background:
+        linear-gradient(180deg,
+          rgba(255, 255, 255, 0.16) 0%,
+          rgba(255, 255, 255, 0.02) 100%);
+      border-bottom: none !important;
+      backdrop-filter: blur(32px) saturate(170%) brightness(108%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.32);
+      
+      /* Progressive blur fade out to eliminate the sharp separator line */
+      padding-bottom: 26px;
+      margin-bottom: -20px;
+      -webkit-mask-image: linear-gradient(to bottom, black 0%, black calc(100% - 20px), transparent 100%);
+      mask-image: linear-gradient(to bottom, black 0%, black calc(100% - 20px), transparent 100%);
+      z-index: 10;
+    }
+
+    /* ── Panels: deep liquid glass cards ── */
+    body.liquid-glass-mode .panel {
+      background:
+        linear-gradient(148deg,
+          rgba(255, 255, 255, 0.22) 0%,
+          rgba(255, 255, 255, 0.08) 45%,
+          rgba(255, 255, 255, 0.14) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.32);
+      box-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.18),
+        0 0 0 0.5px rgba(255, 255, 255, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.44),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.06),
+        inset 1px 0 0 rgba(255, 255, 255, 0.18),
+        0 0 36px rgba(var(--theme-color-rgb), 0.06);
+      backdrop-filter: blur(42px) saturate(185%) brightness(112%);
+      border-radius: 22px;
+      transition: all 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+      position: relative;
+    }
+
+    body.liquid-glass-mode .panel:hover {
+      border-color: rgba(255, 255, 255, 0.55);
+      box-shadow:
+        0 18px 44px rgba(0, 0, 0, 0.24),
+        0 0 0 1px rgba(255, 255, 255, 0.22),
+        0 0 48px rgba(var(--theme-color-rgb), 0.20);
+      transform: translateY(-4px) scale(1.008);
+    }
+
+    /* ── Toggles: iOS liquid glass pills ── */
+    body.liquid-glass-mode .toggle {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      backdrop-filter: blur(14px);
+      box-shadow:
+        inset 0 1.5px 3px rgba(0, 0, 0, 0.22),
+        inset 0 -1px 1px rgba(255, 255, 255, 0.14),
+        0 0 0 0.5px rgba(255, 255, 255, 0.07);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    body.liquid-glass-mode .toggle:hover {
+      border-color: rgba(255, 255, 255, 0.35);
+      box-shadow:
+        0 0 0 0.5px rgba(255, 255, 255, 0.15);
+    }
+
+    body.liquid-glass-mode .toggle.active {
+      background: linear-gradient(135deg,
+          rgba(var(--theme-color-rgb), 0.88) 0%,
+          rgba(var(--theme-color-rgb), 0.66) 100%);
+      border-color: rgba(255, 255, 255, 0.32);
+      box-shadow:
+        0 0 22px rgba(var(--theme-color-rgb), 0.55),
+        0 0 44px rgba(var(--theme-color-rgb), 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.32),
+        0 4px 14px rgba(0, 0, 0, 0.22);
+    }
+
+    body.liquid-glass-mode .toggle.active:hover {
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow:
+        0 0 26px rgba(var(--theme-color-rgb), 0.65),
+        0 0 50px rgba(var(--theme-color-rgb), 0.3),
+        0 6px 18px rgba(0, 0, 0, 0.3);
+    }
+
+    body.liquid-glass-mode .toggle-knob {
+      background: linear-gradient(145deg, #ffffff 0%, rgba(228, 234, 246, 0.96) 100%);
+      box-shadow:
+        0 2px 10px rgba(0, 0, 0, 0.28),
+        0 0 0 0.5px rgba(0, 0, 0, 0.07),
+        inset 0 1px 1px rgba(255, 255, 255, 0.9);
+    }
+
+    /* ── Icon buttons: glass circles ── */
+    body.liquid-glass-mode .icon-btn {
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 10px;
+      backdrop-filter: blur(14px);
+      color: rgba(0, 0, 0, 0.8);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        0 2px 8px rgba(0, 0, 0, 0.16);
+      transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+    }
+
+    body.liquid-glass-mode .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.20);
+      border-color: rgba(255, 255, 255, 0.36);
+      color: rgba(255, 255, 255, 1);
+      box-shadow:
+        0 6px 16px rgba(0, 0, 0, 0.22),
+        0 0 20px rgba(var(--theme-color-rgb), 0.28);
+      transform: translateY(-1.5px) scale(1.06);
+    }
+
+    /* ── Tooltip overlay: deep frosted glass popup ── */
+    body.liquid-glass-mode .tooltip-overlay {
+      background: linear-gradient(145deg,
+          rgba(255, 255, 255, 0.22) 0%,
+          rgba(255, 255, 255, 0.09) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.36);
+      backdrop-filter: blur(44px) saturate(190%) brightness(112%);
+      box-shadow:
+        0 24px 64px rgba(0, 0, 0, 0.44),
+        inset 0 1px 0 rgba(255, 255, 255, 0.42),
+        0 0 0 1px rgba(var(--theme-color-rgb), 0.18);
+      color: rgba(0, 0, 0, 0.9);
+      font-weight: 800;
+    }
+
+    /* ── Timer value: glowing glass numeral ── */
+    body.liquid-glass-mode .timer-value {
+      color: rgba(255, 255, 255, 0.96) !important;
+      text-shadow:
+        0 0 30px rgba(var(--theme-color-rgb), 0.65),
+        0 0 60px rgba(var(--theme-color-rgb), 0.32),
+        0 2px 10px rgba(0, 0, 0, 0.35);
+      filter: drop-shadow(0 0 10px rgba(var(--theme-color-rgb), 0.42));
+    }
+
+    /* ── Status text ── */
+    body.liquid-glass-mode .status-text,
+    body.liquid-glass-mode .status-text span {
+      color: rgba(255, 255, 255, 0.95) !important;
+      font-weight: 700;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    /* ── Labels and status: legible through glass ── */
+    body.liquid-glass-mode .timer-label {
+      color: rgba(255, 255, 255, 0.95) !important;
+      font-weight: 700;
+      text-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    body.liquid-glass-mode .toggle-label,
+    body.liquid-glass-mode .status,
+    body.liquid-glass-mode .input-label {
+      color: rgba(0, 0, 0, 0.9);
+      font-weight: 600;
+      text-shadow: 0 1px 4px rgba(255, 255, 255, 0.15);
+    }
+
+    /* ── Disable toggle pill: liquid glass pill ── */
+    body.liquid-glass-mode .disable-toggle-pill {
+      background: rgba(255, 255, 255, 0.11);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      backdrop-filter: blur(20px);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.26),
+        0 4px 14px rgba(0, 0, 0, 0.22);
+      position: absolute;
+    }
+
+    body.liquid-glass-mode .disable-toggle-pill:hover {
+      background: rgba(255, 255, 255, 0.20);
+      border-color: rgba(255, 255, 255, 0.36);
+      box-shadow:
+        0 6px 18px rgba(0, 0, 0, 0.26);
+    }
+
+    body.liquid-glass-mode.app-disabled .disable-toggle-pill {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.38);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 0 22px rgba(239, 68, 68, 0.22);
+    }
+
+    /* ── Disabled banner: frosted glass warning ── */
+    body.liquid-glass-mode .disabled-banner-inner {
+      background: rgba(255, 255, 255, 0.10);
+      border: 1px solid rgba(239, 68, 68, 0.46);
+      backdrop-filter: blur(32px) saturate(160%);
+      box-shadow:
+        0 10px 36px rgba(0, 0, 0, 0.44),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        0 0 24px rgba(239, 68, 68, 0.22);
+    }
+
+    /* ── Sleep overlay: full liquid glass screen ── */
+    body.liquid-glass-mode .sleep-overlay {
+      background:
+        linear-gradient(148deg,
+          rgba(255, 255, 255, 0.16) 0%,
+          rgba(255, 255, 255, 0.06) 100%);
+      backdrop-filter: blur(52px) saturate(200%) brightness(112%);
+    }
+
+    body.liquid-glass-mode .sleep-btn {
+      background: linear-gradient(148deg,
+          rgba(var(--theme-color-rgb), 0.92) 0%,
+          rgba(var(--theme-color-rgb), 0.70) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.32);
+      box-shadow:
+        0 10px 28px rgba(var(--theme-color-rgb), 0.48),
+        inset 0 1px 0 rgba(255, 255, 255, 0.36),
+        0 0 0 1px rgba(255, 255, 255, 0.10);
+      backdrop-filter: blur(14px);
+      transition: all 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+    }
+
+    body.liquid-glass-mode .sleep-btn:hover {
+      background: linear-gradient(148deg,
+          rgba(var(--theme-color-rgb), 1) 0%,
+          rgba(var(--theme-color-rgb), 0.86) 100%);
+      border-color: rgba(255, 255, 255, 0.45);
+      box-shadow:
+        0 16px 40px rgba(var(--theme-color-rgb), 0.65),
+        0 0 50px rgba(var(--theme-color-rgb), 0.32);
+      transform: scale(1.07) translateY(-1px);
+    }
+
+    /* ── Dynamic Glass Edge Caustics — light slides along rims like real glass ── */
+    body.liquid-glass-mode .app::after,
+    body.liquid-glass-mode .panel::after,
+    body.liquid-glass-mode .icon-btn::after,
+    body.liquid-glass-mode .toggle::after,
+    body.liquid-glass-mode .disable-toggle-pill::after,
+    body.liquid-glass-mode .sleep-btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      /*
+        Thin rim highlights: bright top/left edges, subtle dark bottom/right edge.
+        The mask slides these caustics so they appear to travel along the
+        physical border of the glass as the cursor moves near it.
+      */
+      box-shadow:
+        inset 0 1.5px 0 rgba(255, 255, 255, 0.92),
+        inset 1.5px 0 0 rgba(255, 255, 255, 0.62),
+        inset -1.5px 0 0 rgba(255, 255, 255, 0.18),
+        inset 0 -1.5px 0 rgba(0, 0, 0, 0.13),
+        inset 0 3px 10px rgba(255, 255, 255, 0.14);
+      opacity: 0;
+      transition: opacity 0.42s cubic-bezier(0.23, 1, 0.32, 1);
+      /* Wide elliptical spread so the rim lights slide smoothly edge-to-edge */
+      -webkit-mask-image: radial-gradient(ellipse 140px 110px at var(--mouse-x, -200px) var(--mouse-y, -200px), black 0%, transparent 100%);
+      mask-image: radial-gradient(ellipse 140px 110px at var(--mouse-x, -200px) var(--mouse-y, -200px), black 0%, transparent 100%);
+      z-index: 10;
+    }
+
+    body.liquid-glass-mode .app:hover::after,
+    body.liquid-glass-mode .panel:hover::after,
+    body.liquid-glass-mode .icon-btn:hover::after,
+    body.liquid-glass-mode .toggle:hover::after,
+    body.liquid-glass-mode .disable-toggle-pill:hover::after,
+    body.liquid-glass-mode .sleep-btn:hover::after {
+      opacity: 1;
+    }
+
+    /* ── Input fields: glass inputs ── */
+    body.liquid-glass-mode .input-field {
+      background: rgba(255, 255, 255, 0.11);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: rgba(255, 255, 255, 0.96);
+      border-bottom: 1.5px solid rgba(var(--theme-color-rgb), 0.65);
+      backdrop-filter: blur(14px);
+      box-shadow:
+        inset 0 1px 4px rgba(0, 0, 0, 0.16),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.10);
+      border-radius: 10px;
+      transition: all 0.22s ease;
+    }
+
+    body.liquid-glass-mode .input-field:focus {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(var(--theme-color-rgb), 0.85);
+      box-shadow:
+        0 0 0 3px rgba(var(--theme-color-rgb), 0.22),
+        inset 0 1px 4px rgba(0, 0, 0, 0.16),
+        0 0 20px rgba(var(--theme-color-rgb), 0.32);
+      transform: translateY(-1px);
+    }
+
+    body.liquid-glass-mode .logo-text {
+      color: rgba(0, 0, 0, 0.9) !important;
+    }
+
+    body.liquid-glass-mode .pill-label {
+      color: rgba(0, 0, 0, 0.8) !important;
+      font-weight: 800 !important;
+    }
+
+    body.liquid-glass-mode .logo-icon svg path[fill="white"],
+    body.liquid-glass-mode .logo-icon svg ellipse {
+      fill: rgba(0, 0, 0, 0.9) !important;
+    }
+
+    body.liquid-glass-mode .logo-icon svg path[stroke="white"],
+    body.liquid-glass-mode .logo-icon svg line {
+      stroke: rgba(0, 0, 0, 0.9) !important;
+    }
+
+    body.coffee-mode {
+      --coffee-espresso: #0a0503;
+      --coffee-roast: #1e0e07;
+      --coffee-mocha: #3a2010;
+      --coffee-caramel: #e08a40;
+      --coffee-cream: #f8ddb8;
+      --coffee-glow: rgba(240, 180, 100, 0.55);
+      color: #f8ead8;
+      font-family: 'Sora', 'Fredoka', sans-serif;
+    }
+
+    body.coffee-mode .app {
+      background:
+        radial-gradient(ellipse 160% 130% at 10% -5%, rgba(255, 200, 130, 0.22) 0%, rgba(20, 10, 4, 0.97) 50%, #060301 100%),
+        radial-gradient(ellipse 80% 60% at 90% 15%, rgba(240, 160, 80, 0.16) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 50% 100%, rgba(180, 90, 30, 0.18) 0%, transparent 60%) !important;
+      position: relative;
+      overflow: hidden;
+      border: 1.5px solid rgba(240, 180, 100, 0.5);
+      box-shadow:
+        0 0 0 1px rgba(240, 180, 100, 0.08),
+        0 16px 60px rgba(0, 0, 0, 0.75),
+        inset 0 0 60px rgba(255, 200, 140, 0.06),
+        inset 0 0 120px rgba(180, 80, 20, 0.04);
+    }
+
+    /* Animated crema / warm light orb */
+    body.coffee-mode .app::before {
+      content: '';
+      position: absolute;
+      top: -40%;
+      left: -20%;
+      width: 120%;
+      height: 120%;
+      background:
+        radial-gradient(ellipse 55% 45% at 30% 35%, rgba(255, 210, 140, 0.22) 0%, transparent 65%),
+        radial-gradient(ellipse 40% 35% at 75% 20%, rgba(220, 140, 60, 0.16) 0%, transparent 55%);
+      opacity: 0.7;
+      mix-blend-mode: screen;
+      animation: cremaPulse 14s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Diagonal grain texture */
+    body.coffee-mode .app::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(125deg, rgba(255, 220, 160, 0.04) 0 1px, transparent 1px 14px),
+        repeating-linear-gradient(215deg, rgba(255, 200, 130, 0.025) 0 1px, transparent 1px 18px);
+      opacity: 0.6;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes cremaPulse {
+
+      0%,
+      100% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.65;
+      }
+
+      33% {
+        transform: translate(4%, 3%) scale(1.06);
+        opacity: 0.9;
+      }
+
+      66% {
+        transform: translate(-3%, -2%) scale(0.97);
+        opacity: 0.72;
+      }
+    }
+
+    /* ===== COFFEE BEANS ANIMATION ===== */
+    .coffee-beans-container {
+      display: none;
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    body.coffee-mode .coffee-beans-container {
+      display: block;
+    }
+
+    .bean {
+      position: absolute;
+      left: 0;
+      opacity: 0;
+      will-change: transform, opacity;
+      overflow: visible;
+      filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.65));
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+
+    .bean-0 {
+      width: 75px;
+      height: 75px;
+      top: 5%;
+      animation: bean-anim-0 38s ease-in-out 0s infinite;
+    }
+
+    .bean-1 {
+      width: 55px;
+      height: 55px;
+      top: 25%;
+      animation: bean-anim-1 42s ease-in-out -7s infinite;
+    }
+
+    .bean-2 {
+      width: 65px;
+      height: 65px;
+      top: 50%;
+      animation: bean-anim-2 33s ease-in-out -5s infinite;
+    }
+
+    .bean-3 {
+      width: 80px;
+      height: 80px;
+      top: 72%;
+      animation: bean-anim-3 48s ease-in-out -18s infinite;
+    }
+
+    .bean-4 {
+      width: 50px;
+      height: 50px;
+      top: 88%;
+      animation: bean-anim-4 36s ease-in-out -28s infinite;
+    }
+
+    .bean-5 {
+      width: 60px;
+      height: 60px;
+      top: 38%;
+      animation: bean-anim-5 44s ease-in-out -11s infinite;
+    }
+
+    .bean-6 {
+      width: 45px;
+      height: 45px;
+      top: 14%;
+      animation: bean-anim-6 30s ease-in-out -21s infinite;
+    }
+
+    .bean-7 {
+      width: 24px;
+      height: 24px;
+      top: 8%;
+      animation: bean-anim-7 22s ease-in-out -4s infinite;
+    }
+
+    .bean-8 {
+      width: 20px;
+      height: 20px;
+      top: 45%;
+      animation: bean-anim-8 20s ease-in-out -17s infinite;
+    }
+
+    .bean-9 {
+      width: 25px;
+      height: 25px;
+      top: 80%;
+      animation: bean-anim-9 19s ease-in-out -13s infinite;
+    }
+
+    .bean-10 {
+      width: 29px;
+      height: 29px;
+      top: 55%;
+      animation: bean-anim-10 21s ease-in-out -24s infinite;
+    }
+
+    .bean-11 {
+      width: 85px;
+      height: 85px;
+      top: 10%;
+      animation: bean-anim-11 45s ease-in-out -12s infinite;
+    }
+
+    .bean-12 {
+      width: 65px;
+      height: 65px;
+      top: 32%;
+      animation: bean-anim-12 40s ease-in-out -2s infinite;
+    }
+
+    .bean-13 {
+      width: 140px;
+      height: 140px;
+      top: 56%;
+      animation: bean-anim-13 55s ease-in-out -22s infinite;
+    }
+
+    .bean-14 {
+      width: 75px;
+      height: 75px;
+      top: 78%;
+      animation: bean-anim-14 50s ease-in-out -8s infinite;
+    }
+
+    .bean-15 {
+      width: 58px;
+      height: 58px;
+      top: 44%;
+      animation: bean-anim-15 38s ease-in-out -33s infinite;
+    }
+
+    .bean-16 {
+      width: 52px;
+      height: 52px;
+      top: 62%;
+      animation: bean-anim-16 35s ease-in-out -15s infinite;
+    }
+
+    .bean-17 {
+      width: 90px;
+      height: 90px;
+      top: 93%;
+      animation: bean-anim-17 52s ease-in-out -40s infinite;
+    }
+
+    .bean-18 {
+      width: 27px;
+      height: 27px;
+      top: 22%;
+      animation: bean-anim-18 18s ease-in-out -9s infinite;
+    }
+
+    .bean-19 {
+      width: 31px;
+      height: 31px;
+      top: 66%;
+      animation: bean-anim-19 24s ease-in-out -3s infinite;
+    }
+
+    .bean-20 {
+      width: 22px;
+      height: 22px;
+      top: 35%;
+      animation: bean-anim-20 17s ease-in-out -6s infinite;
+    }
+
+    .bean-21 {
+      width: 18px;
+      height: 18px;
+      top: 92%;
+      animation: bean-anim-21 16s ease-in-out -20s infinite;
+    }
+
+    .bean-22 {
+      width: 16px;
+      height: 16px;
+      top: 58%;
+      animation: bean-anim-19 30s ease-in-out -2s infinite;
+    }
+
+    .bean-23 {
+      width: 20px;
+      height: 20px;
+      top: 79%;
+      animation: bean-anim-10 23s ease-in-out -37s infinite;
+    }
+
+    .bean-24 {
+      width: 22px;
+      height: 22px;
+      top: 58%;
+      animation: bean-anim-21 19s ease-in-out -25s infinite;
+    }
+
+    .bean-25 {
+      width: 20px;
+      height: 20px;
+      top: 25%;
+      animation: bean-anim-19 19s ease-in-out -11s infinite;
+    }
+
+    .bean-26 {
+      width: 34px;
+      height: 34px;
+      top: 75%;
+      animation: bean-anim-19 33s ease-in-out -25s infinite;
+    }
+
+    .bean-27 {
+      width: 33px;
+      height: 33px;
+      top: 90%;
+      animation: bean-anim-7 21s ease-in-out -3s infinite;
+    }
+
+    .bean-28 {
+      width: 24px;
+      height: 24px;
+      top: 17%;
+      animation: bean-anim-10 24s ease-in-out -16s infinite;
+    }
+
+    .bean-29 {
+      width: 32px;
+      height: 32px;
+      top: 71%;
+      animation: bean-anim-19 28s ease-in-out -37s infinite;
+    }
+
+    .bean-30 {
+      width: 33px;
+      height: 33px;
+      top: 23%;
+      animation: bean-anim-10 28s ease-in-out -6s infinite;
+    }
+
+    .bean-31 {
+      width: 32px;
+      height: 32px;
+      top: 31%;
+      animation: bean-anim-7 27s ease-in-out -34s infinite;
+    }
+
+    .bean-32 {
+      width: 31px;
+      height: 31px;
+      top: 94%;
+      animation: bean-anim-10 19s ease-in-out -23s infinite;
+    }
+
+    .bean-33 {
+      width: 34px;
+      height: 34px;
+      top: 49%;
+      animation: bean-anim-20 33s ease-in-out -38s infinite;
+    }
+
+    .bean-34 {
+      width: 32px;
+      height: 32px;
+      top: 55%;
+      animation: bean-anim-18 34s ease-in-out -5s infinite;
+    }
+
+    .bean-35 {
+      width: 33px;
+      height: 33px;
+      top: 40%;
+      animation: bean-anim-7 21s ease-in-out -36s infinite;
+    }
+
+    .bean-36 {
+      width: 34px;
+      height: 34px;
+      top: 58%;
+      animation: bean-anim-10 18s ease-in-out -6s infinite;
+    }
+
+    .bean-37 {
+      width: 18px;
+      height: 18px;
+      top: 59%;
+      animation: bean-anim-18 33s ease-in-out -23s infinite;
+    }
+
+    .bean-38 {
+      width: 23px;
+      height: 23px;
+      top: 19%;
+      animation: bean-anim-7 28s ease-in-out -10s infinite;
+    }
+
+    .bean-39 {
+      width: 23px;
+      height: 23px;
+      top: 30%;
+      animation: bean-anim-21 18s ease-in-out -29s infinite;
+    }
+
+    .bean-40 {
+      width: 18px;
+      height: 18px;
+      top: 49%;
+      animation: bean-anim-20 18s ease-in-out -16s infinite;
+    }
+
+    .bean-41 {
+      width: 21px;
+      height: 21px;
+      top: 81%;
+      animation: bean-anim-21 31s ease-in-out -10s infinite;
+    }
+
+    /* Embedded realistic bean images */
+    .bean-0 {
+      background-image: url('bean_img_0.png');
+    }
+
+    .bean-1 {
+      background-image: url('bean_img_1.png');
+    }
+
+    .bean-2 {
+      background-image: url('bean_img_2.png');
+    }
+
+    .bean-3 {
+      background-image: url('bean_img_3.png');
+    }
+
+    .bean-4 {
+      background-image: url('bean_img_0.png');
+    }
+
+    .bean-5 {
+      background-image: url('bean_img_1.png');
+    }
+
+    .bean-6 {
+      background-image: url('bean_img_2.png');
+    }
+
+    .bean-7 {
+      background-image: url('bean_img_3.png');
+    }
+
+    .bean-8 {
+      background-image: url('bean_img_0.png');
+    }
+
+    .bean-9 {
+      background-image: url('bean_img_1.png');
+    }
+
+    .bean-10 {
+      background-image: url('bean_img_2.png');
+    }
+
+    .bean-11 {
+      background-image: url('bean_img_3.png');
+    }
+
+    .bean-12 {
+      background-image: url('bean_img_0.png');
+    }
+
+    .bean-13 {
+      background-image: url('bean_img_1.png');
+    }
+
+    .bean-14 {
+      background-image: url('bean_img_2.png');
+    }
+
+    .bean-15 {
+      background-image: url('bean_img_3.png');
+    }
+
+    .bean-16 {
+      background-image: url('bean_img_0.png');
+    }
+
+    .bean-17 {
+      background-image: url('bean_img_1.png');
+    }
+
+    .bean-18 {
+      background-image: url('bean_img_2.png');
+    }
+
+    .bean-19 {
+      background-image: url('bean_img_3.png');
+    }
+
+    .bean-20 {
+      background-image: url('bean_img_0.png');
+    }
+
+    .bean-21 {
+      background-image: url('bean_img_1.png');
+    }
+
+    .bean-22 {
+      background-image: url('bean_img_2.png');
+    }
+
+    .bean-23 {
+      background-image: url('bean_img_3.png');
+    }
+
+    .bean-24 {
+      background-image: url('bean_img_0.png');
+    }
+
+    .bean-25 {
+      background-image: url('bean_img_1.png');
+    }
+
+    .bean-26 {
+      background-image: url('bean_img_2.png');
+    }
+
+    .bean-27 {
+      background-image: url('bean_img_3.png');
+    }
+
+    .bean-28 {
+      background-image: url('bean_img_0.png');
+    }
+
+    .bean-29 {
+      background-image: url('bean_img_1.png');
+    }
+
+    .bean-30 {
+      background-image: url('bean_img_2.png');
+    }
+
+    .bean-31 {
+      background-image: url('bean_img_3.png');
+    }
+
+    .bean-32 {
+      background-image: url('bean_img_0.png');
+    }
+
+    .bean-33 {
+      background-image: url('bean_img_1.png');
+    }
+
+    .bean-34 {
+      background-image: url('bean_img_2.png');
+    }
+
+    .bean-35 {
+      background-image: url('bean_img_3.png');
+    }
+
+    .bean-36 {
+      background-image: url('bean_img_0.png');
+    }
+
+    .bean-37 {
+      background-image: url('bean_img_1.png');
+    }
+
+    .bean-38 {
+      background-image: url('bean_img_2.png');
+    }
+
+    .bean-39 {
+      background-image: url('bean_img_3.png');
+    }
+
+    .bean-40 {
+      background-image: url('bean_img_0.png');
+    }
+
+    .bean-41 {
+      background-image: url('bean_img_1.png');
+    }
+
+
+
+    @keyframes bean-anim-0 {
+      0% {
+        transform: translateX(-160px) rotate(0deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.65;
+      }
+
+      50% {
+        transform: translateX(220px) rotate(110deg) scale(1);
+        opacity: 0.65;
+      }
+
+      90% {
+        opacity: 0.65;
+      }
+
+      100% {
+        transform: translateX(620px) rotate(250deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-1 {
+      0% {
+        transform: translateX(-130px) rotate(-45deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.6;
+      }
+
+      50% {
+        transform: translateX(190px) rotate(95deg) scale(1);
+        opacity: 0.6;
+      }
+
+      90% {
+        opacity: 0.6;
+      }
+
+      100% {
+        transform: translateX(590px) rotate(230deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-2 {
+      0% {
+        transform: translateX(-150px) rotate(15deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.68;
+      }
+
+      50% {
+        transform: translateX(170px) rotate(145deg) scale(1);
+        opacity: 0.68;
+      }
+
+      90% {
+        opacity: 0.68;
+      }
+
+      100% {
+        transform: translateX(560px) rotate(300deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-3 {
+      0% {
+        transform: translateX(-175px) rotate(80deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.58;
+      }
+
+      50% {
+        transform: translateX(210px) rotate(200deg) scale(1);
+        opacity: 0.58;
+      }
+
+      90% {
+        opacity: 0.58;
+      }
+
+      100% {
+        transform: translateX(630px) rotate(360deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-4 {
+      0% {
+        transform: translateX(-120px) rotate(-30deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.62;
+      }
+
+      50% {
+        transform: translateX(140px) rotate(80deg) scale(1);
+        opacity: 0.62;
+      }
+
+      90% {
+        opacity: 0.62;
+      }
+
+      100% {
+        transform: translateX(570px) rotate(210deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-5 {
+      0% {
+        transform: translateX(-140px) rotate(55deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.55;
+      }
+
+      50% {
+        transform: translateX(160px) rotate(175deg) scale(1);
+        opacity: 0.55;
+      }
+
+      90% {
+        opacity: 0.55;
+      }
+
+      100% {
+        transform: translateX(540px) rotate(330deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-6 {
+      0% {
+        transform: translateX(-110px) rotate(20deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.7;
+      }
+
+      50% {
+        transform: translateX(150px) rotate(160deg) scale(1);
+        opacity: 0.7;
+      }
+
+      90% {
+        opacity: 0.7;
+      }
+
+      100% {
+        transform: translateX(540px) rotate(330deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-7 {
+      0% {
+        transform: translateX(-60px) rotate(30deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.65;
+      }
+
+      50% {
+        transform: translateX(150px) rotate(170deg) scale(1);
+        opacity: 0.65;
+      }
+
+      90% {
+        opacity: 0.65;
+      }
+
+      100% {
+        transform: translateX(480px) rotate(330deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-8 {
+      0% {
+        transform: translateX(-55px) rotate(60deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.72;
+      }
+
+      50% {
+        transform: translateX(140px) rotate(200deg) scale(1);
+        opacity: 0.72;
+      }
+
+      90% {
+        opacity: 0.72;
+      }
+
+      100% {
+        transform: translateX(460px) rotate(350deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-9 {
+      0% {
+        transform: translateX(-65px) rotate(-45deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.66;
+      }
+
+      50% {
+        transform: translateX(135px) rotate(100deg) scale(1);
+        opacity: 0.66;
+      }
+
+      90% {
+        opacity: 0.66;
+      }
+
+      100% {
+        transform: translateX(450px) rotate(260deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-10 {
+      0% {
+        transform: translateX(-70px) rotate(-10deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.62;
+      }
+
+      50% {
+        transform: translateX(145px) rotate(150deg) scale(1);
+        opacity: 0.62;
+      }
+
+      90% {
+        opacity: 0.62;
+      }
+
+      100% {
+        transform: translateX(470px) rotate(310deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-11 {
+      0% {
+        transform: translateX(140px) rotate(30deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.6;
+      }
+
+      50% {
+        transform: translateX(-150px) rotate(-100deg) scale(1);
+        opacity: 0.6;
+      }
+
+      90% {
+        opacity: 0.6;
+      }
+
+      100% {
+        transform: translateX(-620px) rotate(-260deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-12 {
+      0% {
+        transform: translateX(150px) rotate(-20deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.65;
+      }
+
+      50% {
+        transform: translateX(-140px) rotate(-110deg) scale(1);
+        opacity: 0.65;
+      }
+
+      90% {
+        opacity: 0.65;
+      }
+
+      100% {
+        transform: translateX(-580px) rotate(-270deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-13 {
+      0% {
+        transform: translateX(200px) rotate(60deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.55;
+      }
+
+      50% {
+        transform: translateX(-140px) rotate(-130deg) scale(1);
+        opacity: 0.55;
+      }
+
+      90% {
+        opacity: 0.55;
+      }
+
+      100% {
+        transform: translateX(-660px) rotate(-310deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-14 {
+      0% {
+        transform: translateX(165px) rotate(45deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.62;
+      }
+
+      50% {
+        transform: translateX(-160px) rotate(-95deg) scale(1);
+        opacity: 0.62;
+      }
+
+      90% {
+        opacity: 0.62;
+      }
+
+      100% {
+        transform: translateX(-610px) rotate(-240deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-15 {
+      0% {
+        transform: translateX(135px) rotate(-50deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.68;
+      }
+
+      50% {
+        transform: translateX(-130px) rotate(-165deg) scale(1);
+        opacity: 0.68;
+      }
+
+      90% {
+        opacity: 0.68;
+      }
+
+      100% {
+        transform: translateX(-570px) rotate(-310deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-16 {
+      0% {
+        transform: translateX(125px) rotate(10deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.6;
+      }
+
+      50% {
+        transform: translateX(-120px) rotate(-120deg) scale(1);
+        opacity: 0.6;
+      }
+
+      90% {
+        opacity: 0.6;
+      }
+
+      100% {
+        transform: translateX(-550px) rotate(-290deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-17 {
+      0% {
+        transform: translateX(190px) rotate(-35deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.56;
+      }
+
+      50% {
+        transform: translateX(-170px) rotate(-145deg) scale(1);
+        opacity: 0.56;
+      }
+
+      90% {
+        opacity: 0.56;
+      }
+
+      100% {
+        transform: translateX(-640px) rotate(-320deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-18 {
+      0% {
+        transform: translateX(70px) rotate(-20deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.7;
+      }
+
+      50% {
+        transform: translateX(-130px) rotate(-140deg) scale(1);
+        opacity: 0.7;
+      }
+
+      90% {
+        opacity: 0.7;
+      }
+
+      100% {
+        transform: translateX(-470px) rotate(-300deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-19 {
+      0% {
+        transform: translateX(75px) rotate(15deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.68;
+      }
+
+      50% {
+        transform: translateX(-120px) rotate(-110deg) scale(1);
+        opacity: 0.68;
+      }
+
+      90% {
+        opacity: 0.68;
+      }
+
+      100% {
+        transform: translateX(-460px) rotate(-280deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-20 {
+      0% {
+        transform: translateX(60px) rotate(70deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.74;
+      }
+
+      50% {
+        transform: translateX(-110px) rotate(-80deg) scale(1);
+        opacity: 0.74;
+      }
+
+      90% {
+        opacity: 0.74;
+      }
+
+      100% {
+        transform: translateX(-440px) rotate(-240deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    @keyframes bean-anim-21 {
+      0% {
+        transform: translateX(55px) rotate(50deg) scale(0.88);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.75;
+      }
+
+      50% {
+        transform: translateX(-100px) rotate(-130deg) scale(1);
+        opacity: 0.75;
+      }
+
+      90% {
+        opacity: 0.75;
+      }
+
+      100% {
+        transform: translateX(-430px) rotate(-300deg) scale(0.88);
+        opacity: 0;
+      }
+    }
+
+    /* ===== COFFEE HEADER ===== */
+    body.coffee-mode .header {
+      background: linear-gradient(110deg, rgba(22, 11, 5, 0.96) 0%, rgba(50, 26, 12, 0.90) 60%, rgba(30, 15, 6, 0.80) 100%);
+      backdrop-filter: blur(22px) saturate(160%);
+      border-bottom: none !important;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      
+      /* Progressive blur fade out to eliminate the sharp separator line */
+      padding-bottom: 26px;
+      margin-bottom: -20px;
+      -webkit-mask-image: linear-gradient(to bottom, black 0%, black calc(100% - 20px), transparent 100%);
+      mask-image: linear-gradient(to bottom, black 0%, black calc(100% - 20px), transparent 100%);
+      z-index: 10;
+    }
+
+    /* ===== COFFEE PANELS ===== */
+    body.coffee-mode .panel {
+      position: relative;
+      background:
+        linear-gradient(155deg, rgba(60, 32, 16, 0.92) 0%, rgba(16, 8, 3, 0.98) 100%),
+        radial-gradient(ellipse 100% 80% at 10% 0%, rgba(255, 210, 150, 0.09), transparent 60%);
+      backdrop-filter: blur(18px) saturate(140%);
+      border: 1px solid rgba(240, 180, 100, 0.32);
+      box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.65),
+        inset 0 1px 0 rgba(255, 218, 160, 0.1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+      z-index: 5;
+      border-radius: 20px;
+      overflow: hidden;
+      transition: border-color 0.35s, box-shadow 0.35s, transform 0.3s;
+    }
+
+    /* Inner corner highlight */
+    body.coffee-mode .panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      background:
+        radial-gradient(ellipse 140% 100% at 5% 0%, rgba(255, 218, 160, 0.14) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 95% 100%, rgba(200, 120, 40, 0.08) 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Subtle animated bottom glow line */
+    body.coffee-mode .panel::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 10%;
+      width: 80%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(240, 180, 100, 0.6), transparent);
+      opacity: 0.5;
+      animation: panelLineGlow 4s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes panelLineGlow {
+
+      0%,
+      100% {
+        opacity: 0.3;
+        width: 60%;
+        left: 20%;
+      }
+
+      50% {
+        opacity: 0.75;
+        width: 85%;
+        left: 7.5%;
+      }
+    }
+
+    body.coffee-mode .panel:hover {
+      border-color: rgba(255, 210, 130, 0.85);
+      box-shadow:
+        0 0 0 1px rgba(240, 180, 100, 0.15),
+        0 24px 55px rgba(240, 180, 100, 0.32),
+        inset 0 2px 25px rgba(255, 255, 255, 0.06),
+        inset 0 0 40px rgba(240, 180, 100, 0.04);
+      transform: translateY(-3px) scale(1.005);
+    }
+
+    body.coffee-mode .panel-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    /* ===== TOGGLES ===== */
+    body.coffee-mode .toggle {
+      background: rgba(255, 214, 170, 0.1);
+      border: 1.5px solid rgba(240, 180, 100, 0.4);
+      box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    body.coffee-mode .toggle.active {
+      background: linear-gradient(135deg, #e8a955 0%, #c8651e 100%);
+      box-shadow: 0 0 20px rgba(232, 169, 85, 0.75), 0 0 40px rgba(232, 169, 85, 0.25);
+      border-color: rgba(255, 220, 150, 0.6);
+    }
+
+    body.coffee-mode .toggle-knob {
+      background: #fff8f0;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.9);
+    }
+
+    /* ===== TOOLTIP OVERLAY ===== */
+    body.coffee-mode .tooltip-overlay {
+      background: linear-gradient(160deg, rgba(18, 8, 3, 0.98), rgba(30, 14, 5, 0.96));
+      border: 2px solid rgba(240, 180, 100, 0.9);
+      color: #f8ead8;
+      font-size: 13px !important;
+      line-height: 1.24 !important;
+      padding: 10px !important;
+      overflow-wrap: anywhere;
+      box-shadow:
+        0 0 0 1px rgba(240, 180, 100, 0.12),
+        0 14px 40px rgba(0, 0, 0, 0.75),
+        inset 0 0 20px rgba(240, 180, 100, 0.05);
+    }
+
+    body.coffee-mode #panelLeft .tooltip-overlay {
+      font-size: 12px !important;
+      line-height: 1.18 !important;
+      padding: 8px !important;
+    }
+
+    /* ===== TIMER VALUES ===== */
+    body.coffee-mode .timer-value {
+      color: #f8d8a8 !important;
+      /* Add a thin coffee-colored line surrounding the counting numbers */
+      -webkit-text-stroke: 1px rgba(120, 60, 20, 0.85);
+      text-shadow:
+        0 0 10px rgba(240, 180, 100, 0.7),
+        0 0 30px rgba(240, 180, 100, 0.35),
+        0 0 60px rgba(240, 150, 60, 0.2);
+    }
+
+    body.coffee-mode .toggle-label {
+      color: rgba(255, 255, 255, 0.45);
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+      transition: color 0.3s ease, text-shadow 0.3s ease;
+    }
+
+    body.coffee-mode .toggle-row:has(.toggle.active) .toggle-label {
+      color: rgba(255, 255, 255, 1) !important;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    body.coffee-mode .timer-label,
+    body.coffee-mode .status {
+      color: rgba(248, 234, 216, 0.92);
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    /* ===== ICONS ===== */
+    body.coffee-mode .header-right .icon-btn svg,
+    body.coffee-mode .logo-icon svg path,
+    body.coffee-mode .logo-icon svg ellipse,
+    body.coffee-mode .logo-icon svg line {
+      fill: #f8d8a8 !important;
+      stroke: #f8d8a8 !important;
+    }
+
+    body.coffee-mode .icon-btn {
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+    }
+
+    body.coffee-mode .icon-btn:hover {
+      background: rgba(240, 180, 100, 0.15);
+      color: #f8d8a8;
+      box-shadow: 0 0 14px rgba(240, 180, 100, 0.25);
+    }
+
+    /* ===== STATUS TEXT ===== */
+    body.coffee-mode .status-text span {
+      color: #f0b060;
+      text-shadow: 0 0 10px rgba(240, 180, 100, 0.6);
+    }
+
+    /* ===== SLEEP OVERLAY ===== */
+    body.coffee-mode .sleep-overlay {
+      background:
+        radial-gradient(ellipse 100% 100% at 50% 50%, rgba(40, 20, 8, 0.97), rgba(8, 4, 1, 0.99));
+      backdrop-filter: blur(14px) saturate(120%);
+      z-index: 10;
+    }
+
+    /* ===== COFFEE POUR ANIMATION ===== */
+
+    .coffee-pour-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    body.coffee-mode .coffee-pour-overlay.active {
+      display: block;
+    }
+
+    /* ── Deep, Realistic Coffee Liquid ── */
+    .coffee-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 0%;
+      background: #000000;
+      /* Pure black for more contrast */
+      transition: height 1.1s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 0 0 20px 20px;
+      overflow: hidden;
+      /* Contain the milk plumes within the fluid */
+    }
+
+    /* Subsurface Milk Turbulence Plumes */
+    .coffee-fill::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background:
+        radial-gradient(circle at 50% 10%, rgba(220, 150, 90, 0.25) 0%, transparent 30%),
+        radial-gradient(circle at 35% 50%, rgba(180, 100, 50, 0.3) 0%, transparent 35%),
+        radial-gradient(ellipse at 65% 80%, rgba(130, 60, 25, 0.25) 0%, transparent 40%);
+      background-size: 100% 300px;
+      background-repeat: repeat-y;
+      animation: shiftPlumesA 4s linear infinite;
+      pointer-events: none;
+    }
+
+    .coffee-fill::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(180, 110, 60, 0.15) 0%, transparent 40%);
+      background-size: 100% 500px;
+      background-repeat: repeat-y;
+      animation: sinkPlume 8s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes sinkPlume {
+      0% {
+        background-position: center -500px;
+        opacity: 0;
+      }
+
+      20% {
+        opacity: 1;
+      }
+
+      80% {
+        opacity: 1;
+      }
+
+      100% {
+        background-position: center 0px;
+        opacity: 0;
+      }
+    }
+
+    /* ── Bold Marble / Milk Swirl Streaks ── */
+    .milk-swirl {
+      position: absolute;
+      border-radius: 50% 30% 60% 40% / 40% 60% 30% 50%;
+      opacity: 0.65;
+      /* Increased for boldness */
+      mix-blend-mode: screen;
+      /* High contrast pop against black */
+      pointer-events: none;
+      will-change: transform;
+      filter: blur(1.5px);
+      /* Sharper lines like the photo */
+    }
+
+    /* Central Impact Plume — The "Jet" of milk */
+    .impact-plume {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 40px;
+      height: 120px;
+      transform: translate(-50%, -10px);
+      background: linear-gradient(180deg,
+          rgba(255, 240, 200, 0.95) 0%,
+          rgba(230, 140, 30, 0.8) 40%,
+          transparent 100%);
+      clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
+      /* Tapered jet shape */
+      filter: blur(4px);
+      animation: plumePush 4s ease-out infinite;
+      mix-blend-mode: screen;
+    }
+
+    @keyframes plumePush {
+      0% {
+        transform: translate(-50%, -20px) scaleY(0.5);
+        opacity: 0;
+      }
+
+      20% {
+        opacity: 0.9;
+      }
+
+      100% {
+        transform: translate(-50%, 350px) scaleY(2);
+        opacity: 0;
+      }
+    }
+
+    /* Subsurface Bubbles (the "hint of that" from the photo) */
+    .sub-bubble {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(0.4px);
+      animation: floatSub 12s ease-out infinite;
+    }
+
+    .sb-light {
+      background: rgba(255, 230, 180, 0.3);
+      box-shadow: 0 0 2px rgba(255, 255, 255, 0.1);
+    }
+
+    .sb-dark {
+      background: rgba(15, 8, 4, 0.8);
+      border: 0.2px solid rgba(255, 255, 255, 0.05);
+    }
+
+    @keyframes floatSub {
+      0% {
+        transform: translate(0, 0) scale(0.8);
+        opacity: 0;
+      }
+
+      20% {
+        opacity: 0.4;
+      }
+
+      80% {
+        opacity: 0.2;
+      }
+
+      100% {
+        transform: translate(var(--dx), var(--dy)) scale(1.4);
+        opacity: 0;
+      }
+    }
+
+    /* Streak 1 — caramel, blossoms from center impact */
+    .ms1 {
+      width: 150%;
+      height: 80px;
+      top: -40px;
+      left: -25%;
+      background: radial-gradient(ellipse at center, rgba(200, 110, 30, 0.9) 0%, transparent 80%);
+      animation: blossomFlow1 10s ease-out infinite;
+    }
+
+    .ms2 {
+      width: 80%;
+      height: 50px;
+      top: -20px;
+      left: 10%;
+      background: radial-gradient(ellipse at center, rgba(255, 230, 170, 0.85) 0%, transparent 70%);
+      animation: blossomFlow2 12s ease-out -2s infinite;
+    }
+
+    .ms3 {
+      width: 120%;
+      height: 60px;
+      top: -30px;
+      left: -10%;
+      background: radial-gradient(ellipse at center, rgba(220, 120, 40, 0.8) 0%, transparent 75%);
+      animation: blossomFlow3 14s ease-out -4s infinite;
+    }
+
+    .ms4 {
+      width: 60px;
+      height: 160px;
+      top: -20px;
+      left: 45%;
+      background: linear-gradient(180deg, rgba(255, 220, 150, 0.8) 0%, transparent 100%);
+      animation: plumeDrift 8s ease-out -1s infinite;
+    }
+
+    .ms5 {
+      width: 180%;
+      height: 40px;
+      top: -10px;
+      left: -40%;
+      background: radial-gradient(ellipse at center, rgba(160, 80, 20, 0.4) 0%, transparent 70%);
+      animation: blossomFlow1 16s ease-out -5s infinite;
+    }
+
+    .ms6 {
+      width: 90%;
+      height: 70px;
+      top: -30px;
+      left: 20%;
+      background: radial-gradient(ellipse at center, rgba(255, 240, 210, 0.6) 0%, transparent 80%);
+      animation: blossomFlow2 11s ease-out -7s infinite;
+    }
+
+    @keyframes blossomFlow1 {
+      0% {
+        transform: scale(0.1) translateY(0) rotate(0deg);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.8;
+      }
+
+      100% {
+        transform: scale(2.8) translateY(400px) rotate(20deg);
+        opacity: 0;
+      }
+    }
+
+    @keyframes blossomFlow2 {
+      0% {
+        transform: scale(0.1) translateY(0) rotate(0deg);
+        opacity: 0;
+      }
+
+      15% {
+        opacity: 0.7;
+      }
+
+      100% {
+        transform: scale(2.2) translateY(450px) rotate(-25deg);
+        opacity: 0;
+      }
+    }
+
+    @keyframes blossomFlow3 {
+      0% {
+        transform: scale(0.2) translateY(0) rotate(0deg);
+        opacity: 0;
+      }
+
+      20% {
+        opacity: 0.6;
+      }
+
+      100% {
+        transform: scale(3) translateY(380px) rotate(40deg);
+        opacity: 0;
+      }
+    }
+
+    @keyframes plumeDrift {
+      0% {
+        transform: translateY(-20px) scaleX(0.5);
+        opacity: 0;
+      }
+
+      20% {
+        opacity: 0.5;
+      }
+
+      100% {
+        transform: translateY(500px) scaleX(2.5);
+        opacity: 0;
+      }
+    }
+
+    @keyframes blossomSwirl1 {
+      0% {
+        transform: scale(0.2) translateY(0);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.6;
+      }
+
+      100% {
+        transform: scale(2) translateY(200px) rotate(15deg);
+        opacity: 0;
+      }
+    }
+
+    @keyframes blossomSwirl2 {
+      0% {
+        transform: scale(0.1) translateY(0) rotate(-10deg);
+        opacity: 0;
+      }
+
+      15% {
+        opacity: 0.5;
+      }
+
+      100% {
+        transform: scale(1.8) translateY(250px) rotate(-30deg);
+        opacity: 0;
+      }
+    }
+
+    @keyframes blossomSwirl3 {
+      0% {
+        transform: scale(0.3) translateY(0);
+        opacity: 0;
+      }
+
+      20% {
+        opacity: 0.4;
+      }
+
+      100% {
+        transform: scale(2.5) translateY(180px) rotate(45deg);
+        opacity: 0;
+      }
+    }
+
+    /* ── Realistic Dynamic Crema Surface ── */
+    .coffee-crema {
+      position: absolute;
+      left: -2%;
+      right: -2%;
+      /* Slight overhang to hide corners on rotation */
+      height: 25px;
+      /* Edges touching walls natively */
+      border-radius: 0;
+      background:
+        radial-gradient(ellipse 200% 100% at 50% 50%,
+          rgba(255, 220, 140, 0.9) 0%,
+          rgba(230, 150, 50, 0.95) 40%,
+          rgba(100, 30, 5, 0.9) 70%,
+          transparent 100%);
+      box-shadow:
+        inset 0px 5px 8px rgba(255, 245, 210, 0.7),
+        /* Top rim glossy light */
+        inset 0px -5px 10px rgba(40, 10, 0, 0.9),
+        /* Deep bottom curve shadow */
+        0px 8px 12px rgba(0, 0, 0, 0.8);
+      /* Heavy shadow down onto liquid */
+      animation: cremaSlosh 4s ease-in-out infinite alternate;
+    }
+
+    @keyframes cremaSlosh {
+      0% {
+        transform: translateY(-2px) rotate(0.5deg);
+      }
+
+      100% {
+        transform: translateY(2px) rotate(-0.5deg);
+      }
+    }
+
+    .coffee-crema::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background:
+        /* Golden marble/swirl effect only */
+        radial-gradient(ellipse at 35% 35%, rgba(255, 230, 150, 0.6) 0%, transparent 40%),
+        radial-gradient(ellipse at 65% 65%, rgba(200, 120, 30, 0.5) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(250, 180, 70, 0.4) 0%, transparent 70%);
+      animation: foamSwirlBg 8s ease-in-out infinite alternate;
+    }
+
+    @keyframes foamSwirlBg {
+      0% {
+        transform: scale(1) rotate(-5deg);
+        opacity: 0.8;
+      }
+
+      100% {
+        transform: scale(1.05) rotate(5deg);
+        opacity: 1;
+      }
+    }
+
+    .crema-caustic {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(0.5px);
+    }
+
+    .crema-caustic.c1 {
+      width: 35px;
+      height: 3px;
+      left: 45%;
+      top: 20%;
+      background: rgba(255, 255, 255, 0.7);
+      animation: pushOutCL 5s ease-out infinite;
+    }
+
+    .crema-caustic.c2 {
+      width: 45px;
+      height: 3px;
+      left: 50%;
+      top: 80%;
+      background: rgba(255, 255, 255, 0.5);
+      animation: pushOutCR 4s ease-out -2s infinite;
+    }
+
+    .crema-caustic.c3 {
+      width: 25px;
+      height: 2px;
+      left: 48%;
+      top: 15%;
+      background: rgba(255, 230, 200, 0.6);
+      animation: pushOutCR 4.5s ease-out -3s infinite;
+    }
+
+    @keyframes pushOutCL {
+      0% {
+        transform: translate(15px, 0) scaleX(0.5);
+        opacity: 0;
+      }
+
+      20% {
+        opacity: 0.8;
+      }
+
+      100% {
+        transform: translate(-35px, 8px) scaleX(1.5);
+        opacity: 0;
+      }
+    }
+
+    @keyframes pushOutCR {
+      0% {
+        transform: translate(-10px, 0) scaleX(0.5);
+        opacity: 0;
+      }
+
+      20% {
+        opacity: 0.8;
+      }
+
+      100% {
+        transform: translate(40px, -5px) scaleX(1.5);
+        opacity: 0;
+      }
+    }
+
+    .crema-bubble {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
+    }
+
+    .crema-bubble.ring {
+      box-shadow: 0 0 0 0.8px rgba(120, 60, 20, 0.8), 0 0 2px rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .crema-bubble.b1 {
+      width: 2.5px;
+      height: 2.5px;
+      left: 45%;
+      top: 45%;
+      animation: blowOutL 3s ease-out infinite;
+    }
+
+    .crema-bubble.b2 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 55%;
+      top: 55%;
+      animation: blowOutR 3.5s ease-out -1s infinite;
+    }
+
+    .crema-bubble.b3 {
+      width: 3px;
+      height: 3px;
+      left: 48%;
+      top: 35%;
+      animation: blowOutTL 2.5s ease-out -0.5s infinite;
+    }
+
+    .crema-bubble.b4 {
+      width: 2px;
+      height: 2px;
+      left: 52%;
+      top: 65%;
+      animation: blowOutBR 4s ease-out -2s infinite;
+    }
+
+    .crema-bubble.b5 {
+      width: 2.5px;
+      height: 2.5px;
+      left: 46%;
+      top: 50%;
+      animation: blowOutL 3.2s ease-out -1.5s infinite;
+    }
+
+    .crema-bubble.b6 {
+      width: 2px;
+      height: 2px;
+      left: 54%;
+      top: 40%;
+      animation: blowOutR 2.8s ease-out -0.8s infinite;
+    }
+
+    .crema-bubble.b7 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 47%;
+      top: 40%;
+      animation: blowOutTL 3.1s ease-out -0.2s infinite;
+    }
+
+    .crema-bubble.b8 {
+      width: 2.5px;
+      height: 2.5px;
+      left: 53%;
+      top: 60%;
+      animation: blowOutBR 2.9s ease-out -1.2s infinite;
+    }
+
+    .crema-bubble.b9 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 49%;
+      top: 55%;
+      animation: blowOutL 2.5s ease-out -0.7s infinite;
+    }
+
+    .crema-bubble.b10 {
+      width: 2px;
+      height: 2px;
+      left: 51%;
+      top: 35%;
+      animation: blowOutR 3.3s ease-out -1.9s infinite;
+    }
+
+    .crema-bubble.b11 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 45%;
+      top: 60%;
+      animation: blowOutTL 2.7s ease-out -2.1s infinite;
+    }
+
+    .crema-bubble.b12 {
+      width: 3px;
+      height: 3px;
+      left: 54%;
+      top: 30%;
+      animation: blowOutBR 3.6s ease-out -0.4s infinite;
+    }
+
+    .crema-bubble.b13 {
+      width: 1px;
+      height: 1px;
+      left: 46%;
+      top: 45%;
+      animation: blowOutL 3.8s ease-out -1.1s infinite;
+    }
+
+    .crema-bubble.b14 {
+      width: 2px;
+      height: 2px;
+      left: 52%;
+      top: 55%;
+      animation: blowOutR 2.4s ease-out -0.9s infinite;
+    }
+
+    .crema-bubble.b15 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 48%;
+      top: 45%;
+      animation: blowOutTL 3.5s ease-out -2.5s infinite;
+    }
+
+    .crema-bubble.b16 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 50%;
+      top: 50%;
+      animation: blowOutBR 2.2s ease-out -0.1s infinite;
+    }
+
+    .crema-bubble.b17 {
+      width: 2px;
+      height: 2px;
+      left: 52%;
+      top: 45%;
+      animation: blowOutL 3.1s ease-out -2.8s infinite;
+    }
+
+    .crema-bubble.b18 {
+      width: 2.5px;
+      height: 2.5px;
+      left: 48%;
+      top: 50%;
+      animation: blowOutR 2.9s ease-out -1.6s infinite;
+    }
+
+    .crema-bubble.b19 {
+      width: 2px;
+      height: 2px;
+      left: 49%;
+      top: 35%;
+      animation: blowOutTL 3.4s ease-out -0.6s infinite;
+    }
+
+    .crema-bubble.b20 {
+      width: 1px;
+      height: 1px;
+      left: 51%;
+      top: 60%;
+      animation: blowOutBR 2.6s ease-out -1.4s infinite;
+    }
+
+    .crema-bubble.b21 {
+      width: 2px;
+      height: 2px;
+      left: 50%;
+      top: 40%;
+      animation: blowOutL 3.3s ease-out -0.4s infinite;
+    }
+
+    .crema-bubble.b22 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 55%;
+      top: 45%;
+      animation: blowOutR 2.7s ease-out -1.2s infinite;
+    }
+
+    .crema-bubble.b23 {
+      width: 2px;
+      height: 2px;
+      left: 47%;
+      top: 65%;
+      animation: blowOutTL 3.2s ease-out -1.8s infinite;
+    }
+
+    .crema-bubble.b24 {
+      width: 1px;
+      height: 1px;
+      left: 53%;
+      top: 50%;
+      animation: blowOutBR 3.9s ease-out -0.3s infinite;
+    }
+
+    .crema-bubble.b25 {
+      width: 2.5px;
+      height: 2.5px;
+      left: 46%;
+      top: 35%;
+      animation: blowOutL 2.8s ease-out -2.2s infinite;
+    }
+
+    .crema-bubble.b26 {
+      width: 2px;
+      height: 2px;
+      left: 49%;
+      top: 60%;
+      animation: blowOutR 3.4s ease-out -0.9s infinite;
+    }
+
+    .crema-bubble.b27 {
+      width: 1px;
+      height: 1px;
+      left: 54%;
+      top: 35%;
+      animation: blowOutTL 2.5s ease-out -1.5s infinite;
+    }
+
+    .crema-bubble.b28 {
+      width: 2px;
+      height: 2px;
+      left: 45%;
+      top: 50%;
+      animation: blowOutBR 3.1s ease-out -2.6s infinite;
+    }
+
+    .crema-bubble.b29 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 51%;
+      top: 45%;
+      animation: blowOutL 2.9s ease-out -1.1s infinite;
+    }
+
+    .crema-bubble.b30 {
+      width: 3px;
+      height: 3px;
+      left: 52%;
+      top: 60%;
+      animation: blowOutR 3.7s ease-out -0.5s infinite;
+    }
+
+    .crema-bubble.b31 {
+      width: 2px;
+      height: 2px;
+      left: 48%;
+      top: 40%;
+      animation: blowOutTL 3.0s ease-out -1.7s infinite;
+    }
+
+    .crema-bubble.b32 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 53%;
+      top: 45%;
+      animation: blowOutBR 2.4s ease-out -0.8s infinite;
+    }
+
+    .crema-bubble.b33 {
+      width: 2.5px;
+      height: 2.5px;
+      left: 47%;
+      top: 55%;
+      animation: blowOutL 3.5s ease-out -2.3s infinite;
+    }
+
+    .crema-bubble.b34 {
+      width: 1px;
+      height: 1px;
+      left: 50%;
+      top: 65%;
+      animation: blowOutR 2.6s ease-out -1.4s infinite;
+    }
+
+    .crema-bubble.b35 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 55%;
+      top: 40%;
+      animation: blowOutTL 3.3s ease-out -0.6s infinite;
+    }
+
+    .crema-bubble.b36 {
+      width: 2px;
+      height: 2px;
+      left: 49%;
+      top: 50%;
+      animation: blowOutBR 3.8s ease-out -2.0s infinite;
+    }
+
+    .crema-bubble.b37 {
+      width: 2.5px;
+      height: 2.5px;
+      left: 46%;
+      top: 45%;
+      animation: blowOutL 2.7s ease-out -1.3s infinite;
+    }
+
+    .crema-bubble.b38 {
+      width: 2px;
+      height: 2px;
+      left: 52%;
+      top: 55%;
+      animation: blowOutR 3.2s ease-out -0.2s infinite;
+    }
+
+    .crema-bubble.b39 {
+      width: 1px;
+      height: 1px;
+      left: 48%;
+      top: 30%;
+      animation: blowOutTL 2.5s ease-out -2.4s infinite;
+    }
+
+    .crema-bubble.b40 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 51%;
+      top: 50%;
+      animation: blowOutBR 3.6s ease-out -1.0s infinite;
+    }
+
+    .crema-bubble.b41 {
+      width: 1px;
+      height: 1px;
+      left: 50%;
+      top: 49%;
+      animation: blowOutL 2.1s ease-out -0.1s infinite;
+    }
+
+    .crema-bubble.b42 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 49%;
+      top: 51%;
+      animation: blowOutR 2.4s ease-out -0.8s infinite;
+    }
+
+    .crema-bubble.b43 {
+      width: 2px;
+      height: 2px;
+      left: 51%;
+      top: 48%;
+      animation: blowOutTL 2.5s ease-out -1.2s infinite;
+    }
+
+    .crema-bubble.b44 {
+      width: 1px;
+      height: 1px;
+      left: 48%;
+      top: 52%;
+      animation: blowOutBR 2.2s ease-out -1.7s infinite;
+    }
+
+    .crema-bubble.b45 {
+      width: 2.5px;
+      height: 2.5px;
+      left: 50%;
+      top: 50%;
+      animation: blowOutL 2.3s ease-out -2.1s infinite;
+    }
+
+    .crema-bubble.b46 {
+      width: 1px;
+      height: 1px;
+      left: 49%;
+      top: 49%;
+      animation: blowOutR 2.6s ease-out -0.4s infinite;
+    }
+
+    .crema-bubble.b47 {
+      width: 2px;
+      height: 2px;
+      left: 51%;
+      top: 50%;
+      animation: blowOutTL 2.2s ease-out -1.5s infinite;
+    }
+
+    .crema-bubble.b48 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 50%;
+      top: 48%;
+      animation: blowOutBR 2.1s ease-out -0.5s infinite;
+    }
+
+    .crema-bubble.b49 {
+      width: 1px;
+      height: 1px;
+      left: 49%;
+      top: 51%;
+      animation: blowOutL 2.4s ease-out -2.5s infinite;
+    }
+
+    .crema-bubble.b50 {
+      width: 3px;
+      height: 3px;
+      left: 51%;
+      top: 49%;
+      animation: blowOutR 2.7s ease-out -1.1s infinite;
+    }
+
+    .crema-bubble.b51 {
+      width: 1px;
+      height: 1px;
+      left: 50%;
+      top: 49%;
+      animation: blowOutTL 2.1s ease-out -0.7s infinite;
+    }
+
+    .crema-bubble.b52 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 49%;
+      top: 51%;
+      animation: blowOutBR 2.4s ease-out -1.3s infinite;
+    }
+
+    .crema-bubble.b53 {
+      width: 2px;
+      height: 2px;
+      left: 51%;
+      top: 48%;
+      animation: blowOutL 2.5s ease-out -0.2s infinite;
+    }
+
+    .crema-bubble.b54 {
+      width: 1px;
+      height: 1px;
+      left: 48%;
+      top: 52%;
+      animation: blowOutR 2.2s ease-out -0.9s infinite;
+    }
+
+    .crema-bubble.b55 {
+      width: 2.5px;
+      height: 2.5px;
+      left: 50%;
+      top: 50%;
+      animation: blowOutTL 2.3s ease-out -1.8s infinite;
+    }
+
+    .crema-bubble.b56 {
+      width: 1px;
+      height: 1px;
+      left: 49%;
+      top: 49%;
+      animation: blowOutBR 2.6s ease-out -2.2s infinite;
+    }
+
+    .crema-bubble.b57 {
+      width: 2px;
+      height: 2px;
+      left: 51%;
+      top: 50%;
+      animation: blowOutL 2.2s ease-out -0.6s infinite;
+    }
+
+    .crema-bubble.b58 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 50%;
+      top: 48%;
+      animation: blowOutR 2.1s ease-out -1.4s infinite;
+    }
+
+    .crema-bubble.b59 {
+      width: 1px;
+      height: 1px;
+      left: 49%;
+      top: 51%;
+      animation: blowOutTL 2.4s ease-out -0.3s infinite;
+    }
+
+    .crema-bubble.b60 {
+      width: 3px;
+      height: 3px;
+      left: 51%;
+      top: 49%;
+      animation: blowOutBR 2.7s ease-out -2.0s infinite;
+    }
+
+    .crema-bubble.b61 {
+      width: 1px;
+      height: 1px;
+      left: 50%;
+      top: 49%;
+      animation: blowOutL 2.1s ease-out -1.6s infinite;
+    }
+
+    .crema-bubble.b62 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 49%;
+      top: 51%;
+      animation: blowOutR 2.4s ease-out -2.4s infinite;
+    }
+
+    .crema-bubble.b63 {
+      width: 2px;
+      height: 2px;
+      left: 51%;
+      top: 48%;
+      animation: blowOutTL 2.5s ease-out -0.8s infinite;
+    }
+
+    .crema-bubble.b64 {
+      width: 1px;
+      height: 1px;
+      left: 48%;
+      top: 52%;
+      animation: blowOutBR 2.2s ease-out -1.1s infinite;
+    }
+
+    .crema-bubble.b65 {
+      width: 2.5px;
+      height: 2.5px;
+      left: 50%;
+      top: 50%;
+      animation: blowOutL 2.3s ease-out -2.6s infinite;
+    }
+
+    .crema-bubble.b66 {
+      width: 1px;
+      height: 1px;
+      left: 49%;
+      top: 49%;
+      animation: blowOutR 2.6s ease-out -1.9s infinite;
+    }
+
+    .crema-bubble.b67 {
+      width: 2px;
+      height: 2px;
+      left: 51%;
+      top: 50%;
+      animation: blowOutTL 2.2s ease-out -2.3s infinite;
+    }
+
+    .crema-bubble.b68 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 50%;
+      top: 48%;
+      animation: blowOutBR 2.1s ease-out -0.1s infinite;
+    }
+
+    .crema-bubble.b69 {
+      width: 1px;
+      height: 1px;
+      left: 49%;
+      top: 51%;
+      animation: blowOutL 2.4s ease-out -1.0s infinite;
+    }
+
+    .crema-bubble.b70 {
+      width: 3px;
+      height: 3px;
+      left: 51%;
+      top: 49%;
+      animation: blowOutR 2.7s ease-out -0.4s infinite;
+    }
+
+    .crema-bubble.b71 {
+      width: 1px;
+      height: 1px;
+      left: 50%;
+      top: 49%;
+      animation: blowOutTL 2.1s ease-out -1.5s infinite;
+    }
+
+    .crema-bubble.b72 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 49%;
+      top: 51%;
+      animation: blowOutBR 2.4s ease-out -2.1s infinite;
+    }
+
+    .crema-bubble.b73 {
+      width: 2px;
+      height: 2px;
+      left: 51%;
+      top: 48%;
+      animation: blowOutL 2.5s ease-out -1.7s infinite;
+    }
+
+    .crema-bubble.b74 {
+      width: 1px;
+      height: 1px;
+      left: 48%;
+      top: 52%;
+      animation: blowOutR 2.2s ease-out -0.6s infinite;
+    }
+
+    .crema-bubble.b75 {
+      width: 2.5px;
+      height: 2.5px;
+      left: 50%;
+      top: 50%;
+      animation: blowOutTL 2.3s ease-out -0.8s infinite;
+    }
+
+    .crema-bubble.b76 {
+      width: 1px;
+      height: 1px;
+      left: 49%;
+      top: 49%;
+      animation: blowOutBR 2.6s ease-out -1.2s infinite;
+    }
+
+    .crema-bubble.b77 {
+      width: 2px;
+      height: 2px;
+      left: 51%;
+      top: 50%;
+      animation: blowOutL 2.2s ease-out -2.4s infinite;
+    }
+
+    .crema-bubble.b78 {
+      width: 1.5px;
+      height: 1.5px;
+      left: 50%;
+      top: 48%;
+      animation: blowOutR 2.1s ease-out -1.9s infinite;
+    }
+
+    .crema-bubble.b79 {
+      width: 1px;
+      height: 1px;
+      left: 49%;
+      top: 51%;
+      animation: blowOutTL 2.4s ease-out -0.5s infinite;
+    }
+
+    .crema-bubble.b80 {
+      width: 3px;
+      height: 3px;
+      left: 51%;
+      top: 49%;
+      animation: blowOutBR 2.7s ease-out -2.5s infinite;
+    }
+
+    @keyframes blowOutL {
+      0% {
+        transform: translate(0, 0) scale(0.6);
+        opacity: 0;
+      }
+
+      15% {
+        opacity: 1;
+        transform: translate(-10px, 2px) scale(0.9);
+      }
+
+      100% {
+        transform: translate(-70px, 5px) scale(1.6);
+        opacity: 0;
+      }
+    }
+
+    @keyframes blowOutR {
+      0% {
+        transform: translate(0, 0) scale(0.6);
+        opacity: 0;
+      }
+
+      15% {
+        opacity: 1;
+        transform: translate(10px, -2px) scale(0.9);
+      }
+
+      100% {
+        transform: translate(70px, -5px) scale(1.6);
+        opacity: 0;
+      }
+    }
+
+    @keyframes blowOutTL {
+      0% {
+        transform: translate(0, 0) scale(0.6);
+        opacity: 0;
+      }
+
+      15% {
+        opacity: 1;
+        transform: translate(-5px, -5px) scale(0.9);
+      }
+
+      100% {
+        transform: translate(-50px, -10px) scale(1.6);
+        opacity: 0;
+      }
+    }
+
+    @keyframes blowOutBR {
+      0% {
+        transform: translate(0, 0) scale(0.6);
+        opacity: 0;
+      }
+
+      15% {
+        opacity: 1;
+        transform: translate(5px, 5px) scale(0.9);
+      }
+
+      100% {
+        transform: translate(50px, 10px) scale(1.6);
+        opacity: 0;
+      }
+    }
+
+    @keyframes cremaSurge {
+
+      0%,
+      100% {
+        transform: scale(1.0, 1.0);
+        opacity: 0.95;
+      }
+
+      50% {
+        transform: scale(1.02, 1.15) translateY(-2px);
+        opacity: 1;
+      }
+    }
+
+    /* Canvas-based Coffee Stream */
+    .coffee-stream-outer {
+      position: absolute;
+      top: 0;
+      left: calc(50% - 70px);
+      width: 140px;
+      height: 100%;
+      pointer-events: none;
+      z-index: 15;
+      overflow: visible;
+    }
+
+    #coffeeStreamCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: block;
+      pointer-events: none;
+    }
+
+    /* ── Subtle Subtle Impact ── */
+    .coffee-impact {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 40px;
+      pointer-events: none;
+      opacity: 0;
+      animation: impactDesignVisibility 7.2s steps(1, end) infinite;
+    }
+
+    @keyframes impactDesignVisibility {
+
+      0%,
+      49.999% {
+        opacity: 0;
+      }
+
+      50%,
+      100% {
+        opacity: 1;
+      }
+    }
+
+    .impact-base {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 30px;
+      height: 10px;
+      background: rgba(250, 180, 70, 0.4);
+      border-radius: 50%;
+      filter: blur(4px);
+      animation: pulseBaseImpact 0.6s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulseBaseImpact {
+      0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.3;
+      }
+
+      100% {
+        transform: translate(-50%, -50%) scale(1.4);
+        opacity: 0.6;
+      }
+    }
+
+    /* Large fluid waves */
+    .coffee-wave {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 3px solid rgba(230, 160, 50, 0.8);
+      box-shadow: inset 0px 0px 10px rgba(230, 160, 50, 0.5), 0px 0px 10px rgba(230, 160, 50, 0.5);
+      opacity: 0;
+    }
+
+    .coffee-wave.w1 {
+      animation: waveRealistic 1.8s cubic-bezier(0.2, 0.8, 0.4, 1) 0.0s infinite;
+    }
+
+    .coffee-wave.w2 {
+      animation: waveRealistic 1.8s cubic-bezier(0.2, 0.8, 0.4, 1) 0.6s infinite;
+    }
+
+    .coffee-wave.w3 {
+      animation: waveRealistic 1.8s cubic-bezier(0.2, 0.8, 0.4, 1) 1.2s infinite;
+    }
+
+    @keyframes waveRealistic {
+      0% {
+        opacity: 1;
+        width: 20px;
+        height: 8px;
+        border-width: 4px;
+      }
+
+      100% {
+        opacity: 0;
+        width: 140px;
+        height: 40px;
+        border-width: 0px;
+      }
+    }
+
+    /* Flying realistic splash droplets */
+    .splash-drop {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 6px;
+      height: 12px;
+      border-radius: 50% 50% 50% 50%;
+      background: radial-gradient(circle at 30% 30%, rgba(255, 220, 150, 1) 0%, rgba(180, 80, 10, 1) 50%, rgba(50, 15, 0, 1) 100%);
+      box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+    }
+
+    /* Left high */
+    .splash-drop.d1 {
+      animation: flyHighL 1.2s cubic-bezier(0.1, 1, 0.8, 1) 0.1s infinite;
+    }
+
+    /* Right mid */
+    .splash-drop.d2 {
+      animation: flyMidR 1.0s cubic-bezier(0.1, 1, 0.8, 1) 0.4s infinite;
+    }
+
+    /* Left mid */
+    .splash-drop.d3 {
+      animation: flyMidL 0.9s cubic-bezier(0.1, 1, 0.8, 1) 0.7s infinite;
+    }
+
+    /* Right high */
+    .splash-drop.d4 {
+      animation: flyHighR 1.1s cubic-bezier(0.1, 1, 0.8, 1) 0.9s infinite;
+    }
+
+    /* Center pop */
+    .splash-drop.d5 {
+      animation: flyPop 0.8s cubic-bezier(0.1, 1, 0.8, 1) 0.3s infinite;
+    }
+
+    @keyframes flyHighL {
+      0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+
+      50% {
+        transform: translate(-30px, -40px) scale(1.2) rotate(-30deg);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translate(-40px, -10px) scale(0.5) rotate(-60deg);
+        opacity: 0;
+      }
+    }
+
+    @keyframes flyHighR {
+      0% {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 1;
+      }
+
+      50% {
+        transform: translate(35px, -45px) scale(1.4) rotate(30deg);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translate(45px, -5px) scale(0.6) rotate(60deg);
+        opacity: 0;
+      }
+    }
+
+    @keyframes flyMidL {
+      0% {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 1;
+      }
+
+      50% {
+        transform: translate(-20px, -20px) scale(1) rotate(-45deg);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translate(-30px, +5px) scale(0.4) rotate(-90deg);
+        opacity: 0;
+      }
+    }
+
+    @keyframes flyMidR {
+      0% {
+        transform: translate(-50%, -50%) scale(0.9);
+        opacity: 1;
+      }
+
+      50% {
+        transform: translate(25px, -25px) scale(1.1) rotate(45deg);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translate(35px, +10px) scale(0.5) rotate(90deg);
+        opacity: 0;
+      }
+    }
+
+    @keyframes flyPop {
+      0% {
+        transform: translate(-50%, -50%) scale(1.5);
+        opacity: 1;
+      }
+
+      40% {
+        transform: translate(-50%, -30px) scale(1.5);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translate(-50%, 0px) scale(0);
+        opacity: 0;
+      }
+    }
+
+    /* ── Steam wisps ── */
+    .coffee-steam-wrap {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 120px;
+      pointer-events: none;
+    }
+
+    .steam-wisp {
+      position: absolute;
+      bottom: 0;
+      border-radius: 50%;
+      opacity: 0;
+      background: radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
+      filter: blur(8px);
+    }
+
+    .steam-wisp.sw1 {
+      left: 20%;
+      width: 30px;
+      height: 60px;
+      animation: wispRiseReal 4s ease-in-out 0.0s infinite;
+    }
+
+    .steam-wisp.sw2 {
+      left: 50%;
+      width: 40px;
+      height: 80px;
+      animation: wispRiseReal 5s ease-in-out 1.5s infinite;
+    }
+
+    .steam-wisp.sw3 {
+      left: 70%;
+      width: 25px;
+      height: 50px;
+      animation: wispRiseReal 4.5s ease-in-out 3.0s infinite;
+    }
+
+    @keyframes wispRiseReal {
+      0% {
+        opacity: 0;
+        transform: translateY(0) scale(0.8);
+      }
+
+      30% {
+        opacity: 0.6;
+        transform: translateY(-30px) scale(1.2) translateX(10px);
+      }
+
+      70% {
+        opacity: 0.3;
+        transform: translateY(-70px) scale(1.8) translateX(-10px);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateY(-110px) scale(2.5);
+      }
+    }
+
+    /* Subtle lower-body coffee turbulence hint only in the dark section */
+    body.coffee-mode .coffee-fill {
+      background:
+        linear-gradient(180deg,
+          rgba(8, 3, 1, 0.98) 0%,
+          rgba(5, 2, 1, 0.99) 100%);
+    }
+
+    body.coffee-mode .coffee-fill::before {
+      top: 10%;
+      bottom: 6%;
+      left: 0;
+      right: 0;
+      background:
+        radial-gradient(42% 20% at 50% 8%, rgba(146, 76, 30, 0.28) 0%, rgba(82, 38, 14, 0.18) 38%, transparent 74%),
+        radial-gradient(32% 16% at 42% 20%, rgba(136, 72, 32, 0.18) 0%, transparent 70%),
+        radial-gradient(30% 14% at 58% 24%, rgba(128, 64, 28, 0.16) 0%, transparent 72%),
+        linear-gradient(162deg,
+          transparent 0%,
+          transparent 26%,
+          rgba(146, 82, 36, 0.16) 36%,
+          rgba(82, 38, 16, 0.05) 42%,
+          transparent 52%,
+          transparent 100%),
+        linear-gradient(18deg,
+          transparent 0%,
+          transparent 34%,
+          rgba(132, 74, 30, 0.14) 44%,
+          rgba(76, 34, 14, 0.04) 49%,
+          transparent 58%,
+          transparent 100%);
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      animation: lowerTurbulenceShift 14s ease-in-out infinite alternate;
+      opacity: 0.96;
+    }
+
+    body.coffee-mode .coffee-fill::after {
+      top: 18%;
+      bottom: 8%;
+      left: 3%;
+      right: 3%;
+      background:
+        radial-gradient(16% 10% at 50% 8%, rgba(12, 4, 1, 0.74) 0%, rgba(34, 12, 4, 0.32) 46%, transparent 78%),
+        radial-gradient(48% 26% at 38% 24%, rgba(40, 16, 6, 0.42) 0%, transparent 52%),
+        radial-gradient(44% 24% at 62% 28%, rgba(42, 18, 8, 0.38) 0%, transparent 54%),
+        linear-gradient(90deg,
+          transparent 0%,
+          rgba(172, 102, 46, 0.10) 22%,
+          rgba(54, 22, 10, 0.00) 40%,
+          rgba(148, 84, 36, 0.10) 62%,
+          transparent 84%);
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      border-radius: 18px 18px 20px 20px;
+      opacity: 0.98;
+      animation: lowerTurbulenceDepth 16s ease-in-out infinite alternate;
+    }
+
+    body.coffee-mode .milk-swirl {
+      mix-blend-mode: screen;
+      opacity: 0.18;
+      filter: blur(4px);
+    }
+
+    body.coffee-mode .milk-swirl.ms1 {
+      width: 118%;
+      height: 28px;
+      top: 10%;
+      bottom: auto;
+      left: -9%;
+      background:
+        linear-gradient(90deg,
+          transparent 0%,
+          rgba(156, 88, 42, 0.00) 22%,
+          rgba(184, 118, 62, 0.28) 40%,
+          rgba(96, 46, 20, 0.16) 58%,
+          transparent 74%);
+      animation: lowerRibbonA 10s ease-in-out infinite alternate;
+    }
+
+    body.coffee-mode .milk-swirl.ms2 {
+      width: 102%;
+      height: 24px;
+      top: 18%;
+      bottom: auto;
+      left: -1%;
+      background:
+        linear-gradient(90deg,
+          transparent 0%,
+          rgba(126, 66, 30, 0.00) 18%,
+          rgba(162, 96, 46, 0.24) 40%,
+          rgba(70, 30, 14, 0.12) 60%,
+          transparent 80%);
+      animation: lowerRibbonB 12s ease-in-out infinite alternate;
+    }
+
+    body.coffee-mode .milk-swirl.ms3 {
+      width: 122%;
+      height: 26px;
+      top: 28%;
+      bottom: auto;
+      left: -11%;
+      background:
+        linear-gradient(90deg,
+          transparent 0%,
+          rgba(98, 46, 20, 0.00) 16%,
+          rgba(146, 82, 40, 0.18) 38%,
+          rgba(64, 26, 10, 0.10) 58%,
+          transparent 82%);
+      animation: lowerRibbonC 14s ease-in-out infinite alternate;
+    }
+
+    body.coffee-mode .sub-bubble {
+      display: none;
+    }
+
+    @keyframes lowerTurbulenceShift {
+      0% {
+        transform: translateY(0) scaleY(1);
+        opacity: 0.72;
+      }
+
+      100% {
+        transform: translateY(6px) scaleY(1.08);
+        opacity: 0.90;
+      }
+    }
+
+    @keyframes lowerTurbulenceDepth {
+      0% {
+        transform: translateX(0) scaleX(1);
+        opacity: 0.82;
+      }
+
+      100% {
+        transform: translateX(4px) scaleX(1.03);
+        opacity: 0.96;
+      }
+    }
+
+    @keyframes lowerRibbonA {
+      0% {
+        transform: translateX(-8px) rotate(-6deg);
+      }
+
+      100% {
+        transform: translateX(10px) rotate(-2deg);
+      }
+    }
+
+    @keyframes lowerRibbonB {
+      0% {
+        transform: translateX(6px) rotate(5deg);
+      }
+
+      100% {
+        transform: translateX(-10px) rotate(1deg);
+      }
+    }
+
+    @keyframes lowerRibbonC {
+      0% {
+        transform: translateX(-4px) rotate(-3deg);
+      }
+
+      100% {
+        transform: translateX(12px) rotate(3deg);
+      }
+    }
+
+    @keyframes coffeeStreamSway {
+      0% {
+        transform: translateX(calc(-50% - 3px)) rotate(-1.4deg);
+      }
+
+      50% {
+        transform: translateX(calc(-50% + 1px)) rotate(0.2deg);
+      }
+
+      100% {
+        transform: translateX(calc(-50% + 5px)) rotate(1.4deg);
+      }
+    }
+
+    @keyframes coffeeStreamThickness {
+
+      0%,
+      100% {
+        transform: translateX(-50%) scaleX(1.04) scaleY(1);
+      }
+
+      50% {
+        transform: translateX(calc(-50% + 1px)) scaleX(1.1) scaleY(0.995);
+      }
+    }
+
+    @keyframes coffeeStreamGlossRoll {
+
+      0%,
+      18% {
+        transform: translateX(-10%) scaleX(0.92);
+        opacity: 0.72;
+      }
+
+      46% {
+        transform: translateX(8%) scaleX(1.08);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translateX(14%) scaleX(0.96);
+        opacity: 0.78;
+      }
+    }
+
+    @keyframes coffeeStreamSpecular {
+      0% {
+        transform: translateX(-42%) scaleX(0.84);
+        opacity: 0.32;
+      }
+
+      42% {
+        transform: translateX(0%) scaleX(1.06);
+        opacity: 0.96;
+      }
+
+      100% {
+        transform: translateX(34%) scaleX(0.88);
+        opacity: 0.28;
+      }
+    }
+
+
+    body.coffee-mode .impact-plume {
+      display: none;
+    }
+
+    /* ===== WHITE MODE ===== */
+
+    body.white-mode {
+      --bg-color: #ffffff;
+      --panel-bg: #f6f7f9;
+      --text-color: #0f172a;
+    }
+
+    body.white-mode .app {
+      background: #ffffff;
+      box-shadow: 0 4px 18px rgba(15, 23, 42, 0.08);
+    }
+
+    body.white-mode .header {
+      background: #f8fafc;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    }
+
+    body.white-mode .panel {
+      background: #ffffff;
+      border-color: rgba(15, 23, 42, 0.08);
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    body.white-mode .icon-btn:hover {
+      background: rgba(15, 23, 42, 0.06);
+    }
+
+    body.white-mode .input-field {
+      background: #ffffff;
+      color: #0f172a;
+      border-color: #cbd5e1;
+    }
+
+    body.white-mode .tooltip-overlay {
+      background: rgba(255, 255, 255, 0.96);
+      color: #0f172a;
+      box-shadow: 0 8px 32px rgba(15, 23, 42, 0.15);
+    }
+
+    body.white-mode .sleep-overlay {
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    body.white-mode .sleep-content {
+      color: #0f172a;
+    }
+
+    body.white-mode .sleep-title {
+      text-shadow: none;
+    }
+
+    body.white-mode .timer-value {
+      color: #0f172a !important;
+    }
+
+    body.white-mode .logo-text {
+      color: #0f172a !important;
+    }
+
+    body.white-mode .logo-icon svg path,
+    body.white-mode .logo-icon svg ellipse,
+    body.white-mode .logo-icon svg line {
+      stroke: var(--theme-color) !important;
+      fill: var(--theme-color) !important;
+    }
+
+    body.white-mode .sleep-bg-icon {
+      opacity: 0.05;
+      filter: grayscale(100%) brightness(1.1);
+    }
+
+    body.white-mode.classic-mode .app,
+    body.white-mode.classic-mode .panel {
+      background: #ffffff !important;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    }
+
+    body.white-mode.classic-mode .sleep-overlay {
+      background: #ffffff !important;
+    }
+
+    body.white-mode.coffee-mode .app {
+      background: #ffffff !important;
+    }
+
+    body.white-mode.coffee-mode .header {
+      background: #f8fafc !important;
+      backdrop-filter: none;
+    }
+
+    body.white-mode.coffee-mode .panel {
+      background: #ffffff !important;
+      backdrop-filter: none;
+    }
+
+    body.white-mode.coffee-mode .sleep-overlay {
+      background: rgba(255, 255, 255, 0.95) !important;
+      backdrop-filter: none;
+    }
+
+    body.white-mode.coffee-mode .input-field {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+    }
+  </style>
+</head>
+
+<body data-tauri-drag-region>
+  <div class="app" data-tauri-drag-region>
+    <div class="coffee-beans-container" id="coffeeBeansContainer">
+      <div class="bean bean-0"></div>
+      <div class="bean bean-1"></div>
+      <div class="bean bean-2"></div>
+      <div class="bean bean-3"></div>
+      <div class="bean bean-4"></div>
+      <div class="bean bean-5"></div>
+      <div class="bean bean-6"></div>
+      <div class="bean bean-7"></div>
+      <div class="bean bean-8"></div>
+      <div class="bean bean-9"></div>
+      <div class="bean bean-10"></div>
+      <div class="bean bean-11"></div>
+      <div class="bean bean-12"></div>
+      <div class="bean bean-13"></div>
+      <div class="bean bean-14"></div>
+      <div class="bean bean-15"></div>
+      <div class="bean bean-16"></div>
+      <div class="bean bean-17"></div>
+      <div class="bean bean-18"></div>
+      <div class="bean bean-19"></div>
+      <div class="bean bean-20"></div>
+      <div class="bean bean-21"></div>
+      <div class="bean bean-22"></div>
+      <div class="bean bean-23"></div>
+      <div class="bean bean-24"></div>
+      <div class="bean bean-25"></div>
+      <div class="bean bean-26"></div>
+      <div class="bean bean-27"></div>
+      <div class="bean bean-28"></div>
+      <div class="bean bean-29"></div>
+      <div class="bean bean-30"></div>
+      <div class="bean bean-31"></div>
+      <div class="bean bean-32"></div>
+      <div class="bean bean-33"></div>
+      <div class="bean bean-34"></div>
+      <div class="bean bean-35"></div>
+      <div class="bean bean-36"></div>
+      <div class="bean bean-37"></div>
+      <div class="bean bean-38"></div>
+      <div class="bean bean-39"></div>
+      <div class="bean bean-40"></div>
+      <div class="bean bean-41"></div>
+    </div>
+    <div class="header" data-tauri-drag-region>
+      <div class="header-right" data-tauri-drag-region>
+        <div class="disable-wrap" id="disableWrap">
+          <div class="logo" data-tauri-drag-region
+            style="display: flex; align-items: center; justify-content: center; height: 100%; -webkit-app-region: drag;">
+            <div class="logo-icon" data-tauri-drag-region style="-webkit-app-region: drag;"><svg width="20" height="20"
+                viewBox="0 0 100 100" style="pointer-events: none; display:block;" data-tauri-drag-region>
+                <!-- Steam wisps -->
+                <path d="M36 22 C 38 14, 30 10, 36 2" stroke="white" stroke-width="4" stroke-linecap="round"
+                  fill="none" />
+                <path d="M54 22 C 56 14, 48 10, 54 2" stroke="white" stroke-width="4" stroke-linecap="round"
+                  fill="none" />
+                <!-- Saucer -->
+                <ellipse cx="48" cy="85" rx="35" ry="8" fill="white" />
+                <!-- Cup body -->
+                <path d="M15 32 Q15 62 25 72 Q35 80 48 80 Q61 80 71 72 Q81 62 81 32 Z" fill="white" />
+                <!-- Handle -->
+                <path d="M78 40 Q98 40 98 55 Q98 70 78 68" stroke="white" stroke-width="8" stroke-linecap="round"
+                  fill="none" />
+                <!-- Top rim line -->
+                <line x1="13" y1="32" x2="83" y2="32" stroke="white" stroke-width="6" stroke-linecap="round" />
+              </svg></div>
+            <span class="logo-text" data-i18n="app_title_text"
+              style="font-size:18px;font-weight:700;color:white;margin-right:8px;letter-spacing:0.5px;pointer-events:none;">Never
+              Sleep</span>
+          </div>
+          <!-- Hover-reveal disable pill -->
+          <div class="disable-toggle-pill" id="disableTogglePill" title="Toggle app on/off">
+            <div class="pill-dot" id="pillDot"></div>
+            <span class="pill-label" id="pillLabel" data-i18n="pill_active">Active</span>
+          </div>
+        </div>
+      </div>
+      <div class="header-left" data-tauri-drag-region>
+        <div class="status" data-tauri-drag-region>
+          <div class="status-dot" id="greenDot"></div>
+          <svg class="activity-icon" id="mouseIcon" viewBox="0 0 24 24">
+            <path d="M7 2L19.2 13.2 13.4 13.7 16.7 21 14.5 21.9 11.3 14.6 6.9 18.9V2z" />
+          </svg>
+          <svg class="activity-icon" id="kbdIcon" viewBox="0 0 24 24">
+            <path
+              d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z" />
+          </svg>
+          <span id="statusText" data-tauri-drag-region data-i18n="status_active">Active</span>
+        </div>
+        <!-- Settings Button -->
+        <button class="icon-btn" id="settingsBtn" data-i18n-title="settings_btn" title="Settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </button>
+        <!-- Tray/Hide Button -->
+        <button class="icon-btn" id="trayBtn" data-i18n-title="tray_btn" title="Minimize to tray">
+          <svg style="pointer-events: none;" width="18" height="18" viewBox="0 0 24 24" fill="var(--theme-color)"
+            xmlns="http://www.w3.org/2000/svg">
+            <!-- Top bar (right portion only, x=7.5→24) + full right bar; rounded top-right outer corner, rounded left cap -->
+            <path d="M7.5,3 A1.5,1.5 0 0,1 7.5,0 L22,0 Q24,0 24,2 L24,22 Q24,24 22,24 L21,24 L21,3 Z"/>
+            <!-- Bottom bar (x=0→21) + partial left bar (y=13→24); rounded bottom-left outer corner, rounded top cap -->
+            <path d="M3,13 A1.5,1.5 0 0,1 0,13 L0,22 Q0,24 2,24 L21,24 L21,21 L3,21 Z"/>
+            <!-- Diagonal SE arrow: shaft from upper-left, wide arrowhead pointing lower-right -->
+            <path d="M2.7,5.2 L5.3,2.8 L12.6,10.7 L14.1,9.4 L15,16 L8.5,14.5 L10,13.2 Z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Disabled overlay banner -->
+    <div class="disabled-banner" id="disabledBanner">
+      <div class="disabled-banner-inner">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+        </svg>
+        <span data-i18n="app_disabled_banner">App is disabled</span>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="panel" id="panelLeft" data-tauri-drag-region>
+        <img src="coffe1.png" class="panel-bg heartbeat-icon" alt="">
+        <div class="panel-content" data-tauri-drag-region>
+          <div class="toggle-row" data-tauri-drag-region><span class="toggle-label" id="activateToggleLabel"
+              style="font-size:16px;font-weight:600" data-tauri-drag-region data-i18n="keep_screen_awake">Keep screen awake</span>
+            <div class="toggle active" id="activateToggle">
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+          <div class="timer-section tooltip-target" id="darkenSection" data-tauri-drag-region>
+            <div class="status-text" id="mainStatusText" data-tauri-drag-region data-i18n="pc_awake">Your PC is<br><span
+                data-tauri-drag-region>awake now</span></div>
+            <div id="darkenTimerContainer" data-tauri-drag-region>
+              <div class="timer-label" id="darkenLabel" style="margin-top:5px" data-tauri-drag-region data-i18n="time_to_darken">Time to darken</div>
+              <div class="timer-value" id="darkenTimer" data-tauri-drag-region>00:10:00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel" id="panelRight" data-tauri-drag-region>
+        <img src="coffe1.png" class="panel-bg heartbeat-icon" alt="">
+        <!-- Coffee pour animation overlay -->
+        <div class="coffee-pour-overlay" id="coffeePourOverlay">
+          <div class="coffee-fill" id="coffeeFill">
+            <div class="impact-plume"></div>
+            <div class="milk-swirl ms1"></div>
+            <div class="milk-swirl ms2"></div>
+            <div class="milk-swirl ms3"></div>
+            <div class="milk-swirl ms4"></div>
+            <div class="milk-swirl ms5"></div>
+            <div class="milk-swirl ms6"></div>
+          </div>
+          <div class="coffee-crema" id="coffeeCrema">
+            <div class="crema-caustic c1"></div>
+            <div class="crema-caustic c2"></div>
+            <div class="crema-caustic c3"></div>
+            <div class="crema-bubble b1"></div>
+            <div class="crema-bubble ring b2"></div>
+            <div class="crema-bubble b3"></div>
+            <div class="crema-bubble ring b4"></div>
+            <div class="crema-bubble b5"></div>
+            <div class="crema-bubble b6"></div>
+            <div class="crema-bubble ring b7"></div>
+            <div class="crema-bubble b8"></div>
+            <div class="crema-bubble ring b9"></div>
+            <div class="crema-bubble b10"></div>
+            <div class="crema-bubble b11"></div>
+            <div class="crema-bubble ring b12"></div>
+            <div class="crema-bubble b13"></div>
+            <div class="crema-bubble b14"></div>
+            <div class="crema-bubble ring b15"></div>
+            <div class="crema-bubble b16"></div>
+            <div class="crema-bubble ring b17"></div>
+            <div class="crema-bubble b18"></div>
+            <div class="crema-bubble b19"></div>
+            <div class="crema-bubble ring b20"></div>
+            <div class="crema-bubble b21"></div>
+            <div class="crema-bubble ring b22"></div>
+            <div class="crema-bubble b23"></div>
+            <div class="crema-bubble ring b24"></div>
+            <div class="crema-bubble b25"></div>
+            <div class="crema-bubble b26"></div>
+            <div class="crema-bubble ring b27"></div>
+            <div class="crema-bubble b28"></div>
+            <div class="crema-bubble ring b29"></div>
+            <div class="crema-bubble b30"></div>
+            <div class="crema-bubble ring b31"></div>
+            <div class="crema-bubble b32"></div>
+            <div class="crema-bubble ring b33"></div>
+            <div class="crema-bubble b34"></div>
+            <div class="crema-bubble ring b35"></div>
+            <div class="crema-bubble b36"></div>
+            <div class="crema-bubble ring b37"></div>
+            <div class="crema-bubble b38"></div>
+            <div class="crema-bubble ring b39"></div>
+            <div class="crema-bubble b40"></div>
+            <div class="crema-bubble ring b41"></div>
+            <div class="crema-bubble ring b42"></div>
+            <div class="crema-bubble ring b43"></div>
+            <div class="crema-bubble ring b44"></div>
+            <div class="crema-bubble ring b45"></div>
+            <div class="crema-bubble ring b46"></div>
+            <div class="crema-bubble ring b47"></div>
+            <div class="crema-bubble ring b48"></div>
+            <div class="crema-bubble ring b49"></div>
+            <div class="crema-bubble ring b50"></div>
+            <div class="crema-bubble ring b51"></div>
+            <div class="crema-bubble ring b52"></div>
+            <div class="crema-bubble ring b53"></div>
+            <div class="crema-bubble ring b54"></div>
+            <div class="crema-bubble ring b55"></div>
+            <div class="crema-bubble ring b56"></div>
+            <div class="crema-bubble ring b57"></div>
+            <div class="crema-bubble ring b58"></div>
+            <div class="crema-bubble ring b59"></div>
+            <div class="crema-bubble ring b60"></div>
+            <div class="crema-bubble ring b61"></div>
+            <div class="crema-bubble ring b62"></div>
+            <div class="crema-bubble ring b63"></div>
+            <div class="crema-bubble ring b64"></div>
+            <div class="crema-bubble ring b65"></div>
+            <div class="crema-bubble ring b66"></div>
+            <div class="crema-bubble ring b67"></div>
+            <div class="crema-bubble ring b68"></div>
+            <div class="crema-bubble ring b69"></div>
+            <div class="crema-bubble ring b70"></div>
+            <div class="crema-bubble ring b71"></div>
+            <div class="crema-bubble ring b72"></div>
+            <div class="crema-bubble ring b73"></div>
+            <div class="crema-bubble ring b74"></div>
+            <div class="crema-bubble ring b75"></div>
+            <div class="crema-bubble ring b76"></div>
+            <div class="crema-bubble ring b77"></div>
+            <div class="crema-bubble ring b78"></div>
+            <div class="crema-bubble ring b79"></div>
+            <div class="crema-bubble ring b80"></div>
+          </div>
+          <div class="coffee-impact" id="coffeeImpact">
+            <div class="impact-base"></div>
+          </div>
+          <div class="coffee-steam-wrap" id="coffeeSteamWrap">
+            <div class="steam-wisp sw1"></div>
+            <div class="steam-wisp sw2"></div>
+            <div class="steam-wisp sw3"></div>
+          </div>
+          <div class="coffee-stream-outer" id="coffeeStreamOuter">
+            <canvas id="coffeeStreamCanvas"></canvas>
+          </div>
+        </div>
+
+        <div class="panel-content" data-tauri-drag-region>
+          <div class="toggle-row" data-tauri-drag-region><span class="toggle-label" id="shutdownToggleLabel"
+              style="font-size:20px;font-weight:600" data-tauri-drag-region data-i18n="category_auto_quit">Schedule</span>
+          </div>
+          <div class="timer-section tooltip-target" id="shutdownSection" data-tauri-drag-region>
+            <div class="timer-label" id="shutdownLabel" data-i18n="time_left">Time left</div>
+            <div class="timer-value green" id="shutdownTimer">00:00:00</div>
+          </div>
+        </div>
+        <div class="schedule-cover" role="status" data-tauri-drag-region>
+          <div class="schedule-cover-content" data-tauri-drag-region>
+            <svg class="schedule-cover-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 6v6l4 2"></path>
+            </svg>
+            <div class="schedule-cover-title" data-i18n="schedule_disabled_title" data-tauri-drag-region>Schedule is off</div>
+            <div class="schedule-cover-sub" data-i18n="schedule_disabled_sub" data-tauri-drag-region>Turn on Schedule Mode in settings to use time profiles.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sleep-overlay" id="sleepOverlay" data-tauri-drag-region>
+      <div class="sleep-bg-icon"></div>
+      <div class="sleep-content">
+        <div class="sleep-icon-small"></div>
+        <div class="sleep-title" data-i18n="sleep_active_title">Sleep Mode Active</div>
+        <div style="font-size:18px;opacity:0.9" data-i18n="sleep_active_sub">Your PC is not kept awake right now</div>
+        <div class="sleep-subtitle-short" data-i18n="sleep_active_sub_short">Not kept awake</div>
+        <div class="sleep-next-profile" id="sleepNextProfile" data-tauri-drag-region>
+          <div class="sleep-next-label" data-i18n="next_schedule">Next schedule</div>
+          <div class="sleep-next-times" data-tauri-drag-region>
+            <div class="sleep-time-pill" data-tauri-drag-region>
+              <span id="sleepNextStart">--:--</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 6v6l4 2"></path>
+              </svg>
+            </div>
+            <div class="sleep-next-arrow" aria-hidden="true">→</div>
+            <div class="sleep-time-pill" data-tauri-drag-region>
+              <span id="sleepNextEnd">--:--</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 6v6l4 2"></path>
+              </svg>
+            </div>
+          </div>
+          <div class="sleep-next-countdown" id="sleepNextCountdown">Starts in 00:00:00</div>
+        </div>
+        <div class="sleep-buttons-row">
+          <button class="sleep-btn" id="sleepSettingsBtn" data-i18n="disable_schedule_btn">Disable Schedule</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    function log(m) { }
+    window.onerror = function () { };
+
+    // Global state
+    let isScreenOn = true;
+    let autoShutdown = false;
+    let themeColor = '#f97316';
+    let appDisabled = false;
+    function hasEnabledTimeProfiles() {
+      return !!timeProfilesEnabled && Array.isArray(timeProfiles) && timeProfiles.some(p => p.enabled !== false);
+    }
+
+    function getActiveProfileTimes() {
+      if (!timeProfiles || timeProfiles.length === 0) return null;
+      const enabledProfiles = timeProfiles.filter(p => p.enabled);
+      if (enabledProfiles.length === 0) return null;
+
+      const now = new Date();
+      const currentMin = now.getHours() * 60 + now.getMinutes();
+
+      for (const p of enabledProfiles) {
+        if (!p.startTime || !p.endTime) continue;
+        const [sh, sm] = p.startTime.split(':').map(Number);
+        const [eh, em] = p.endTime.split(':').map(Number);
+        if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) continue;
+
+        const startMin = sh * 60 + sm;
+        const endMin = eh * 60 + em;
+
+        let active = false;
+        let start = new Date(now);
+        let end = new Date(now);
+
+        if (startMin <= endMin) {
+          active = currentMin >= startMin && currentMin < endMin;
+          start.setHours(sh, sm, 0, 0);
+          end.setHours(eh, em, 0, 0);
+        } else {
+          // Crosses midnight
+          active = currentMin >= startMin || currentMin < endMin;
+          if (currentMin >= startMin) {
+            start.setHours(sh, sm, 0, 0);
+            end.setHours(eh, em, 0, 0);
+            end.setDate(end.getDate() + 1);
+          } else {
+            start.setHours(sh, sm, 0, 0);
+            start.setDate(start.getDate() - 1);
+            end.setHours(eh, em, 0, 0);
+          }
+        }
+
+        if (active) {
+          return { start, end };
+        }
+      }
+      return null;
+    }
+
+    function getNextProfileWindow() {
+      if (!hasEnabledTimeProfiles()) return null;
+      const enabledProfiles = timeProfiles.filter(p => p.enabled !== false);
+      const now = new Date();
+      let next = null;
+
+      enabledProfiles.forEach(p => {
+        if (!p.startTime || !p.endTime) return;
+        const [sh, sm] = p.startTime.split(':').map(Number);
+        const [eh, em] = p.endTime.split(':').map(Number);
+        if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return;
+
+        const startMin = sh * 60 + sm;
+        const endMin = eh * 60 + em;
+        const start = new Date(now);
+        start.setHours(sh, sm, 0, 0);
+        if (start <= now) start.setDate(start.getDate() + 1);
+
+        const end = new Date(start);
+        end.setHours(eh, em, 0, 0);
+        if (endMin <= startMin) end.setDate(end.getDate() + 1);
+
+        if (!next || start < next.start) {
+          next = { start, end };
+        }
+      });
+
+      if (!next) return null;
+      next.secondsUntilStart = Math.max(0, Math.floor((next.start - now) / 1000));
+      return next;
+    }
+
+    function getProfileStatus() {
+      if (!timeProfiles || timeProfiles.length === 0) return null;
+      const enabledProfiles = timeProfiles.filter(p => p.enabled);
+      if (enabledProfiles.length === 0) return null;
+
+      const now = new Date();
+      const currentMin = now.getHours() * 60 + now.getMinutes();
+
+      function isMinutesCovered(minOfDay) {
+        const m = ((minOfDay % 1440) + 1440) % 1440;
+        return enabledProfiles.some(p => {
+          if (!p.startTime || !p.endTime) return false;
+          const [sh, sm] = p.startTime.split(':').map(Number);
+          const [eh, em] = p.endTime.split(':').map(Number);
+          if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return false;
+          
+          const startMin = sh * 60 + sm;
+          const endMin = eh * 60 + em;
+
+          if (startMin <= endMin) {
+            return m >= startMin && m < endMin;
+          } else {
+            // Crosses midnight
+            return m >= startMin || m < endMin;
+          }
+        });
+      }
+
+      const isCurrentActive = isMinutesCovered(currentMin);
+      
+      // Scan forward to find when state will change
+      let minutesDelta = 0;
+      for (let i = 0; i <= 1440; i++) {
+        const covered = isMinutesCovered(currentMin + i);
+        if (covered !== isCurrentActive) {
+          minutesDelta = i;
+          break;
+        }
+      }
+
+      const secondsInCurrentMinute = now.getSeconds();
+      let totalSecondsDelta = 0;
+      if (minutesDelta > 0) {
+        totalSecondsDelta = (minutesDelta - 1) * 60 + (60 - secondsInCurrentMinute);
+      }
+
+      return {
+        isActive: isCurrentActive,
+        remainingSeconds: Math.max(0, totalSecondsDelta)
+      };
+    }
+
+    let disableOnVideo = false;
+    let disabledByMedia = false;
+
+    // Config
+    let timeProfiles = [];
+    let timeProfilesEnabled = false;
+    let profileControlledAwake = false;
+
+
+
+    function getNextProfileSeconds() {
+      const status = getProfileStatus();
+      return status !== null ? status.remainingSeconds : null;
+    }
+
+    let darkenHours = 0;
+    let darkenMinutes = 10;
+
+    let breakH = 1;
+    let breakM = 0;
+
+    let notificationsEnabled = true;
+    let soundEnabled = false;
+    let focusOnCountdown = false;
+    let minimizeOnDarken = false;
+    let quitFocusOnCountdown = true;
+
+    // Runtime state
+    let isSleeping = false;
+    let screenDarkened = false;
+    let initCheck = true;
+    let lastAct = 0;
+    let lastBreak = 0;
+    let uptime = 0;
+
+    // Target Timestamps for robust timing
+    let shutdownTargetTime = 0;
+    let darkenTargetTime = 0;
+    let darkModeStartTime = 0;
+
+    let focusTriggered = false;
+    let minimizeTriggered = false;
+    let lastActivityIconAt = 0;
+
+    // Helpers
+    function hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '249, 115, 22';
+    }
+
+    function applyTheme(c) {
+      themeColor = c;
+      const rgb = hexToRgb(c);
+      document.documentElement.style.setProperty('--theme-color', c);
+      document.documentElement.style.setProperty('--theme-color-rgb', rgb);
+    }
+
+
+    function applyWhiteMode(active) {
+      document.body.classList.toggle('white-mode', !!active);
+    }
+
+    function applySchedulePanelVisibility() {
+      document.body.classList.toggle('schedule-panel-hidden', !timeProfilesEnabled);
+    }
+
+    const CLASSIC_SHORT_LABELS = {
+      activate: '\u05DE\u05E1\u05DA \u05E2\u05E8',
+      shutdown: 'עירנות עד…'
+    };
+
+    const DEFAULT_LABELS = {
+      activate: '\u05D2\u05DD \u05D4\u05DE\u05E1\u05DA \u05E0\u05E9\u05D0\u05E8 \u05E2\u05E8',
+      shutdown: 'עירנות עד…'
+    };
+    function applyViewMode(mode) {
+      document.body.classList.remove('classic-mode', 'liquid-glass-mode', 'coffee-mode');
+      if (mode === 'liquid-glass') {
+        document.body.classList.add('liquid-glass-mode');
+      } else {
+        document.body.classList.add(mode + '-mode');
+      }
+
+      const activateToggleLabel = document.getElementById('activateToggleLabel');
+      const shutdownToggleLabel = document.getElementById('shutdownToggleLabel');
+      const sleepSettingsBtn = document.getElementById('sleepSettingsBtn');
+      if (activateToggleLabel) {
+        activateToggleLabel.textContent = mode === 'classic' ? (translations[window.currentLang] ? translations[window.currentLang].screen_awake_short : 'Screen Awake') : (translations[window.currentLang] ? translations[window.currentLang].keep_screen_awake : 'Keep screen awake');
+      }
+      if (shutdownToggleLabel) {
+        shutdownToggleLabel.textContent = translations[window.currentLang] ? translations[window.currentLang].category_auto_quit : 'Awake until...';
+      }
+      if (sleepSettingsBtn) {
+        const key = mode === 'classic' ? 'disable_schedule_btn_short' : 'disable_schedule_btn';
+        sleepSettingsBtn.textContent = translations[window.currentLang] && translations[window.currentLang][key] ? translations[window.currentLang][key] : (mode === 'classic' ? 'Disable' : 'Disable Schedule');
+      }
+
+      if (window.__TAURI__) {
+        if (mode === 'classic') {
+          window.__TAURI__.invoke('set_window_size', { width: 560, height: 44 }).catch(() => { });
+        } else {
+          if (darkenTimerContainer) darkenTimerContainer.style.display = 'block';
+          window.__TAURI__.invoke('set_window_size', { width: 500, height: 260 }).catch(() => { });
+        }
+      }
+    }
+
+    function updateUI() {
+      if (!isScreenOn && darkenTargetTime <= 0) resetDarkenTimer();
+      if (profileControlledAwake && shutdownTargetTime <= 0) resetShutdownTimer();
+      const statusTextEl = document.getElementById('statusText');
+      const mainStatusEl = document.getElementById('mainStatusText');
+      const darkenTimerEl = document.getElementById('darkenTimer');
+      const shutdownTimerEl = document.getElementById('shutdownTimer');
+      const darkenLabelEl = document.getElementById('darkenLabel');
+      const shutdownLabelEl = document.getElementById('shutdownLabel');
+      const darkenTimerContainer = document.getElementById('darkenTimerContainer');
+      const mouseIcon = document.getElementById('mouseIcon');
+      const kbdIcon = document.getElementById('kbdIcon');
+      const greenDot = document.getElementById('greenDot');
+      const activateToggle = document.getElementById('activateToggle');
+
+      if (activateToggle) activateToggle.classList.toggle('active', isScreenOn);
+
+      const darkTotal = (darkenHours * 3600) + (darkenMinutes * 60);
+      if (isScreenOn) {
+        if (darkenTimerContainer) darkenTimerContainer.style.display = 'none';
+        if (mouseIcon) mouseIcon.classList.remove('show');
+        if (kbdIcon) kbdIcon.classList.remove('show');
+        if (statusTextEl) statusTextEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].status_active : 'Active';
+        if (greenDot) greenDot.classList.add('show');
+        if (mainStatusEl) mainStatusEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].pc_awake : 'Your PC is<br><span>awake now</span>';
+        if (darkenLabelEl) darkenLabelEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].time_to_darken : 'Time to darken';
+        if (darkenTimerEl) darkenTimerEl.textContent = formatTime(darkTotal);
+      } else {
+        if (darkenTimerContainer) darkenTimerContainer.style.display = 'block';
+        if (statusTextEl) statusTextEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].status_darken : 'Darken<br>Mode';
+        if (greenDot) greenDot.classList.remove('show');
+        const remDark = Math.max(0, Math.floor((darkenTargetTime - Date.now()) / 1000));
+        if (darkenLabelEl) darkenLabelEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].time_to_darken : 'Time to darken';
+        if (darkenTimerEl) darkenTimerEl.textContent = formatTime(remDark);
+      }
+
+      const status = getProfileStatus();
+      if (status !== null) {
+        if (status.isActive) {
+          if (shutdownLabelEl) shutdownLabelEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].time_left : 'Time left';
+        } else {
+          if (shutdownLabelEl) shutdownLabelEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].starts_in : 'Starts in';
+        }
+        if (shutdownTimerEl) shutdownTimerEl.textContent = formatTime(status.remainingSeconds);
+      } else {
+        if (shutdownLabelEl) shutdownLabelEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].time_left : 'Time left';
+        if (shutdownTimerEl) shutdownTimerEl.textContent = "00:00:00";
+      }
+
+      updateSleepNextProfile();
+    }
+
+    async function checkAct() {
+      if (!window.__TAURI__) return;
+      try {
+        const r = await window.__TAURI__.invoke('get_last_activity');
+        const t = r[0];
+        const type = r[1] || 'mouse';
+        if (t !== lastAct) {
+          lastAct = t;
+
+          const mouseIcon = document.getElementById('mouseIcon');
+          const kbdIcon = document.getElementById('kbdIcon');
+          const now = Date.now();
+
+          if (!isScreenOn && (now - lastActivityIconAt > 1000)) {
+            lastActivityIconAt = now;
+            if (type === 'mouse') {
+              if (mouseIcon) mouseIcon.classList.add('show');
+              if (kbdIcon) kbdIcon.classList.remove('show');
+            } else {
+              if (kbdIcon) kbdIcon.classList.add('show');
+              if (mouseIcon) mouseIcon.classList.remove('show');
+            }
+            setTimeout(() => {
+              if (mouseIcon) mouseIcon.classList.remove('show');
+              if (kbdIcon) kbdIcon.classList.remove('show');
+            }, 800);
+          } else if (isScreenOn) {
+            if (mouseIcon) mouseIcon.classList.remove('show');
+            if (kbdIcon) kbdIcon.classList.remove('show');
+          }
+
+          if (!isScreenOn && !isSleeping) {
+            resetDarkenTimer();
+          }
+
+          if (screenDarkened) {
+            screenDarkened = false;
+            if (window.__TAURI__) window.__TAURI__.invoke('close_screen_overlay').catch(() => { });
+          }
+        }
+      } catch (e) { }
+    }
+
+    // Force size maintenance for classic mode
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        const s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+        if (s.viewMode === 'classic') {
+          if (window.innerWidth !== 560 || window.innerHeight !== 44) {
+            applyViewMode('classic');
+          }
+        }
+      }, 500);
+    });
+
+    async function notify(t, b) {
+      try {
+        if (!notificationsEnabled) return;
+        if (window.__TAURI__) {
+          const isLocked = await window.__TAURI__.invoke('is_workstation_locked');
+          if (isLocked) return;
+        }
+        if (window.__TAURI__) await window.__TAURI__.invoke('show_notification', { title: t, body: b });
+        if (soundEnabled) await window.__TAURI__.invoke('play_sys_sound');
+      } catch (e) { }
+    }
+
+    function formatTime(s) {
+      if (s < 0) s = 0;
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = Math.floor(s % 60);
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    }
+
+    function formatClockTime(date) {
+      try {
+        return date.toLocaleTimeString(window.currentLang || undefined, {
+          hour: 'numeric',
+          minute: '2-digit'
+        });
+      } catch (e) {
+        return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+      }
+    }
+
+    function updateSleepNextProfile() {
+      const overlay = document.getElementById('sleepOverlay');
+      const box = document.getElementById('sleepNextProfile');
+      const startEl = document.getElementById('sleepNextStart');
+      const endEl = document.getElementById('sleepNextEnd');
+      const countdownEl = document.getElementById('sleepNextCountdown');
+      if (!box || !startEl || !endEl || !countdownEl) return;
+
+      const status = getProfileStatus();
+      const next = getNextProfileWindow();
+      const shouldShow = isSleeping && profileControlledAwake && status && !status.isActive && next;
+      box.classList.toggle('show', !!shouldShow);
+      if (overlay) overlay.classList.toggle('has-next-profile', !!shouldShow);
+      if (!shouldShow) return;
+
+      startEl.textContent = formatClockTime(next.start);
+      endEl.textContent = formatClockTime(next.end);
+      const startsIn = translations[window.currentLang] && translations[window.currentLang].starts_in
+        ? translations[window.currentLang].starts_in
+        : 'Starts in';
+      countdownEl.textContent = `${startsIn} ${formatTime(next.secondsUntilStart)}`;
+    }
+
+    // Load Settings
+    localStorage.setItem('app_start_timestamp', Date.now().toString());
+
+    function saveTogglesState() {
+      localStorage.setItem('neverSleepToggles', JSON.stringify({
+        isScreenOn: isScreenOn
+      }));
+    }
+
+    function loadSet() {
+      try {
+        const s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+        window.currentLang = s.language || 'en';
+        if(typeof applyLanguage === 'function') applyLanguage(window.currentLang);
+        if (s.themeColor) applyTheme(s.themeColor);
+
+        // Migration: modern -> liquid-glass
+        let currentMode = s.viewMode || 'liquid-glass';
+        if (currentMode === 'modern') currentMode = 'liquid-glass';
+
+        applyViewMode(currentMode);
+        applyWhiteMode(!!s.whiteMode);
+
+        timeProfiles = s.timeProfiles || [];
+        timeProfilesEnabled = s.timeProfilesEnabled === undefined ? (timeProfiles.length > 0) : !!s.timeProfilesEnabled;
+        applySchedulePanelVisibility();
+        profileControlledAwake = hasEnabledTimeProfiles();
+        autoShutdown = profileControlledAwake;
+
+        darkenHours = s.darkenHours === undefined ? 0 : s.darkenHours;
+        darkenMinutes = s.darkenMinutes === undefined ? 10 : s.darkenMinutes;
+
+        breakH = s.breakHours === undefined ? 1 : s.breakHours;
+        breakM = s.breakMinutes === undefined ? 0 : s.breakMinutes;
+
+        notificationsEnabled = s.notificationsEnabled === undefined ? true : s.notificationsEnabled;
+        soundEnabled = s.soundEnabled === undefined ? false : s.soundEnabled;
+        disableOnVideo = s.disableOnVideo === true;
+        focusOnCountdown = s.focusOnCountdown === undefined ? false : s.focusOnCountdown;
+        minimizeOnDarken = s.minimizeOnDarken === undefined ? false : s.minimizeOnDarken;
+        quitFocusOnCountdown = s.quitFocusOnCountdown === undefined ? true : s.quitFocusOnCountdown;
+
+        if (window.__TAURI__ && s.pinned !== undefined) {
+          window.__TAURI__.invoke('set_pinned', { pinned: !!s.pinned }).catch(() => { });
+        }
+
+        // Check for special commands
+        const cmd = localStorage.getItem('neverSleepCommand');
+        if (cmd) {
+          localStorage.removeItem('neverSleepCommand');
+          const c = JSON.parse(cmd);
+          if (c.type === 'recalculateProfiles') {
+            if (profileControlledAwake) resetShutdownTimer();
+          }
+        }
+      } catch (e) { }
+    }
+
+    function resetDarkenTimer() {
+      const total = (darkenHours * 3600) + (darkenMinutes * 60);
+      darkenTargetTime = Date.now() + (total * 1000);
+    }
+
+
+
+    function resetShutdownTimer() {
+      const secs = getNextProfileSeconds();
+      if (secs !== null) {
+        shutdownTargetTime = Date.now() + (secs * 1000);
+      } else {
+        shutdownTargetTime = 0;
+      }
+    }
+
+    function createOverlay() {
+      if (window.__TAURI__) window.__TAURI__.invoke('create_screen_overlay').catch(() => { });
+      screenDarkened = true;
+    }
+
+    // Overlay Tooltips - Fixed Target Parent
+    function showOverlay(targetId, html) {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      hideOverlay(targetId);
+
+      const overlay = document.createElement('div');
+      overlay.className = 'tooltip-overlay';
+      overlay.innerHTML = html;
+      overlay.id = 'tooltip_' + targetId;
+
+      // Per-panel sizing to fit the red squares
+      if (targetId === 'shutdownSection') {
+        // Right tip - bigger
+        if (document.body.classList.contains('coffee-mode')) {
+          overlay.style.fontSize = '13px';
+          overlay.style.lineHeight = '1.24';
+          overlay.style.padding = '10px';
+        } else {
+          overlay.style.fontSize = '18px';
+          overlay.style.lineHeight = '1.45';
+          overlay.style.padding = '15px';
+        }
+      } else if (targetId === 'darkenSection') {
+        // Left tip - refined
+        if (document.body.classList.contains('coffee-mode')) {
+          overlay.style.fontSize = '12px';
+          overlay.style.lineHeight = '1.18';
+          overlay.style.padding = '8px';
+        } else {
+          overlay.style.fontSize = '13px';
+          overlay.style.lineHeight = '1.35';
+          overlay.style.padding = '12px';
+        }
+      }
+
+      // Tooltip fix: append directly to the hover target to fit the red squares
+      target.appendChild(overlay);
+    }
+    function hideOverlay(targetId) {
+      const el = document.getElementById('tooltip_' + targetId);
+      if (el) el.remove();
+    }
+
+    // Hover Listeners
+    const statusTip = () => translations[window.currentLang] && translations[window.currentLang].tip_status ? translations[window.currentLang].tip_status : `<div style="direction:ltr">Screen won't turn off as long as app is active.</div>`;
+    const darkenTip = () => translations[window.currentLang] && translations[window.currentLang].tip_darken ? translations[window.currentLang].tip_darken : `<div style="direction:ltr">After countdown, screen goes dark but PC stays awake.</div>`;
+    const shutdownTip = () => translations[window.currentLang] && translations[window.currentLang].tip_shutdown ? translations[window.currentLang].tip_shutdown : `<div style="direction:ltr">When timer is active, PC will sleep after time ends.</div>`;
+
+    const darkenSection = document.getElementById('darkenSection');
+    if (darkenSection) {
+      darkenSection.onmouseenter = function () {
+        if (document.body.classList.contains('classic-mode')) return;
+        if (isScreenOn) {
+          showOverlay('darkenSection', statusTip());
+        } else if (!isSleeping) {
+          showOverlay('darkenSection', darkenTip());
+        }
+      };
+      darkenSection.onmouseleave = function () { hideOverlay('darkenSection'); };
+    }
+
+    const shutdownSection = document.getElementById('shutdownSection');
+    if (shutdownSection) {
+      shutdownSection.onmouseenter = function () {
+        if (document.body.classList.contains('classic-mode')) return;
+        showOverlay('shutdownSection', shutdownTip());
+      };
+      shutdownSection.onmouseleave = function () { hideOverlay('shutdownSection'); };
+    }
+
+    async function focusMainWindow() {
+      if (!window.__TAURI__) return;
+      try {
+        await window.__TAURI__.invoke('focus_main_window');
+        const s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+        if (s.pinned) {
+          await window.__TAURI__.invoke('set_pinned', { pinned: true });
+        }
+      } catch (e) { }
+    }
+
+    function enterSleepMode(options = {}) {
+      isSleeping = true;
+      document.getElementById('sleepOverlay').classList.add('show');
+      isScreenOn = false;
+
+      if (options.focus !== false && quitFocusOnCountdown && window.__TAURI__) {
+        focusMainWindow().catch(() => { });
+      }
+
+      if (window.__TAURI__) window.__TAURI__.invoke('allow_sleep').catch(() => { });
+      updateUI();
+    }
+
+    function exitSleepModeAndPreventSleep() {
+      isSleeping = false;
+      document.getElementById('sleepOverlay').classList.remove('show');
+      isScreenOn = true;
+      screenDarkened = false;
+      if (window.__TAURI__) {
+        window.__TAURI__.invoke('close_screen_overlay').catch(() => { });
+        window.__TAURI__.invoke('prevent_sleep').catch(() => { });
+      }
+      resetDarkenTimer();
+      updateUI();
+    }
+
+    function applyProfileControlledPowerState(options = {}) {
+      profileControlledAwake = hasEnabledTimeProfiles();
+      autoShutdown = profileControlledAwake;
+
+      if (!profileControlledAwake) {
+        exitSleepModeAndPreventSleep();
+        shutdownTargetTime = 0;
+        return;
+      }
+
+      const status = getProfileStatus();
+      resetShutdownTimer();
+      if (status && status.isActive) {
+        exitSleepModeAndPreventSleep();
+      } else {
+        enterSleepMode({ focus: options.focus === true });
+      }
+    }
+
+    // Main Loop
+    setInterval(async () => {
+      // 0. Background media playback check
+      if (disableOnVideo && window.__TAURI__) {
+        try {
+          const isPlaying = await window.__TAURI__.invoke('is_media_playing');
+          if (isPlaying && !appDisabled) {
+             disabledByMedia = true;
+             setAppDisabled(true);
+          } else if (!isPlaying && disabledByMedia && appDisabled) {
+             disabledByMedia = false;
+             setAppDisabled(false);
+          }
+        } catch (e) { }
+      }
+
+      // If app is disabled, skip all behaviour
+      if (appDisabled) return;
+
+      uptime++; // Approx
+      await checkAct();
+
+      if (!isScreenOn && !screenDarkened && !isSleeping) {
+        const now = Date.now();
+        const rem = (darkenTargetTime - now) / 1000;
+
+        // 1. Focus Logic
+        if (focusOnCountdown && rem <= 10 && rem > 0 && !focusTriggered) {
+          if (window.__TAURI__) {
+            const isVisible = await window.__TAURI__.invoke('is_main_visible');
+            if (isVisible) {
+              focusTriggered = true;
+              await focusMainWindow();
+            }
+          }
+        }
+
+        // 2. Overlay
+        if (rem <= 0) {
+          await createOverlay();
+          notify('Screens Dark', 'Moved mouse to wake');
+          darkModeStartTime = Date.now();
+        }
+      }
+
+      // 3. Minimize Logic (After Dark Mode starts)
+      if (screenDarkened && !isSleeping && minimizeOnDarken && !minimizeTriggered) {
+        const darkDuration = (Date.now() - darkModeStartTime) / 1000;
+        if (darkDuration >= 10) {
+          minimizeTriggered = true;
+          if (window.__TAURI__) await window.__TAURI__.invoke('minimize_window');
+        }
+      }
+
+      // 4. Time Profile Logic
+      if (profileControlledAwake) {
+        const status = getProfileStatus();
+        if (status && status.isActive) {
+          if (isSleeping) {
+            exitSleepModeAndPreventSleep();
+          }
+        } else if (!isSleeping) {
+          enterSleepMode();
+        }
+      }
+
+      // 5. Break Logic
+      const brSeconds = (breakH * 3600) + (breakM * 60);
+      if (brSeconds > 0 && !isSleeping) {
+        if (Math.floor(uptime) - lastBreak >= brSeconds) {
+          notify(translations[window.currentLang] && translations[window.currentLang].notify_break_title ? translations[window.currentLang].notify_break_title : 'Break Time', translations[window.currentLang] && translations[window.currentLang].notify_break_body ? translations[window.currentLang].notify_break_body : 'Take a break!');
+          lastBreak = Math.floor(uptime);
+        }
+      }
+
+      updateUI();
+      updateCoffeePour();
+    }, 1000);
+
+    // ── Disable toggle logic ──
+    function setAppDisabled(disabled) {
+      appDisabled = disabled;
+      document.body.classList.toggle('app-disabled', disabled);
+      const dot = document.getElementById('pillDot');
+      const label = document.getElementById('pillLabel');
+      if (dot) dot.style.background = disabled ? '#ef4444' : '';
+      const isMediaDisable = disabled && disabledByMedia;
+      const disabledLabel = isMediaDisable
+        ? (translations[window.currentLang] && translations[window.currentLang].pill_disabled_media ? translations[window.currentLang].pill_disabled_media : 'Media')
+        : (translations[window.currentLang] && translations[window.currentLang].pill_disabled ? translations[window.currentLang].pill_disabled : 'Disabled');
+      const activeLabel = translations[window.currentLang] && translations[window.currentLang].pill_active ? translations[window.currentLang].pill_active : 'Active';
+      if (label) label.textContent = disabled ? disabledLabel : activeLabel;
+      const bannerSpan = document.querySelector('#disabledBanner span[data-i18n]') || document.querySelector('#disabledBanner span[data-i18n-dynamic]');
+      if (bannerSpan) {
+        if (disabled && isMediaDisable) {
+          bannerSpan.removeAttribute('data-i18n');
+          bannerSpan.setAttribute('data-i18n-dynamic', 'app_disabled_banner_media');
+          bannerSpan.textContent = translations[window.currentLang] && translations[window.currentLang].app_disabled_banner_media
+            ? translations[window.currentLang].app_disabled_banner_media
+            : 'Paused \u2014 media playing';
+        } else {
+          bannerSpan.removeAttribute('data-i18n-dynamic');
+          bannerSpan.setAttribute('data-i18n', 'app_disabled_banner');
+          bannerSpan.textContent = translations[window.currentLang] && translations[window.currentLang].app_disabled_banner
+            ? translations[window.currentLang].app_disabled_banner
+            : 'App is disabled';
+        }
+      }
+      if (disabled) {
+        // Stop sleep prevention - let OS sleep naturally
+        if (window.__TAURI__) window.__TAURI__.invoke('allow_sleep').catch(() => { });
+        // Freeze timer targets so they don't drift
+        darkenTargetTime = Date.now() + 99999 * 1000;
+        shutdownTargetTime = Date.now() + 99999 * 1000;
+      } else {
+        if (profileControlledAwake) {
+          applyProfileControlledPowerState({ focus: false });
+        } else {
+          if (window.__TAURI__) window.__TAURI__.invoke('prevent_sleep').catch(() => { });
+          resetDarkenTimer();
+        }
+        updateUI();
+        updateCoffeePour();
+      }
+    };
+
+    document.getElementById('disableTogglePill').onclick = function (e) {
+      e.stopPropagation();
+      disabledByMedia = false; // Reset media tracking if user manually intervenes
+      setAppDisabled(!appDisabled);
+    };
+
+    document.getElementById('activateToggle').onclick = async function () {
+      isScreenOn = !isScreenOn; this.classList.toggle('active', isScreenOn);
+      saveTogglesState();
+      if (isScreenOn) {
+        if (darkenTimerContainer) darkenTimerContainer.style.display = 'none';
+        if (mouseIcon) mouseIcon.classList.remove('show');
+        if (kbdIcon) kbdIcon.classList.remove('show');
+        if (window.__TAURI__) await window.__TAURI__.invoke('prevent_sleep');
+        minimizeTriggered = false;
+      }
+      else {
+        resetDarkenTimer();
+        screenDarkened = false;
+        focusTriggered = false;
+        darkModeStartTime = 0;
+        if (window.__TAURI__) { const r = await window.__TAURI__.invoke('get_last_activity'); lastAct = r[0]; initCheck = true; }
+      }
+      updateUI();
+    };
+
+    // Settings Button
+    document.getElementById('settingsBtn').onclick = async () => {
+      if (window.__TAURI__) await window.__TAURI__.invoke('open_settings', { section: null });
+    };
+    document.getElementById('sleepSettingsBtn').onclick = async () => {
+      if (window.__TAURI__) {
+        await window.__TAURI__.invoke('open_settings', { section: 'schedule' });
+      }
+
+      setTimeout(async () => {
+        let s = {};
+        try {
+          if (window.__TAURI__) {
+            const saved = await window.__TAURI__.invoke('load_settings');
+            s = JSON.parse(saved || '{}');
+          } else {
+            s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+          }
+        } catch (e) { s = {}; }
+
+        s.timeProfilesEnabled = false;
+        timeProfilesEnabled = false;
+        profileControlledAwake = false;
+        autoShutdown = false;
+        applySchedulePanelVisibility();
+        exitSleepModeAndPreventSleep();
+
+        const serialized = JSON.stringify(s);
+        localStorage.setItem('neverSleepSettings', serialized);
+        localStorage.setItem('neverSleepCommand', JSON.stringify({ type: 'recalculateProfiles', timestamp: Date.now() }));
+        if (window.__TAURI__) {
+          await window.__TAURI__.invoke('save_settings', { settings: serialized }).catch(() => { });
+          await window.__TAURI__.invoke('open_settings', { section: 'schedule' }).catch(() => { });
+        }
+      }, 1500);
+    };
+    document.getElementById('trayBtn').onclick = async () => {
+      if (window.__TAURI__) {
+        await window.__TAURI__.invoke('close_settings');
+        await window.__TAURI__.invoke('hide_window');
+      }
+    };
+
+    // ===== COFFEE STREAM CANVAS ENGINE =====
+    (function () {
+      var raf = null;
+      var t = 0;
+      var drops = [];
+      var splashDrops = [];
+      var ripples = [];
+      var streamBubbles = [];
+      var dropTimer = 0;
+      var splashTimer = 0;
+      var running = false;
+      var G = 0.20;
+
+      function spawnDrop(cx, y, sw) {
+        var off = (Math.random() - 0.5) * sw * 0.6;
+        drops.push({
+          x: cx + off, y: y,
+          vx: (Math.random() - 0.5) * 0.9,
+          vy: 1.2 + Math.random() * 3.2,
+          r: 3 + Math.random() * 5,
+          life: 1.0, decay: 0.007 + Math.random() * 0.005
+        });
+      }
+
+      function spawnSplash(cx, y) {
+        ripples.push({ x: cx, y: y, r: 3, maxR: 20 + Math.random() * 22, speed: 1.1 + Math.random() * 0.9, life: 1.0 });
+        var n = 3 + Math.floor(Math.random() * 4);
+        for (var i = 0; i < n; i++) {
+          var angle = (Math.random() - 0.5) * Math.PI;
+          var spd = 1.0 + Math.random() * 2.8;
+          splashDrops.push({
+            x: cx + (Math.random() - 0.5) * 8, y: y,
+            vx: Math.cos(angle) * spd * (Math.random() < 0.5 ? 1 : -1),
+            vy: -1.8 - Math.random() * 2.8,
+            r: 0.9 + Math.random() * 2.5,
+            life: 1.0, decay: 0.022 + Math.random() * 0.025
+          });
+        }
+      }
+
+      function spawnStreamBubble(cx, sw) {
+        var off = (Math.random() - 0.5) * sw * 0.8;
+        streamBubbles.push({
+          x: cx + off, 
+          y: 0,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: 14.0 + Math.random() * 10.0, // move much faster down
+          r: 0.8 + Math.random() * 1.5, // small size
+          life: 1.0, 
+          decay: 0.005 + Math.random() * 0.008
+        });
+      }
+
+      function drawStream(ctx, canvasW, streamH) {
+        if (streamH < 4) return;
+        var cx = canvasW / 2;
+
+        // --- Dynamic pressure pulsation ---
+        var pressure = 1 + 0.22 * Math.sin(t * 1.7) + 0.10 * Math.sin(t * 4.3);
+        var swAmp = 6.5, swFreq = 0.45;
+        var sway    = swAmp * Math.sin(t * swFreq);
+        var swayMid = swAmp * Math.sin(t * swFreq + 0.5) * 0.55;
+
+        // Base widths — much thicker
+        var wtop = 28 * pressure;
+        var wbot = 10 * pressure;
+        var wmid = (wtop * 0.55 + wbot * 0.45) + Math.sin(t * 2.8) * 3.2;
+
+        // Control points
+        var lx0 = cx - wtop / 2,  rx0 = cx + wtop / 2;
+        var lx1 = cx - wmid / 2 + swayMid, rx1 = cx + wmid / 2 + swayMid;
+        var lx2 = cx - wbot / 2 + sway,    rx2 = cx + wbot / 2 + sway;
+        var y0 = 0, y1 = streamH * 0.36, y2 = streamH * 0.70, y3 = streamH;
+
+        // --- Turbulence edge noise (high-freq wiggle along edges) ---
+        var noise1 = 1.8 * Math.sin(t * 9.1 + 0.0);
+        var noise2 = 1.5 * Math.sin(t * 11.3 + 1.2);
+        var noise3 = 2.2 * Math.sin(t * 7.7 + 2.5);
+
+        ctx.save();
+
+        // ── Layer 1: Outer glow / soft halo ──
+        ctx.save();
+        ctx.shadowColor = 'rgba(120, 60, 15, 0.25)';
+        ctx.shadowBlur  = 8;
+        var glowGrad = ctx.createLinearGradient(lx0 - 6, 0, rx0 + 6, 0);
+        glowGrad.addColorStop(0.0,  'rgba(80, 30, 6, 0.0)');
+        glowGrad.addColorStop(0.25, 'rgba(140, 70, 18, 0.15)');
+        glowGrad.addColorStop(0.5,  'rgba(180, 110, 40, 0.22)');
+        glowGrad.addColorStop(0.75, 'rgba(140, 70, 18, 0.15)');
+        glowGrad.addColorStop(1.0,  'rgba(80, 30, 6, 0.0)');
+        ctx.beginPath();
+        ctx.moveTo(lx0 - 5, y0);
+        ctx.bezierCurveTo(lx1 - 4 + noise1, y1, lx2 - 3 + noise2, y2, lx2 - 2 + noise3, y3);
+        ctx.lineTo(rx2 + 2 - noise3, y3);
+        ctx.bezierCurveTo(rx2 + 3 - noise2, y2, rx1 + 4 - noise1, y1, rx0 + 5, y0);
+        ctx.closePath();
+        ctx.fillStyle = glowGrad;
+        ctx.fill();
+        ctx.restore();
+
+        // ── Layer 2: Main body with rich gradient ──
+        var grad = ctx.createLinearGradient(lx0, 0, rx0, 0);
+        grad.addColorStop(0.00, 'rgba(30, 10, 3, 0.95)');
+        grad.addColorStop(0.12, 'rgba(90, 38, 10, 0.97)');
+        grad.addColorStop(0.30, 'rgba(155, 82, 28, 0.99)');
+        grad.addColorStop(0.50, 'rgba(195, 130, 50, 1.00)');
+        grad.addColorStop(0.70, 'rgba(155, 82, 28, 0.99)');
+        grad.addColorStop(0.88, 'rgba(90, 38, 10, 0.97)');
+        grad.addColorStop(1.00, 'rgba(25, 8, 2, 0.95)');
+
+        ctx.beginPath();
+        ctx.moveTo(lx0, y0);
+        ctx.bezierCurveTo(lx1 + noise1, y1, lx2 + noise2, y2, lx2 + noise3, y3);
+        ctx.lineTo(rx2 - noise3, y3);
+        ctx.bezierCurveTo(rx2 - noise2, y2, rx1 - noise1, y1, rx0, y0);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // ── Layer 3: Inner dark core (depth) ──
+        var coreW = wtop * 0.28;
+        var coreGrad = ctx.createLinearGradient(cx - coreW, 0, cx + coreW, 0);
+        coreGrad.addColorStop(0,   'rgba(255, 140, 20, 0.0)');
+        coreGrad.addColorStop(0.35,'rgba(255, 140, 20, 0.25)');
+        coreGrad.addColorStop(0.65,'rgba(255, 140, 20, 0.25)');
+        coreGrad.addColorStop(1,   'rgba(255, 140, 20, 0.0)');
+        ctx.beginPath();
+        ctx.moveTo(cx - coreW, y0);
+        ctx.bezierCurveTo(cx - coreW * 0.7 + swayMid * 0.3, y1,
+                          cx - coreW * 0.5 + sway * 0.4, y2,
+                          cx - coreW * 0.4 + sway, y3);
+        ctx.lineTo(cx + coreW * 0.4 + sway, y3);
+        ctx.bezierCurveTo(cx + coreW * 0.5 + sway * 0.4, y2,
+                          cx + coreW * 0.7 + swayMid * 0.3, y1,
+                          cx + coreW, y0);
+        ctx.closePath();
+        ctx.fillStyle = coreGrad;
+        ctx.fill();
+
+        // ── Layer 4: Sharp specular highlight ──
+        var specX = cx - wtop * 0.12;
+        var specW = wtop * 0.14;
+        var hGrad = ctx.createLinearGradient(specX - specW, 0, specX + specW, 0);
+        hGrad.addColorStop(0,   'rgba(255, 210, 60, 0)');
+        hGrad.addColorStop(0.4, 'rgba(255, 210, 60, 0.30)');
+        hGrad.addColorStop(0.6, 'rgba(255, 210, 60, 0.30)');
+        hGrad.addColorStop(1,   'rgba(255, 210, 60, 0)');
+        ctx.beginPath();
+        ctx.moveTo(specX - specW, y0);
+        ctx.bezierCurveTo(specX - specW + swayMid * 0.4, y1,
+                          specX - specW + sway * 0.5, y2,
+                          specX - specW * 0.8 + sway, y3);
+        ctx.lineTo(specX + specW * 0.8 + sway, y3);
+        ctx.bezierCurveTo(specX + specW + sway * 0.5, y2,
+                          specX + specW + swayMid * 0.4, y1,
+                          specX + specW, y0);
+        ctx.closePath();
+        ctx.fillStyle = hGrad;
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      function drawDrops(ctx, impactY) {
+        for (var i = drops.length - 1; i >= 0; i--) {
+          var d = drops[i];
+          d.vy += G; d.x += d.vx; d.y += d.vy;
+          d.life -= d.decay;
+          if (d.y >= impactY) {
+            if (Math.random() < 0.35) spawnSplash(d.x, impactY);
+            drops.splice(i, 1); continue;
+          }
+          if (d.life <= 0) { drops.splice(i, 1); continue; }
+          var angle = Math.atan2(d.vy, d.vx);
+          var stretch = Math.min(1.9, 1 + d.vy * 0.06);
+          ctx.save();
+          ctx.globalAlpha = d.life;
+          ctx.translate(d.x, d.y);
+          ctx.rotate(angle - Math.PI / 2);
+          var dg = ctx.createRadialGradient(-d.r * 0.25, -d.r * 0.25, 0, 0, 0, d.r);
+          dg.addColorStop(0, 'rgba(245,205,130,1)');
+          dg.addColorStop(0.55, 'rgba(175,92,30,1)');
+          dg.addColorStop(1, 'rgba(70,26,8,0.85)');
+          ctx.beginPath();
+          ctx.ellipse(0, 0, d.r * 0.65, d.r * stretch, 0, 0, Math.PI * 2);
+          ctx.fillStyle = dg;
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      function drawSplashAndRipples(ctx, impactY) {
+        // Ripples
+        for (var i = ripples.length - 1; i >= 0; i--) {
+          var r = ripples[i];
+          r.r += r.speed; r.life -= 0.018;
+          if (r.life <= 0 || r.r >= r.maxR) { ripples.splice(i, 1); continue; }
+          ctx.save();
+          ctx.globalAlpha = r.life * 0.55;
+          ctx.strokeStyle = 'rgba(200,130,50,1)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.ellipse(r.x, r.y, r.r, r.r * 0.32, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+        // Splash droplets
+        for (var j = splashDrops.length - 1; j >= 0; j--) {
+          var sd = splashDrops[j];
+          sd.vy += G * 0.6; sd.x += sd.vx; sd.y += sd.vy;
+          sd.life -= sd.decay;
+          if (sd.life <= 0) { splashDrops.splice(j, 1); continue; }
+          ctx.save();
+          ctx.globalAlpha = sd.life * 0.9;
+          ctx.fillStyle = 'rgba(210,138,52,1)';
+          ctx.beginPath();
+          ctx.ellipse(sd.x, sd.y, sd.r * 0.6, sd.r, Math.atan2(sd.vy, sd.vx + 0.01), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      function drawStreamBubbles(ctx, streamH) {
+        ctx.save();
+        for (var i = streamBubbles.length - 1; i >= 0; i--) {
+          var b = streamBubbles[i];
+          b.x += b.vx; 
+          b.y += b.vy;
+          b.life -= b.decay;
+          if (b.life <= 0 || b.y >= streamH) { 
+            streamBubbles.splice(i, 1); 
+            continue; 
+          }
+          // Stretch bubbles vertically due to their speed
+          ctx.globalAlpha = b.life * 0.8;
+          ctx.fillStyle = 'rgba(255, 230, 150, 0.9)'; 
+          ctx.beginPath();
+          ctx.ellipse(b.x, b.y, b.r * 0.6, b.r * 2.5, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function frame() {
+        if (!running) return;
+        var canvas = document.getElementById('coffeeStreamCanvas');
+        if (!canvas) { running = false; return; }
+        var outer = document.getElementById('coffeeStreamOuter');
+        if (!outer) { running = false; return; }
+
+        // Resize canvas to match outer container
+        var W = outer.offsetWidth, H = outer.offsetHeight;
+        if (canvas.width !== W) canvas.width = W;
+        if (canvas.height !== H) canvas.height = H;
+
+        var ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, W, H);
+        t += 0.016;
+
+        var streamH = window._coffeeStreamH || 0;
+        var impactY = streamH;
+        var cx = W / 2;
+        var sway = 4.5 * Math.sin(t * 0.5);
+
+        // Spawn drips from stream end
+        dropTimer++;
+        if (streamH > 10 && dropTimer > 5 + Math.random() * 8) {
+          dropTimer = 0;
+          spawnDrop(cx + sway, streamH, 6);
+          if (Math.random() < 0.65) spawnDrop(cx + sway + (Math.random() - 0.5) * 10, streamH - 6, 5);
+          if (Math.random() < 0.30) spawnDrop(cx + sway + (Math.random() - 0.5) * 14, streamH - 14, 4);
+        }
+
+        // Periodic ripple at impact even without a drop
+        splashTimer++;
+        if (streamH > 10 && splashTimer > 30 + Math.random() * 25) {
+          splashTimer = 0;
+          spawnSplash(cx + sway, impactY);
+        }
+
+        // Spawn fast-moving stream bubbles
+        if (streamH > 20 && Math.random() < 0.6) {
+          spawnStreamBubble(cx + sway * 0.5, 14);
+        }
+
+        drawStream(ctx, W, streamH);
+        drawStreamBubbles(ctx, streamH);
+        drawDrops(ctx, impactY);
+        drawSplashAndRipples(ctx, impactY);
+
+        raf = requestAnimationFrame(frame);
+      }
+
+      window._startCoffeeCanvas = function () {
+        if (running) return;
+        running = true;
+        t = 0; drops = []; splashDrops = []; ripples = []; streamBubbles = [];
+        dropTimer = 0; splashTimer = 0;
+        raf = requestAnimationFrame(frame);
+      };
+
+      window._stopCoffeeCanvas = function () {
+        running = false;
+        if (raf) { cancelAnimationFrame(raf); raf = null; }
+        drops = []; splashDrops = []; ripples = []; streamBubbles = [];
+        var canvas = document.getElementById('coffeeStreamCanvas');
+        if (canvas) { var ctx = canvas.getContext('2d'); if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); }
+      };
+    })();
+
+    // ===== COFFEE POUR ANIMATION CONTROLLER =====
+    function updateCoffeePour() {
+      const overlay = document.getElementById("coffeePourOverlay");
+      const fill = document.getElementById("coffeeFill");
+      const crema = document.getElementById("coffeeCrema");
+      const impact = document.getElementById("coffeeImpact");
+      const steamWrap = document.getElementById("coffeeSteamWrap");
+      if (!overlay || !fill) return;
+
+      const isCoffeeMode = document.body.classList.contains("coffee-mode");
+
+      if (!isCoffeeMode || !autoShutdown || isSleeping) {
+        overlay.classList.remove("active");
+        fill.style.height = "0%";
+        if (crema) crema.style.bottom = "-30px";
+        if (window._stopCoffeeCanvas) window._stopCoffeeCanvas();
+        return;
+      }
+
+      overlay.classList.add("active");
+
+      const activeTimes = getActiveProfileTimes();
+      if (activeTimes === null) {
+        fill.style.height = "0%";
+        if (crema) crema.style.bottom = "-30px";
+        if (window._stopCoffeeCanvas) window._stopCoffeeCanvas();
+        return;
+      }
+
+      const totalSecs = Math.max(1, Math.floor((activeTimes.end.getTime() - activeTimes.start.getTime()) / 1000));
+      const remSecs = Math.max(0, (activeTimes.end.getTime() - Date.now()) / 1000);
+      const elapsed = Math.max(0, totalSecs - remSecs);
+      const progress = totalSecs > 0 ? Math.min(1, elapsed / totalSecs) : 0;
+
+      const fillPct = 5 + 75 * progress;
+      fill.style.height = fillPct.toFixed(1) + "%";
+
+      const panelRight = document.getElementById("panelRight");
+      const panelH = panelRight ? panelRight.offsetHeight : 230;
+      const fillPx = panelH * (fillPct / 100);
+      const cremaH = 35;
+
+      if (crema) crema.style.bottom = fillPct.toFixed(1) + "%";
+
+      const streamH = Math.max(0, panelH - fillPx - cremaH / 2 + 5);
+      window._coffeeStreamH = streamH;
+
+      if (impact) impact.style.bottom = "calc(" + fillPct.toFixed(1) + "% - 4px)";
+      if (steamWrap) steamWrap.style.bottom = "calc(" + fillPct.toFixed(1) + "% + 10px)";
+
+      if (window._startCoffeeCanvas) window._startCoffeeCanvas();
+    }
+
+    // Setup
+    loadSet(); resetDarkenTimer();
+    applyProfileControlledPowerState({ focus: false });
+    updateCoffeePour(); // sync pour state on load
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'neverSleepSettings' || e.key === 'neverSleepCommand') {
+        const hadRegisteredProfiles = profileControlledAwake;
+        loadSet();
+        if (!appDisabled && (profileControlledAwake || hadRegisteredProfiles)) {
+          applyProfileControlledPowerState({ focus: false });
+        }
+        updateUI();
+        updateCoffeePour();
+      }
+    });
+
+    // Cursor-following spotlight reflection
+    document.addEventListener('mousemove', (e) => {
+      if (document.body.classList.contains('liquid-glass-mode')) {
+        const els = document.querySelectorAll('.app, .panel, .icon-btn, .toggle, .disable-toggle-pill, .sleep-btn');
+        els.forEach(el => {
+            const rect = el.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            el.style.setProperty('--mouse-x', `${x}px`);
+            el.style.setProperty('--mouse-y', `${y}px`);
+        });
+      }
+    });
+
+  </script>
+</body>
+
+</html>

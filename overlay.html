@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Screen Overlay</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      cursor: none;
+    }
+
+    body {
+      background-color: black;
+      background-image: url('black.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+  </style>
+</head>
+
+<body>
+  <script>
+    // Close overlay on any mouse movement or keyboard input
+    let hasInput = false;
+
+    function closeOverlay() {
+      if (!hasInput && window.__TAURI__) {
+        hasInput = true;
+        window.__TAURI__.invoke('close_screen_overlay');
+      }
+    }
+
+    document.addEventListener('mousemove', closeOverlay);
+    document.addEventListener('mousedown', closeOverlay);
+    document.addEventListener('keydown', closeOverlay);
+    document.addEventListener('keypress', closeOverlay);
+    document.addEventListener('touchstart', closeOverlay);
+
+    // Force focus
+    window.onload = () => {
+      window.focus();
+      // Also try to close if clicked immediately
+      document.body.click();
+    };
+  </script>
+</body>
+
+</html>
