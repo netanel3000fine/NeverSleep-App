@@ -1,0 +1,11 @@
+{
+  "version": "14.0.0",
+  "notes": "Version 14.0.0 with Custom App Icons, Auto-apply on Startup, and Check for Updates button.",
+  "pub_date": "2026-07-19T22:00:00Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "PASTE_THE_SIGNATURE_STRING_FROM_YOUR_SIG_FILE_HERE",
+      "url": "https://github.com/netanel3000fine/NeverSleep-App/releases/download/v14.0.0/Never.Sleep_14.0.0_x64-setup.nsis.zip"
+    }
+  }
+}
