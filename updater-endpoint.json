@@ -1,6 +1,6 @@
 {
-  "version": "14.0.0",
-  "notes": "Version 14.0.0 with Custom App Icons, Auto-apply on Startup, and Check for Updates button.",
+  "version": "14.2.0",
+  "notes": "Version 14.2.0 with Custom App Icons, Auto-apply on Startup, and Check for Updates button.",
   "pub_date": "2026-07-19T22:00:00Z",
   "platforms": {
     "windows-x86_64": {
