@@ -4,7 +4,7 @@
   "pub_date": "2026-07-19T22:00:00Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "PASTE_THE_SIGNATURE_STRING_FROM_YOUR_SIG_FILE_HERE",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSMGRSK1ltUXZkVXhPbDQvcjdzRFFIVkd3K2VJSnMrUkRMRGtKOFFXQlFEeFZYWXdiRk1EcDh3Q1gvdUkxbWxrRlg3UExvRHZEaklvSjgyMjBrYTNwWFNBc211SGVqTmdVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0NTM1NjkyCWZpbGU6TmV2ZXIgU2xlZXBfMTQuMC4wX3g2NC1zZXR1cC5uc2lzLnppcApTRmMxZVkwd1ZKY1BqYStYMlppR25Xd0FneFVCUlAvS1RQU0Vtc1V2azZoMVpKaFZObGRaeHlYaTdzdlVxOS9CejRrd0QzajI3OGpxang5UzJPMGpDUT09Cg==",
       "url": "https://github.com/netanel3000fine/NeverSleep-App/releases/download/v14.0.0/Never.Sleep_14.0.0_x64-setup.nsis.zip"
     }
   }
