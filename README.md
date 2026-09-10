@@ -151,7 +151,7 @@ Never Sleep can now detect when you're watching a video and **automatically paus
 
 ---
 
-## 🔔 Notifications & Break Reminders
+## 🔔 Notifications & Break Reminders (NEW)
 
 - **Break Reminder**: Set a recurring interval (e.g., every 1 hour) to receive a system notification prompting you to take a break
 - **Enable/disable** system notifications globally
@@ -162,8 +162,8 @@ Never Sleep can now detect when you're watching a video and **automatically paus
 
 ## 🪟 Window Vibrancy & DWM Border Colors
 
-- **Liquid Glass mode** applies Windows **Acrylic** blur to both the main and settings windows via `window-vibrancy`
-- The **window border color** updates to match your chosen theme color in real time
+- **Liquid Glass mode** applies Windows **Acrylic** blur effect to both the main and settings windows via `window-vibrancy`
+- The **window border color** (DWM accent) updates to match your chosen theme color in real time
 - Border color applies to both the main and settings windows simultaneously
 
 ---
@@ -172,12 +172,13 @@ Never Sleep can now detect when you're watching a video and **automatically paus
 
 | Fix | Details |
 |---|---|
-| 🐛 Language switching | Changing language now immediately applies without a restart |
-| ⚡ Mouse tracking | Mouse move events are debounced to reduce CPU usage |
-| 🔒 Single instance enforcement | Windows Mutex ensures only one instance runs |
-| 🖥️ Multi-monitor overlay | Overlays cover all monitors including non-primary displays |
-| 💾 Settings persistence | Settings are saved to `%AppData%\never-sleep\settings.json` |
-| 🔄 Workstation lock detection | Notifications skip when the Windows session is locked |
+| 🐛 Language switching | Fixed: changing language in settings now immediately applies to the UI without needing a restart |
+| ⚡ High CPU from mouse tracking | Mouse move events now debounced to **500ms** — eliminated unnecessary lock contention on cursor movement |
+| 🔒 Single instance enforcement | Windows Mutex ensures only one instance of the app runs at a time |
+| 🧠 Activity tracking | Global keyboard & mouse listener now correctly distinguishes input type (`mouse` vs `keyboard`) |
+| 🖥️ Multi-monitor overlay | Screen darken overlays now correctly cover all monitors including non-primary ones |
+| 💾 Settings persistence | All settings saved to and restored from `%AppData%\never-sleep\settings.json` |
+| 🔄 Workstation lock detection | Notifications and certain operations now skip when the Windows session is locked |
 
 ---
 
@@ -185,10 +186,10 @@ Never Sleep can now detect when you're watching a video and **automatically paus
 
 - Built with **Tauri** + **Rust** backend + **HTML/CSS/JS** frontend
 - Uses **WinAPI** (`SetThreadExecutionState`) for sleep prevention
-- Uses Windows Media Transport Controls for media detection
-- Global input listener via `rdev`
-- Autostart via Windows Registry
-- Window effects via `window-vibrancy`
+- Uses **Windows Media Transport Controls** (UWP API via `windows` crate) for media detection
+- Global input listener via `rdev` crate
+- Autostart via Windows Registry (`HKCU\...\Run`)
+- Window effects via `window-vibrancy` crate (Acrylic)
 
 ---
 
