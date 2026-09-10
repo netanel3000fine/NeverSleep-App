@@ -1,0 +1,13 @@
+{
+  "name": "never-sleep-tauri",
+  "version": "17.0.0",
+  "description": "מונע שינה למחשב",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.5.9"
+  }
+}

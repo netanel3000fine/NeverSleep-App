@@ -5,7 +5,7 @@
   "platforms": {
     "windows-x86_64": {
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSMGRSK1ltUXZkVXhPbDQvcjdzRFFIVkd3K2VJSnMrUkRMRGtKOFFXQlFEeFZYWXdiRk1EcDh3Q1gvdUkxbWxrRlg3UExvRHZEaklvSjgyMjBrYTNwWFNBc211SGVqTmdVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0NTM1NjkyCWZpbGU6TmV2ZXIgU2xlZXBfMTQuMC4wX3g2NC1zZXR1cC5uc2lzLnppcApTRmMxZVkwd1ZKY1BqYStYMlppR25Xd0FneFVCUlAvS1RQU0Vtc1V2azZoMVpKaFZObGRaeHlYaTdzdlVxOS9CejRrd0QzajI3OGpxang5UzJPMGpDUT09Cg==",
-      "url": "https://github.com/netanel3000fine/NeverSleep-App/releases/download/v14.0.0/Never.Sleep_14.2.0_x64-setup.nsis.zip"
+      "url": "https://github.com/netanel3000fine/NeverSleep-App/releases/download/v14.0.0/Never.Sleep_14.0.0_x64-setup.nsis.zip"
     }
   }
 }
