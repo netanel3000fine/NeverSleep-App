@@ -322,12 +322,307 @@
         }
 
         .settings-item:first-of-type { padding-top: 0; }
-
-        .label-group {
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
+
+        /* ===== CLICKABLE NAV ITEM ===== */
+        .clickable-nav-item {
+            cursor: pointer;
+            transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
         }
+
+        .clickable-nav-item:hover {
+            background: var(--surface-hover);
+            border-color: rgba(var(--theme-color-rgb, 249, 115, 22), 0.25);
+        }
+
+        .nav-arrow-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        .nav-arrow-badge svg {
+            width: 16px;
+            height: 16px;
+            color: var(--text-secondary);
+            transition: transform 0.18s ease, color 0.2s ease;
+        }
+
+        .clickable-nav-item:hover .nav-arrow-badge svg {
+            color: var(--theme-color);
+            transform: translateX(2px);
+        }
+
+        body[dir="rtl"] .clickable-nav-item:hover .nav-arrow-badge svg {
+            transform: translateX(-2px) rotate(180deg);
+        }
+
+        body[dir="rtl"] .nav-arrow-badge svg {
+            transform: rotate(180deg);
+        }
+
+        .active-method-tag {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 66px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.12);
+            border: 1px solid rgba(var(--theme-color-rgb, 249, 115, 22), 0.2);
+            color: var(--theme-color);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        body.white-mode .active-method-tag {
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.12);
+            border-color: rgba(var(--theme-color-rgb, 249, 115, 22), 0.25);
+        }
+
+        /* Sub-page Container */
+        .subpage-view {
+            display: none;
+            opacity: 0;
+            padding-bottom: 24px;
+        }
+
+        .subpage-open .header,
+        .subpage-open .tutorial-card,
+        .subpage-open #tourReopenBtn,
+        .subpage-open .settings-content,
+        .subpage-open .credit-link {
+            display: none !important;
+        }
+
+        .subpage-open .subpage-view {
+            display: block;
+            opacity: 1;
+            animation: subpageFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes subpageFadeIn {
+            0% { opacity: 0; transform: translateX(20px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes subpageFadeInRtl {
+            0% { opacity: 0; transform: translateX(-20px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+
+        body[dir="rtl"] .subpage-open .subpage-view {
+            animation-name: subpageFadeInRtl;
+        }
+
+        /* Subpage Header */
+        .subpage-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+            padding: 4px 0 14px;
+            border-bottom: 1px solid var(--surface-border);
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: #111827;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+
+        body.white-mode .subpage-header {
+            background: #f0f2f7;
+        }
+
+        .subpage-back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface);
+            border: 1px solid var(--surface-border);
+            border-radius: 8px;
+            padding: 7px 13px;
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .subpage-back-btn:hover {
+            background: var(--surface-hover);
+            border-color: var(--theme-color);
+            color: var(--theme-color);
+            transform: translateX(-2px);
+            box-shadow: 0 0 10px rgba(var(--theme-color-rgb, 249, 115, 22), 0.2);
+        }
+
+        body[dir="rtl"] .subpage-back-btn:hover {
+            transform: translateX(2px);
+        }
+
+        body[dir="rtl"] .subpage-back-btn svg {
+            transform: rotate(180deg);
+        }
+
+        .subpage-title-wrap {
+            flex: 1;
+        }
+
+        .subpage-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .subpage-desc {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 3px;
+        }
+
+        .darken-methods-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .darken-method-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 13px 15px;
+            border-radius: 10px;
+            background: var(--surface);
+            border: 1px solid var(--surface-border);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        .darken-method-card:hover {
+            background: var(--surface-hover);
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        body.white-mode .darken-method-card:hover {
+            border-color: rgba(0, 0, 0, 0.16);
+        }
+
+        .darken-method-card.active {
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.08);
+            border-color: var(--theme-color);
+            box-shadow: 0 0 16px rgba(var(--theme-color-rgb, 249, 115, 22), 0.15);
+        }
+
+        body.white-mode .darken-method-card.active {
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.06);
+            border-color: var(--theme-color);
+        }
+
+        .darken-method-radio {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid var(--text-muted);
+            flex-shrink: 0;
+            margin-top: 2px;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .darken-method-card.active .darken-method-radio {
+            border-color: var(--theme-color);
+        }
+
+        .darken-method-card.active .darken-method-radio::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--theme-color);
+            box-shadow: 0 0 6px var(--theme-color);
+        }
+
+        .darken-method-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .darken-method-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .darken-method-title-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .darken-method-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .darken-method-badge {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--theme-color);
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.08);
+            border: 1px solid rgba(var(--theme-color-rgb, 249, 115, 22), 0.18);
+            border-radius: 999px;
+            padding: 3px 7px;
+        }
+
+        .darken-method-hint {
+            color: var(--text-secondary);
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .darken-test-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border-radius: 8px;
+            border: 1px solid var(--surface-border);
+            background: rgba(255,255,255,0.04);
+            color: var(--text-primary);
+            padding: 5px 9px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .darken-test-btn:hover {
+            border-color: rgba(var(--theme-color-rgb, 249, 115, 22), 0.35);
+            color: var(--theme-color);
+        }
+
+        .label-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
 
         .item-label {
             font-size: 14px;
@@ -1079,9 +1374,40 @@
                     </div>
                     <div class="toggle" id="minimizeToggle"><div class="toggle-knob"></div></div>
                 </div>
-            </div>
-
-            <!-- Category: Auto Quit -->
+
+                <div class="settings-item clickable-nav-item" id="openDarkenMethodSubpage">
+                    <div class="label-group">
+                        <span class="item-label" data-i18n="darken_method_title">Darken Method</span>
+                        <span class="item-sub" id="currentDarkenMethodName">Overlay Window</span>
+                    </div>
+                    <div class="nav-arrow-badge">
+                        <span class="active-method-tag" id="currentDarkenMethodBadge">Default</span>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+                    </div>
+                </div>
+
+                <div class="settings-item clickable-nav-item" id="openNotificationsSubpage">
+                    <div class="label-group">
+                        <span class="item-label" data-i18n="category_notifications">Notifications</span>
+                        <span class="item-sub">Alerts, sounds, and reminders</span>
+                    </div>
+                    <div class="nav-arrow-badge">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+                    </div>
+                </div>
+
+                <div class="settings-item clickable-nav-item" id="openDesignSubpage">
+                    <div class="label-group">
+                        <span class="item-label" data-i18n="category_design">Design</span>
+                        <span class="item-sub">Language, theme, and icon</span>
+                    </div>
+                    <div class="nav-arrow-badge">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category: Auto Quit -->
             <div class="category-block">
                 <div class="category-title">
                     <span class="category-icon">
@@ -1119,127 +1445,194 @@
                 </div>
             </div>
 
-            <!-- Category: Notifications -->
-            <div class="category-block">
-                <div class="category-title">
-                    <span class="category-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                    </span>
-                    <span data-i18n="category_notifications">Notifications</span>
-                </div>
-                <div class="settings-item">
-                    <div class="label-group"><span class="item-label" data-i18n="enable_notifications">Enable notifications</span></div>
-                    <div class="toggle" id="notificationsToggle"><div class="toggle-knob"></div></div>
-                </div>
-                <div class="settings-item">
-                    <div class="label-group"><span class="item-label" data-i18n="system_sounds">Play system sounds</span></div>
-                    <div class="toggle" id="soundToggle"><div class="toggle-knob"></div></div>
-                </div>
-                <div class="settings-item">
-                    <div class="label-group"><span class="item-label" data-i18n="break_reminder">Break reminder</span></div>
-                    <div class="input-row">
-                        <div class="input-wrapper">
-                            <input id="breakHours" type="number" class="input-field" min="0">
-                            <span class="input-label" data-i18n="hours">hrs</span>
-                        </div>
-                        <span class="input-sep">:</span>
-                        <div class="input-wrapper">
-                            <input id="breakMinutes" type="number" class="input-field" min="1" max="59">
-                            <span class="input-label" data-i18n="minutes">min</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Category: Design -->
-            <div class="category-block">
-                <div class="category-title">
-                    <span class="category-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M20.39 7.57a9 9 0 1 0 0 8.86"/></svg>
-                    </span>
-                    <span data-i18n="category_design">Design</span>
-                </div>
-                <div class="settings-item">
-                    <div class="label-group">
-                        <span class="item-label" data-i18n="language">Language</span>
-                    </div>
-                    <select id="languageSelect" class="select-field">
-                        <option value="en" data-i18n="lang_en">English</option>
-                        <option value="he" data-i18n="lang_he">עברית</option>
-                        <option value="ru" data-i18n="lang_ru">Русский</option>
-                    </select>
-                </div>
-
-                <div class="settings-item">
-                    <div class="label-group">
-                        <span class="item-label" data-i18n="view_mode">View Mode</span>
-                        <span class="item-sub" data-i18n="view_mode_sub">Classic / Liquid Glass / Coffee</span>
-                    </div>
-                    <select id="viewModeSelect" class="select-field">
-                        <option value="classic" data-i18n="mode_classic">Classic</option>
-                        <option value="liquid-glass" data-i18n="mode_liquid">Liquid Glass</option>
-                        <option value="coffee" data-i18n="mode_coffee">Coffee ☕</option>
-                    </select>
-                </div>
-                <div class="settings-item">
-                    <div class="label-group">
-                        <span class="item-label" data-i18n="white_mode">White Mode</span>
-                        <span class="item-sub" data-i18n="white_mode_sub">Turns black backgrounds to white</span>
-                    </div>
-                    <div class="toggle" id="whiteModeToggle"><div class="toggle-knob"></div></div>
-                </div>
-                <div class="color-section-label" data-i18n="theme_color">Theme Color</div>
-                <div class="color-picker-container">
-                    <div class="color-option bg-orange selected" data-color="#f97316"></div>
-                    <div class="color-option bg-true-yellow" data-color="#FACC15" title="True Yellow"></div>
-                    <div class="color-option bg-yellow" data-color="#eab308"></div>
-                    <div class="color-option bg-red" data-color="#ef4444"></div>
-                    <div class="color-option bg-pink" data-color="#ec4899"></div>
-                    <div class="color-option bg-violet" data-color="#8b5cf6"></div>
-                    <div class="color-option bg-blue" data-color="#3b82f6"></div>
-                    <div class="color-option bg-teal" data-color="#14b8a6"></div>
-                    <div class="color-option bg-lime" data-color="#84cc16"></div>
-                    <div class="color-option bg-brown" data-color="#C47440" title="Fancy Brown"></div>
-                </div>
-
-                <div class="icon-section-label" data-i18n="app_icon">App Icon</div>
-                <div class="app-icon-grid" id="appIconGrid">
-                    <div class="app-icon-option" data-icon="IMG_6276.png" title="Coffee Cup Classic">
-                        <img src="IMG_6276.png" alt="Coffee Cup Classic">
-                    </div>
-                    <div class="app-icon-option" data-icon="Stylish 3D Coffee Cup Icon with Steam Effect - Woopicx.png" title="3D Coffee Steam">
-                        <img src="Stylish 3D Coffee Cup Icon with Steam Effect - Woopicx.png" alt="3D Coffee Steam">
-                    </div>
-                    <div class="app-icon-option" data-icon="Stylish 3D Coffee Cup Icon with Steam and Isometric Design.png" title="Isometric Coffee">
-                        <img src="Stylish 3D Coffee Cup Icon with Steam and Isometric Design.png" alt="Isometric Coffee">
-                    </div>
-                    <div class="app-icon-option" data-icon="Stylized Coffee Machine Icon with White Cup - Woopicx.png" title="Coffee Machine">
-                        <img src="Stylized Coffee Machine Icon with White Cup - Woopicx.png" alt="Coffee Machine">
-                    </div>
-                    <div class="app-icon-option" data-icon="A visually striking illustration.png" title="Energy Can">
-                        <img src="A visually striking illustration.png" alt="Energy Can">
-                    </div>
-                    <div class="app-icon-option" data-icon="3D Battery Icon with Lightning Bolt in Isometric View.png" title="Battery">
-                        <img src="3D Battery Icon with Lightning Bolt in Isometric View.png" alt="Battery">
-                    </div>
-                </div>
-                <div class="app-icon-actions">
-                    <button type="button" id="hardApplyIconBtn" class="app-icon-apply-btn" data-i18n-title="apply_to_windows" title="Apply to Windows shortcuts">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M21 12a9 9 0 0 1-9 9 8.7 8.7 0 0 1-6.3-2.7"/>
-                            <path d="M3 12a9 9 0 0 1 15.3-6.3"/>
-                            <path d="M3 5v7h7"/>
-                            <path d="M21 19v-7h-7"/>
-                        </svg>
-                        <span data-i18n="apply_to_windows">Apply to Windows</span>
-                    </button>
-                    <span id="appIconStatus" class="app-icon-status"></span>
-                </div>
-            </div>
-
-        </div><!-- /settings-content -->
-
-        <!-- Footer -->
+        </div><!-- /settings-content -->
+
+        <div class="subpage-view" id="darkenSubPage">
+            <div class="subpage-header">
+                <button type="button" class="subpage-back-btn" data-close-subpage="darkenSubPage">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                    <span data-i18n="darken_back">Back</span>
+                </button>
+                <div class="subpage-title-wrap">
+                    <h2 class="subpage-title" data-i18n="darken_method_title">Darken Method</h2>
+                    <p class="subpage-desc" data-i18n="darken_method_sub">Choose how monitors are darkened or put to sleep</p>
+                </div>
+            </div>
+
+            <div class="darken-methods-list" id="darkenMethodCardsList">
+                <div class="darken-method-card active" data-method="overlay" id="dmOverlay">
+                    <div class="darken-method-radio"></div>
+                    <div class="darken-method-info">
+                        <div class="darken-method-header-row">
+                            <div class="darken-method-title-wrap">
+                                <span class="darken-method-name" data-i18n="darken_method_overlay">Overlay Window</span>
+                                <span class="darken-method-badge">Default</span>
+                            </div>
+                            <button type="button" class="darken-test-btn" data-method="overlay" title="Test this method for 4 seconds">
+                                <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                                    <polygon points="5 3 19 12 5 21 5 3"/>
+                                </svg>
+                                <span class="test-btn-text" data-i18n="darken_test">Test</span>
+                            </button>
+                        </div>
+                        <span class="darken-method-hint" data-i18n="darken_method_overlay_hint">Default. Transparent/black HTML window overlay.</span>
+                    </div>
+                </div>
+
+                <div class="darken-method-card" data-method="displaysleep" id="dmDisplaySleep">
+                    <div class="darken-method-radio"></div>
+                    <div class="darken-method-info">
+                        <div class="darken-method-header-row">
+                            <div class="darken-method-title-wrap">
+                                <span class="darken-method-name" data-i18n="darken_method_displaysleep">Display Sleep (Standby)</span>
+                                <span class="darken-method-badge">Recommended</span>
+                            </div>
+                            <button type="button" class="darken-test-btn" data-method="displaysleep" title="Test this method for 4 seconds">
+                                <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                                    <polygon points="5 3 19 12 5 21 5 3"/>
+                                </svg>
+                                <span class="test-btn-text" data-i18n="darken_test">Test</span>
+                            </button>
+                        </div>
+                        <span class="darken-method-hint" data-i18n="darken_method_displaysleep_hint">Uses Windows monitor standby to save power.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="subpage-view" id="notificationsSubPage">
+            <div class="subpage-header">
+                <button type="button" class="subpage-back-btn" data-close-subpage="notificationsSubPage">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                    <span data-i18n="darken_back">Back</span>
+                </button>
+                <div class="subpage-title-wrap">
+                    <h2 class="subpage-title" data-i18n="category_notifications">Notifications</h2>
+                    <p class="subpage-desc">Alerts, sounds, and reminder timing</p>
+                </div>
+            </div>
+
+            <div class="settings-item">
+                <div class="label-group"><span class="item-label" data-i18n="enable_notifications">Enable notifications</span></div>
+                <div class="toggle" id="notificationsToggle"><div class="toggle-knob"></div></div>
+            </div>
+            <div class="settings-item">
+                <div class="label-group"><span class="item-label" data-i18n="system_sounds">Play system sounds</span></div>
+                <div class="toggle" id="soundToggle"><div class="toggle-knob"></div></div>
+            </div>
+            <div class="settings-item">
+                <div class="label-group"><span class="item-label" data-i18n="break_reminder">Break reminder</span></div>
+                <div class="input-row">
+                    <div class="input-wrapper">
+                        <input id="breakHours" type="number" class="input-field" min="0">
+                        <span class="input-label" data-i18n="hours">hrs</span>
+                    </div>
+                    <span class="input-sep">:</span>
+                    <div class="input-wrapper">
+                        <input id="breakMinutes" type="number" class="input-field" min="1" max="59">
+                        <span class="input-label" data-i18n="minutes">min</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="subpage-view" id="designSubPage">
+            <div class="subpage-header">
+                <button type="button" class="subpage-back-btn" data-close-subpage="designSubPage">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                    <span data-i18n="darken_back">Back</span>
+                </button>
+                <div class="subpage-title-wrap">
+                    <h2 class="subpage-title" data-i18n="category_design">Design</h2>
+                    <p class="subpage-desc">Language, theme, and app styling</p>
+                </div>
+            </div>
+
+            <div class="settings-item">
+                <div class="label-group">
+                    <span class="item-label" data-i18n="language">Language</span>
+                </div>
+                <select id="languageSelect" class="select-field">
+                    <option value="en" data-i18n="lang_en">English</option>
+                    <option value="he" data-i18n="lang_he">עברית</option>
+                    <option value="ru" data-i18n="lang_ru">Русский</option>
+                </select>
+            </div>
+
+            <div class="settings-item">
+                <div class="label-group">
+                    <span class="item-label" data-i18n="view_mode">View Mode</span>
+                    <span class="item-sub" data-i18n="view_mode_sub">Classic / Liquid Glass / Coffee</span>
+                </div>
+                <select id="viewModeSelect" class="select-field">
+                    <option value="classic" data-i18n="mode_classic">Classic</option>
+                    <option value="liquid-glass" data-i18n="mode_liquid">Liquid Glass</option>
+                    <option value="coffee" data-i18n="mode_coffee">Coffee ☕</option>
+                </select>
+            </div>
+            <div class="settings-item">
+                <div class="label-group">
+                    <span class="item-label" data-i18n="white_mode">White Mode</span>
+                    <span class="item-sub" data-i18n="white_mode_sub">Turns black backgrounds to white</span>
+                </div>
+                <div class="toggle" id="whiteModeToggle"><div class="toggle-knob"></div></div>
+            </div>
+            <div class="color-section-label" data-i18n="theme_color">Theme Color</div>
+            <div class="color-picker-container">
+                <div class="color-option bg-orange selected" data-color="#f97316"></div>
+                <div class="color-option bg-true-yellow" data-color="#FACC15" title="True Yellow"></div>
+                <div class="color-option bg-yellow" data-color="#eab308"></div>
+                <div class="color-option bg-red" data-color="#ef4444"></div>
+                <div class="color-option bg-pink" data-color="#ec4899"></div>
+                <div class="color-option bg-violet" data-color="#8b5cf6"></div>
+                <div class="color-option bg-blue" data-color="#3b82f6"></div>
+                <div class="color-option bg-teal" data-color="#14b8a6"></div>
+                <div class="color-option bg-lime" data-color="#84cc16"></div>
+                <div class="color-option bg-brown" data-color="#C47440" title="Fancy Brown"></div>
+            </div>
+
+            <div class="icon-section-label" data-i18n="app_icon">App Icon</div>
+            <div class="app-icon-grid" id="appIconGrid">
+                <div class="app-icon-option" data-icon="IMG_6276.png" title="Coffee Cup Classic">
+                    <img src="IMG_6276.png" alt="Coffee Cup Classic">
+                </div>
+                <div class="app-icon-option" data-icon="Stylish 3D Coffee Cup Icon with Steam Effect - Woopicx.png" title="3D Coffee Steam">
+                    <img src="Stylish 3D Coffee Cup Icon with Steam Effect - Woopicx.png" alt="3D Coffee Steam">
+                </div>
+                <div class="app-icon-option" data-icon="Stylish 3D Coffee Cup Icon with Steam and Isometric Design.png" title="Isometric Coffee">
+                    <img src="Stylish 3D Coffee Cup Icon with Steam and Isometric Design.png" alt="Isometric Coffee">
+                </div>
+                <div class="app-icon-option" data-icon="Stylized Coffee Machine Icon with White Cup - Woopicx.png" title="Coffee Machine">
+                    <img src="Stylized Coffee Machine Icon with White Cup - Woopicx.png" alt="Coffee Machine">
+                </div>
+                <div class="app-icon-option" data-icon="A visually striking illustration.png" title="Energy Can">
+                    <img src="A visually striking illustration.png" alt="Energy Can">
+                </div>
+                <div class="app-icon-option" data-icon="3D Battery Icon with Lightning Bolt in Isometric View.png" title="Battery">
+                    <img src="3D Battery Icon with Lightning Bolt in Isometric View.png" alt="Battery">
+                </div>
+            </div>
+            <div class="app-icon-actions">
+                <button type="button" id="hardApplyIconBtn" class="app-icon-apply-btn" data-i18n-title="apply_to_windows" title="Apply to Windows shortcuts">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 12a9 9 0 0 1-9 9 8.7 8.7 0 0 1-6.3-2.7"/>
+                        <path d="M3 12a9 9 0 0 1 15.3-6.3"/>
+                        <path d="M3 5v7h7"/>
+                        <path d="M21 19v-7h-7"/>
+                    </svg>
+                    <span data-i18n="apply_to_windows">Apply to Windows</span>
+                </button>
+                <span id="appIconStatus" class="app-icon-status"></span>
+            </div>
+        </div>
+
+        <!-- Footer -->
         <div class="credit-link">
             <span id="appVersion" class="version-badge"></span>
             <div class="credit-dot"></div>
@@ -1259,8 +1652,9 @@
         let settings = {};
         let themeColor = '#f97316';
         let isInitializing = true;
-
-        function applySettingsViewMode(mode) {
+        let activeDarkenMethod = 'overlay';
+
+        function applySettingsViewMode(mode) {
             const container = document.getElementById('appContainer');
             container.classList.remove('liquid-glass-mode', 'coffee-mode');
             if (mode === 'liquid-glass') container.classList.add('liquid-glass-mode');
@@ -1373,8 +1767,12 @@
             if (settings.themeColor) applyTheme(settings.themeColor);
             applyWhiteMode(!!settings.whiteMode);
             if (settings.appIcon) applyAppIcon(settings.appIcon, false);
-
-            const langSelect = document.getElementById('languageSelect');
+            activeDarkenMethod = settings.darkenMethod || 'overlay';
+            updateDarkenMethodBadge(activeDarkenMethod);
+            setupDarkenMethodSubpage();
+            setupSubpageNavigation();
+
+            const langSelect = document.getElementById('languageSelect');
             langSelect.value = settings.language || 'en';
             if(typeof applyLanguage === 'function') applyLanguage(langSelect.value);
             langSelect.addEventListener('change', () => {
@@ -1641,8 +2039,69 @@
                 block.style.display = 'block';
             });
         };
-
-        init();
+
+        const DARKEN_METHOD_LABELS = {
+            overlay: () => 'Overlay Window',
+            displaysleep: () => 'Display Sleep',
+            win32: () => 'Win32 Window',
+            gamma: () => 'Gamma Ramp',
+            ddcci: () => 'DDC/CI (Native)',
+            brightness: () => 'Brightness'
+        };
+
+        function updateDarkenMethodBadge(method) {
+            const nameEl = document.getElementById('currentDarkenMethodName');
+            const badgeEl = document.getElementById('currentDarkenMethodBadge');
+            if (nameEl) nameEl.textContent = (DARKEN_METHOD_LABELS[method] || DARKEN_METHOD_LABELS.overlay)();
+            if (badgeEl) badgeEl.textContent = method === 'overlay' ? 'Default' : '✓ Active';
+        }
+
+        function setupDarkenMethodSubpage() {
+            activeDarkenMethod = settings.darkenMethod || 'overlay';
+            const darkenMethodCards = document.querySelectorAll('#darkenMethodCardsList .darken-method-card');
+            updateDarkenMethodBadge(activeDarkenMethod);
+
+            darkenMethodCards.forEach(card => {
+                card.classList.toggle('active', card.dataset.method === activeDarkenMethod);
+                card.addEventListener('click', () => {
+                    darkenMethodCards.forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                    activeDarkenMethod = card.dataset.method;
+                    settings.darkenMethod = activeDarkenMethod;
+                    updateDarkenMethodBadge(activeDarkenMethod);
+                    saveSettings();
+                });
+            });
+        }
+
+        function setupSubpageNavigation() {
+            let prevScrollTop = 0;
+            const appCont = document.getElementById('appContainer');
+
+            const openSubpage = (id) => {
+                if (!appCont) return;
+                prevScrollTop = appCont.scrollTop;
+                appCont.classList.add('subpage-open');
+                appCont.dataset.activeSubpage = id;
+                appCont.scrollTop = 0;
+            };
+
+            const closeSubpage = () => {
+                if (!appCont) return;
+                appCont.classList.remove('subpage-open');
+                appCont.scrollTop = prevScrollTop;
+                delete appCont.dataset.activeSubpage;
+            };
+
+            document.getElementById('openDarkenMethodSubpage')?.addEventListener('click', () => openSubpage('darkenSubPage'));
+            document.getElementById('openNotificationsSubpage')?.addEventListener('click', () => openSubpage('notificationsSubPage'));
+            document.getElementById('openDesignSubpage')?.addEventListener('click', () => openSubpage('designSubPage'));
+            document.querySelectorAll('[data-close-subpage]').forEach(btn => {
+                btn.addEventListener('click', closeSubpage);
+            });
+        }
+
+        init();
 
         // Icon picker
         async function applyAppIcon(filename, invokeBackend) {
@@ -1741,7 +2200,8 @@
                 appIcon: settings.appIcon || null,
                 timeProfiles: window.timeProfiles,
                 timeProfilesEnabled: getToggle('timeProfilesEnabledToggle'),
-                darkenHours: getVal('defaultDarkenHours'),
+                darkenMethod: activeDarkenMethod,
+                darkenHours: getVal('defaultDarkenHours'),
                 darkenMinutes: enforceMin('defaultDarkenMinutes', 1),
                 breakHours: getVal('breakHours'),
                 breakMinutes: enforceMin('breakMinutes', 1),
