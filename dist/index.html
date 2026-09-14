@@ -5979,9 +5979,21 @@
       }));
     }
 
+    function loadTogglesState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('neverSleepToggles') || '{}');
+        if (typeof saved.isScreenOn === 'boolean') {
+          isScreenOn = saved.isScreenOn;
+        }
+      } catch (e) {
+        console.error('Could not restore screen state:', e);
+      }
+    }
+
     function loadSet() {
       try {
         const s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+        loadTogglesState();
         window.currentLang = s.language || 'en';
         if(typeof applyLanguage === 'function') applyLanguage(window.currentLang);
         if (s.themeColor) applyTheme(s.themeColor);
