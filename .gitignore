@@ -1,5 +1,6 @@
 node_modules/
 target/
+Cargo.lock
 src-tauri/target/
 
 # Local signing credentials
