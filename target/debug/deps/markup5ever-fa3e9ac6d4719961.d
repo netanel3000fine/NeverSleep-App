@@ -1,0 +1,15 @@
+C:\Users\ntnlb\Desktop\never-sleep-tauri\target\debug\deps\markup5ever-fa3e9ac6d4719961.d: C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\lib.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\data\mod.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\interface\mod.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\interface\tree_builder.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\serialize.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\util\buffer_queue.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\util\smallcharset.rs C:\Users\ntnlb\Desktop\never-sleep-tauri\target\debug\build\markup5ever-3f35bc91d9b1634d\out/generated.rs C:\Users\ntnlb\Desktop\never-sleep-tauri\target\debug\build\markup5ever-3f35bc91d9b1634d\out/named_entities.rs
+
+C:\Users\ntnlb\Desktop\never-sleep-tauri\target\debug\deps\libmarkup5ever-fa3e9ac6d4719961.rmeta: C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\lib.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\data\mod.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\interface\mod.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\interface\tree_builder.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\serialize.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\util\buffer_queue.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\util\smallcharset.rs C:\Users\ntnlb\Desktop\never-sleep-tauri\target\debug\build\markup5ever-3f35bc91d9b1634d\out/generated.rs C:\Users\ntnlb\Desktop\never-sleep-tauri\target\debug\build\markup5ever-3f35bc91d9b1634d\out/named_entities.rs
+
+C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\lib.rs:
+C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\data\mod.rs:
+C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\interface\mod.rs:
+C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\interface\tree_builder.rs:
+C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\serialize.rs:
+C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\util\buffer_queue.rs:
+C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\markup5ever-0.11.0\util\smallcharset.rs:
+C:\Users\ntnlb\Desktop\never-sleep-tauri\target\debug\build\markup5ever-3f35bc91d9b1634d\out/generated.rs:
+C:\Users\ntnlb\Desktop\never-sleep-tauri\target\debug\build\markup5ever-3f35bc91d9b1634d\out/named_entities.rs:
+
+# env-dep:OUT_DIR=C:\\Users\\ntnlb\\Desktop\\never-sleep-tauri\\target\\debug\\build\\markup5ever-3f35bc91d9b1634d\\out

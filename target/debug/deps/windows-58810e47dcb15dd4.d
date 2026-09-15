@@ -1,0 +1,10 @@
+C:\Users\ntnlb\Desktop\never-sleep-tauri\target\debug\deps\windows-58810e47dcb15dd4.d: C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.52.0\src\lib.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.52.0\src\Windows/mod.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.52.0\src\Windows\Foundation\mod.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.52.0\src\Windows\Foundation\Collections\mod.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.52.0\src\Windows\Media\mod.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.52.0\src\Windows\Media\Control\mod.rs
+
+C:\Users\ntnlb\Desktop\never-sleep-tauri\target\debug\deps\libwindows-58810e47dcb15dd4.rmeta: C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.52.0\src\lib.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.52.0\src\Windows/mod.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.52.0\src\Windows\Foundation\mod.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.52.0\src\Windows\Foundation\Collections\mod.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.52.0\src\Windows\Media\mod.rs C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.52.0\src\Windows\Media\Control\mod.rs
+
+C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.52.0\src\lib.rs:
+C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.52.0\src\Windows/mod.rs:
+C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.52.0\src\Windows\Foundation\mod.rs:
+C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.52.0\src\Windows\Foundation\Collections\mod.rs:
+C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.52.0\src\Windows\Media\mod.rs:
+C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows-0.52.0\src\Windows\Media\Control\mod.rs:

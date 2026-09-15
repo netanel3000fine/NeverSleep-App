@@ -6024,7 +6024,7 @@
         focusOnCountdown = s.focusOnCountdown === undefined ? false : s.focusOnCountdown;
         minimizeOnDarken = s.minimizeOnDarken === undefined ? false : s.minimizeOnDarken;
         quitFocusOnCountdown = s.quitFocusOnCountdown === undefined ? true : s.quitFocusOnCountdown;
-        darkenMethod = s.darkenMethod || 'overlay';
+        darkenMethod = s.darkenMethod === 'displaysleep' ? 'overlay' : (s.darkenMethod || 'overlay');
         controlMyMonitorPath = s.controlMyMonitorPath || '';
 
         if (window.__TAURI__ && s.pinned !== undefined) {

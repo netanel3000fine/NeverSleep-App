@@ -1,0 +1,5 @@
+C:\Users\ntnlb\Desktop\never-sleep-tauri\target\debug\build\serde-8a509dc42ef96cf9\build_script_build-8a509dc42ef96cf9.d: C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\build.rs
+
+C:\Users\ntnlb\Desktop\never-sleep-tauri\target\debug\build\serde-8a509dc42ef96cf9\build_script_build-8a509dc42ef96cf9.exe: C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\build.rs
+
+C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\build.rs:

@@ -311,7 +311,6 @@ async fn create_screen_overlay(
 ) -> Result<(), String> {
     let m = method.unwrap_or_else(|| "overlay".to_string());
     match m.as_str() {
-        "displaysleep" => create_darken_display_sleep(),
         "win32" => create_darken_win32(),
         "gamma" => create_darken_gamma(),
         "ddcci" => send_ddcci_vcp_power(4),
@@ -338,7 +337,6 @@ async fn close_screen_overlay(
 ) -> Result<(), String> {
     let m = method.unwrap_or_else(|| "overlay".to_string());
     match m.as_str() {
-        "displaysleep" => close_darken_display_sleep(),
         "win32" => close_darken_win32(),
         "gamma" => close_darken_gamma(),
         "ddcci" => send_ddcci_vcp_power(1),
@@ -374,32 +372,6 @@ async fn close_screen_overlay(
             Ok(())
         }
     }
-}
-
-// ===== DISPLAY SLEEP METHOD (Windows SC_MONITORPOWER) =====
-
-fn create_darken_display_sleep() -> Result<(), String> {
-    #[cfg(target_os = "windows")]
-    {
-        use winapi::um::winuser::{SendMessageW, HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER};
-        unsafe {
-            // 2 = Monitor Power Off / Standby
-            SendMessageW(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, 2);
-        }
-    }
-    Ok(())
-}
-
-fn close_darken_display_sleep() -> Result<(), String> {
-    #[cfg(target_os = "windows")]
-    {
-        use winapi::um::winuser::{SendMessageW, HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER};
-        unsafe {
-            // -1 = Monitor Power On
-            SendMessageW(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, -1);
-        }
-    }
-    Ok(())
 }
 
 // ===== BRIGHTNESS METHOD (via PowerShell WMI) =====
@@ -496,10 +468,10 @@ fn create_darken_win32() -> Result<(), String> {
             use winapi::um::winuser::{
                 CreateWindowExW, ShowWindow, UpdateWindow, DefWindowProcW,
                 GetSystemMetrics, RegisterClassW, GetMessageW, TranslateMessage,
-                DispatchMessageW, PostQuitMessage, DestroyWindow,
+                DispatchMessageW, PostQuitMessage, DestroyWindow, SetWindowPos,
                 SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN, SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN,
                 SW_SHOW, WNDCLASSW, WS_EX_TOPMOST, WS_EX_TOOLWINDOW,
-                WS_EX_TRANSPARENT, WS_POPUP, CS_HREDRAW, CS_VREDRAW, WM_CLOSE, WM_DESTROY,
+                WS_POPUP, CS_HREDRAW, CS_VREDRAW, WM_CLOSE, WM_DESTROY,
                 WM_ERASEBKGND,
             };
             use winapi::um::libloaderapi::GetModuleHandleW;
@@ -510,6 +482,9 @@ fn create_darken_win32() -> Result<(), String> {
                 fn GetStockObject(i: i32) -> HGDIOBJ;
             }
             const BLACK_BRUSH: i32 = 4;
+            const WS_EX_NOACTIVATE: u32 = 0x08000000;
+            const SWP_SHOWWINDOW: u32 = 0x0040;
+            const HWND_TOPMOST: isize = -1;
 
             unsafe extern "system" fn darken_wnd_proc(
                 hwnd: HWND,
@@ -517,8 +492,29 @@ fn create_darken_win32() -> Result<(), String> {
                 wparam: WPARAM,
                 lparam: LPARAM,
             ) -> LRESULT {
+                const WM_NCHITTEST: UINT = 0x0084;
+                const WM_PAINT: UINT = 0x000F;
                 match msg {
-                    WM_ERASEBKGND => 1,
+                    WM_NCHITTEST => -1, // HTTRANSPARENT: let mouse pass through
+                    WM_ERASEBKGND => {
+                        use winapi::um::winuser::{FillRect, GetClientRect};
+                        use winapi::shared::windef::RECT;
+                        let hdc = wparam as winapi::shared::windef::HDC;
+                        let mut rc: RECT = std::mem::zeroed();
+                        GetClientRect(hwnd, &mut rc);
+                        let black_brush = GetStockObject(BLACK_BRUSH) as HBRUSH;
+                        FillRect(hdc, &rc, black_brush);
+                        1
+                    }
+                    WM_PAINT => {
+                        use winapi::um::winuser::{BeginPaint, EndPaint, FillRect, PAINTSTRUCT};
+                        let mut ps: PAINTSTRUCT = std::mem::zeroed();
+                        let hdc = BeginPaint(hwnd, &mut ps);
+                        let black_brush = GetStockObject(BLACK_BRUSH) as HBRUSH;
+                        FillRect(hdc, &ps.rcPaint, black_brush);
+                        EndPaint(hwnd, &ps);
+                        0
+                    }
                     WM_CLOSE => {
                         DestroyWindow(hwnd);
                         0
@@ -557,10 +553,10 @@ fn create_darken_win32() -> Result<(), String> {
                 let h = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
                 let hwnd: HWND = CreateWindowExW(
-                    WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_TRANSPARENT,
+                    WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
                     class_name.as_ptr(),
                     title.as_ptr(),
-                    WS_POPUP,
+                    WS_POPUP | winapi::um::winuser::WS_VISIBLE,
                     x, y, w, h,
                     ptr::null_mut(),
                     ptr::null_mut(),
@@ -576,6 +572,7 @@ fn create_darken_win32() -> Result<(), String> {
                 WIN32_DARKEN_HWND.store(hwnd as isize, std::sync::atomic::Ordering::SeqCst);
                 let _ = tx.send(hwnd as isize);
 
+                SetWindowPos(hwnd, HWND_TOPMOST as HWND, x, y, w, h, SWP_SHOWWINDOW);
                 ShowWindow(hwnd, SW_SHOW);
                 UpdateWindow(hwnd);
 
@@ -616,41 +613,48 @@ fn close_darken_win32() -> Result<(), String> {
     Ok(())
 }
 
-// ===== GAMMA RAMP METHOD =====
+// ===== DESKTOP COLOR ENGINE (Windows Magnification API) =====
 
 #[cfg(target_os = "windows")]
-static SAVED_GAMMA_RAMP: Mutex<Option<Vec<u16>>> = Mutex::new(None);
+static COLOR_ENGINE_ACTIVE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 fn create_darken_gamma() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
-        use winapi::um::winuser::{GetDC, ReleaseDC};
-        use winapi::shared::windef::HDC;
-
-        #[link(name = "gdi32")]
-        extern "system" {
-            fn GetDeviceGammaRamp(hdc: HDC, lpRamp: *mut std::ffi::c_void) -> winapi::shared::minwindef::BOOL;
-            fn SetDeviceGammaRamp(hdc: HDC, lpRamp: *const std::ffi::c_void) -> winapi::shared::minwindef::BOOL;
-        }
-
+        use winapi::um::libloaderapi::{LoadLibraryA, GetProcAddress};
         unsafe {
-            let hdc = GetDC(std::ptr::null_mut());
-            if hdc.is_null() {
-                return Err("Failed to get primary display DC".to_string());
+            let lib = LoadLibraryA(b"Magnification.dll\0".as_ptr() as *const i8);
+            if lib.is_null() {
+                return Err("Failed to load Magnification.dll".to_string());
             }
 
-            let mut original_ramp = vec![0u16; 3 * 256];
-            if GetDeviceGammaRamp(hdc, original_ramp.as_mut_ptr() as *mut std::ffi::c_void) != 0 {
-                let mut saved = SAVED_GAMMA_RAMP.lock().unwrap();
-                *saved = Some(original_ramp);
+            type MagInitFn = unsafe extern "system" fn() -> winapi::shared::minwindef::BOOL;
+            type MagSetEffectFn = unsafe extern "system" fn(*const f32) -> winapi::shared::minwindef::BOOL;
 
-                let black_ramp = vec![0u16; 3 * 256];
-                SetDeviceGammaRamp(hdc, black_ramp.as_ptr() as *const std::ffi::c_void);
-            } else {
-                ReleaseDC(std::ptr::null_mut(), hdc);
-                return Err("Display driver does not support hardware gamma ramp".to_string());
+            let init_proc = GetProcAddress(lib, b"MagInitialize\0".as_ptr() as *const i8);
+            let set_effect_proc = GetProcAddress(lib, b"MagSetFullscreenColorEffect\0".as_ptr() as *const i8);
+
+            if init_proc.is_null() || set_effect_proc.is_null() {
+                return Err("Failed to locate Magnification API entry points".to_string());
             }
-            ReleaseDC(std::ptr::null_mut(), hdc);
+
+            let mag_init: MagInitFn = std::mem::transmute(init_proc);
+            let mag_set_effect: MagSetEffectFn = std::mem::transmute(set_effect_proc);
+
+            if mag_init() == 0 {
+                return Err("MagInitialize failed".to_string());
+            }
+
+            // 5x5 color matrix with zero RGB multipliers (transforms screen to pure black)
+            let mut black_matrix = [0.0f32; 25];
+            black_matrix[18] = 1.0; // alpha multiplier
+            black_matrix[24] = 1.0; // identity scale
+
+            if mag_set_effect(black_matrix.as_ptr()) == 0 {
+                return Err("MagSetFullscreenColorEffect failed".to_string());
+            }
+
+            COLOR_ENGINE_ACTIVE.store(true, std::sync::atomic::Ordering::SeqCst);
         }
     }
     Ok(())
@@ -659,21 +663,35 @@ fn create_darken_gamma() -> Result<(), String> {
 fn close_darken_gamma() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
-        use winapi::um::winuser::{GetDC, ReleaseDC};
-        use winapi::shared::windef::HDC;
-
-        #[link(name = "gdi32")]
-        extern "system" {
-            fn SetDeviceGammaRamp(hdc: HDC, lpRamp: *const std::ffi::c_void) -> winapi::shared::minwindef::BOOL;
+        if !COLOR_ENGINE_ACTIVE.swap(false, std::sync::atomic::Ordering::SeqCst) {
+            return Ok(());
         }
 
+        use winapi::um::libloaderapi::{LoadLibraryA, GetProcAddress};
         unsafe {
-            let mut saved = SAVED_GAMMA_RAMP.lock().unwrap();
-            if let Some(ramp) = saved.take() {
-                let hdc = GetDC(std::ptr::null_mut());
-                if !hdc.is_null() {
-                    SetDeviceGammaRamp(hdc, ramp.as_ptr() as *const std::ffi::c_void);
-                    ReleaseDC(std::ptr::null_mut(), hdc);
+            let lib = LoadLibraryA(b"Magnification.dll\0".as_ptr() as *const i8);
+            if !lib.is_null() {
+                type MagSetEffectFn = unsafe extern "system" fn(*const f32) -> winapi::shared::minwindef::BOOL;
+                type MagUninitFn = unsafe extern "system" fn() -> winapi::shared::minwindef::BOOL;
+
+                let set_effect_proc = GetProcAddress(lib, b"MagSetFullscreenColorEffect\0".as_ptr() as *const i8);
+                let uninit_proc = GetProcAddress(lib, b"MagUninitialize\0".as_ptr() as *const i8);
+
+                if !set_effect_proc.is_null() {
+                    let mag_set_effect: MagSetEffectFn = std::mem::transmute(set_effect_proc);
+                    // 5x5 identity matrix
+                    let mut identity = [0.0f32; 25];
+                    identity[0] = 1.0;
+                    identity[6] = 1.0;
+                    identity[12] = 1.0;
+                    identity[18] = 1.0;
+                    identity[24] = 1.0;
+                    let _ = mag_set_effect(identity.as_ptr());
+                }
+
+                if !uninit_proc.is_null() {
+                    let mag_uninit: MagUninitFn = std::mem::transmute(uninit_proc);
+                    let _ = mag_uninit();
                 }
             }
         }

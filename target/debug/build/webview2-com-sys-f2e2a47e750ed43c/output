@@ -1,0 +1,1 @@
+cargo:rustc-link-search=native=C:\Users\ntnlb\Desktop\never-sleep-tauri\target\debug\build\webview2-com-sys-f2e2a47e750ed43c\out\x64
