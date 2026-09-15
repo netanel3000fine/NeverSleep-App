@@ -1,4 +1,5 @@
 node_modules/
+target/
 src-tauri/target/
 
 # Local signing credentials
