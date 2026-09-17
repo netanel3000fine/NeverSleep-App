@@ -1971,7 +1971,23 @@ fn update_tray_menu_state(
     Ok(())
 }
 
+fn clear_webview_http_cache() {
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(local_appdata) = std::env::var("LOCALAPPDATA") {
+            let base = std::path::PathBuf::from(local_appdata)
+                .join("com.neversleep.app")
+                .join("EBWebView")
+                .join("Default");
+            let _ = std::fs::remove_dir_all(base.join("Cache"));
+            let _ = std::fs::remove_dir_all(base.join("Code Cache"));
+        }
+    }
+}
+
 fn main() {
+    clear_webview_http_cache();
+
     // Single Instance Check using WinAPI Mutex
     #[cfg(target_os = "windows")]
     {
