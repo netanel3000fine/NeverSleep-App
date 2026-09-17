@@ -5977,10 +5977,23 @@
       localStorage.setItem('neverSleepToggles', JSON.stringify({
         isScreenOn: isScreenOn
       }));
+      try {
+        let s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+        s.isScreenOn = isScreenOn;
+        const serialized = JSON.stringify(s);
+        localStorage.setItem('neverSleepSettings', serialized);
+        if (window.__TAURI__) {
+          window.__TAURI__.invoke('save_settings', { settings: serialized }).catch(() => {});
+        }
+      } catch (e) {}
     }
 
-    function loadTogglesState() {
+    function loadTogglesState(settingsObj) {
       try {
+        if (settingsObj && typeof settingsObj.isScreenOn === 'boolean') {
+          isScreenOn = settingsObj.isScreenOn;
+          return;
+        }
         const saved = JSON.parse(localStorage.getItem('neverSleepToggles') || '{}');
         if (typeof saved.isScreenOn === 'boolean') {
           isScreenOn = saved.isScreenOn;
@@ -5990,10 +6003,10 @@
       }
     }
 
-    function loadSet() {
+    function loadSet(customSettings) {
       try {
-        const s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
-        loadTogglesState();
+        const s = customSettings || JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+        loadTogglesState(s);
         window.currentLang = s.language || 'en';
         if(typeof applyLanguage === 'function') applyLanguage(window.currentLang);
         if (s.themeColor) applyTheme(s.themeColor);
@@ -6175,8 +6188,19 @@
       autoShutdown = profileControlledAwake;
 
       if (!profileControlledAwake) {
-        exitSleepModeAndPreventSleep();
+        isSleeping = false;
+        const sleepOverlay = document.getElementById('sleepOverlay');
+        if (sleepOverlay) sleepOverlay.classList.remove('show');
+        screenDarkened = false;
+        if (window.__TAURI__) {
+          window.__TAURI__.invoke('close_screen_overlay', { method: darkenMethod, customPath: controlMyMonitorPath || null }).catch(() => { });
+          window.__TAURI__.invoke('prevent_sleep').catch(() => { });
+        }
         shutdownTargetTime = 0;
+        if (!isScreenOn) {
+          resetDarkenTimer();
+        }
+        updateUI();
         return;
       }
 
@@ -6918,6 +6942,22 @@
     applyProfileControlledPowerState({ focus: false });
     updateCoffeePour(); // sync pour state on load
     setTimeout(checkForUpdatesInBackground, 5000);
+
+    if (window.__TAURI__) {
+      window.__TAURI__.invoke('load_settings').then(saved => {
+        if (saved) {
+          try {
+            const s = JSON.parse(saved);
+            loadSet(s);
+            if (!appDisabled) {
+              applyProfileControlledPowerState({ focus: false });
+            }
+            updateUI();
+            updateCoffeePour();
+          } catch (e) { }
+        }
+      }).catch(() => { });
+    }
 
     window.addEventListener('storage', (e) => {
       if (e.key === 'neverSleepSettings' || e.key === 'neverSleepCommand') {
