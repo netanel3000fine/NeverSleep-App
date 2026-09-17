@@ -1,13 +1,1 @@
-{
-  "name": "never-sleep-tauri",
-  "version": "17.0.0",
-  "description": "מונע שינה למחשב",
-  "scripts": {
-    "tauri": "tauri",
-    "dev": "tauri dev",
-    "build": "tauri build"
-  },
-  "devDependencies": {
-    "@tauri-apps/cli": "^1.5.9"
-  }
-}
+﻿{\r\n  "name": "never-sleep-tauri",\r\n  "version": "17.0.0",\r\n  "description": "\u05de\u05d5\u05e0\u05e2 \u05e9\u05d9\u05e0\u05d4 \u05dc\u05de\u05d7\u05e9\u05d1",\r\n  "scripts": {\r\n    "tauri": "tauri",\r\n    "dev": "tauri dev",\r\n    "prebuild": "powershell -Command \"Get-ChildItem src-tauri/target/release/build/ -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'app-*' } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue; (Get-Item src-tauri/build.rs).LastWriteTime = Get-Date\"",\r\n    "build": "tauri build"\r\n  },\r\n  "devDependencies": {\r\n    "@tauri-apps/cli": "^1.5.9"\r\n  }\r\n}\r\n
