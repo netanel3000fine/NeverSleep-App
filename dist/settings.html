@@ -1150,12 +1150,45 @@
         }
 
         /* ===== EXPANDABLE PROFILE CARDS WITH CIRCULAR 24-HOUR DIAL ===== */
+        .add-profile-header-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.14);
+            border: 1px solid rgba(var(--theme-color-rgb, 249, 115, 22), 0.35);
+            color: var(--theme-color);
+            border-radius: 8px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .add-profile-header-btn:hover {
+            background: var(--theme-color);
+            color: #fff;
+            box-shadow: 0 0 12px var(--theme-glow);
+            transform: translateY(-1px);
+        }
+
+        .add-profile-header-btn:active {
+            transform: translateY(0);
+        }
+
         .profile-card-wrapper {
             background: var(--input-bg);
             border: 1px solid var(--input-border);
             border-radius: 12px;
             overflow: hidden;
+            margin-bottom: 10px;
             transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+        }
+
+        .profile-card-wrapper:last-child {
+            margin-bottom: 0;
         }
 
         .profile-card-wrapper.expanded {
@@ -1740,45 +1773,46 @@
                     </button>
                 </div>
                 <div class="popup-body">
-
-                    <!-- Single unified card -->
-                    <div style="background:var(--surface-card,rgba(255,255,255,0.04));border:1px solid var(--surface-border,rgba(255,255,255,0.08));border-radius:14px;padding:6px 16px 4px;">
-                    <div class="settings-item">
-                        <div class="label-group"><span class="item-label" data-i18n="default_darken">Default Darken Time</span></div>
-                        <div class="input-row">
-                            <div class="input-wrapper">
-                                <input id="defaultDarkenHours" type="number" class="input-field" min="0">
-                                <span class="input-label" data-i18n="hours">hrs</span>
+                    <!-- Card 1: Timings & Window Options -->
+                    <div style="background:var(--surface-card,rgba(255,255,255,0.04));border:1px solid var(--surface-border,rgba(255,255,255,0.08));border-radius:14px;padding:6px 16px 4px;margin-bottom:14px;">
+                        <div class="settings-item">
+                            <div class="label-group"><span class="item-label" data-i18n="default_darken">Default Darken Time</span></div>
+                            <div class="input-row">
+                                <div class="input-wrapper">
+                                    <input id="defaultDarkenHours" type="number" class="input-field" min="0">
+                                    <span class="input-label" data-i18n="hours">hrs</span>
+                                </div>
+                                <span class="input-sep">:</span>
+                                <div class="input-wrapper">
+                                    <input id="defaultDarkenMinutes" type="number" class="input-field" min="1">
+                                    <span class="input-label" data-i18n="minutes">min</span>
+                                </div>
                             </div>
-                            <span class="input-sep">:</span>
-                            <div class="input-wrapper">
-                                <input id="defaultDarkenMinutes" type="number" class="input-field" min="1">
-                                <span class="input-label" data-i18n="minutes">min</span>
+                        </div>
+                        <div class="settings-item">
+                            <div class="label-group">
+                                <span class="item-label" data-i18n="focus_countdown">Pop up window before darken</span>
+                                <span class="item-sub" data-i18n="focus_countdown_sub">10 seconds before darkening</span>
                             </div>
+                            <div class="toggle" id="focusToggle"><div class="toggle-knob"></div></div>
                         </div>
-                    </div>
-                    <div class="settings-item">
-                        <div class="label-group">
-                            <span class="item-label" data-i18n="focus_countdown">Pop up window before darken</span>
-                            <span class="item-sub" data-i18n="focus_countdown_sub">10 seconds before darkening</span>
+                        <div class="settings-item" style="border-bottom:none;">
+                            <div class="label-group">
+                                <span class="item-label" data-i18n="minimize_window">Minimize Window</span>
+                                <span class="item-sub" data-i18n="minimize_window_sub">10 seconds after start</span>
+                            </div>
+                            <div class="toggle" id="minimizeToggle"><div class="toggle-knob"></div></div>
                         </div>
-                        <div class="toggle" id="focusToggle"><div class="toggle-knob"></div></div>
-                    </div>
-                    <div class="settings-item" style="border-bottom:none;">
-                        <div class="label-group">
-                            <span class="item-label" data-i18n="minimize_window">Minimize Window</span>
-                            <span class="item-sub" data-i18n="minimize_window_sub">10 seconds after start</span>
-                        </div>
-                        <div class="toggle" id="minimizeToggle"><div class="toggle-knob"></div></div>
-                    </div>
+                    </div><!-- end Card 1 -->
 
-                    <!-- Internal divider + Darken Method header -->
-                    <div style="border-top:1px solid rgba(255,255,255,0.13);margin:0 -16px;padding:14px 16px 6px;">
-                        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--theme-color);" data-i18n="darken_method_title">Darken Method</span>
-                        <p style="font-size:11px;color:var(--text-secondary);margin-top:3px;" data-i18n="darken_method_sub">Choose how monitors are darkened or put to sleep</p>
-                    </div>
+                    <!-- Card 2: Darken Method Selection -->
+                    <div style="background:var(--surface-card,rgba(255,255,255,0.04));border:1px solid var(--surface-border,rgba(255,255,255,0.08));border-radius:14px;padding:14px 16px 16px;">
+                        <div style="margin-bottom:12px;">
+                            <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--theme-color);" data-i18n="darken_method_title">Darken Method</span>
+                            <p style="font-size:11px;color:var(--text-secondary);margin-top:3px;" data-i18n="darken_method_sub">Choose how monitors are darkened or put to sleep</p>
+                        </div>
 
-                    <div class="darken-methods-list" id="darkenMethodCardsList">
+                        <div class="darken-methods-list" id="darkenMethodCardsList">
                         <!-- 1. Overlay Window -->
                         <div class="darken-method-card active" data-method="overlay" id="dmOverlay">
                             <div class="darken-method-radio"></div>
@@ -1952,19 +1986,23 @@
                     </button>
                 </div>
                 <div class="popup-body">
-                    <div class="settings-item">
-                        <div class="label-group">
-                            <span class="item-label" data-i18n="language">Language</span>
+                    <!-- Language Card -->
+                    <div style="background:var(--surface-card,rgba(255,255,255,0.04));border:1px solid var(--surface-border,rgba(255,255,255,0.08));border-radius:14px;padding:6px 16px;margin-bottom:14px;">
+                        <div class="settings-item" style="border-bottom:none;">
+                            <div class="label-group">
+                                <span class="item-label" data-i18n="language">Language</span>
+                            </div>
+                            <select id="languageSelect" class="select-field">
+                                <option value="en" data-i18n="lang_en">English</option>
+                                <option value="he" data-i18n="lang_he">עברית</option>
+                                <option value="ru" data-i18n="lang_ru">Русский</option>
+                            </select>
                         </div>
-                        <select id="languageSelect" class="select-field">
-                            <option value="en" data-i18n="lang_en">English</option>
-                            <option value="he" data-i18n="lang_he">עברית</option>
-                            <option value="ru" data-i18n="lang_ru">Русский</option>
-                        </select>
                     </div>
 
-                    <div style="margin-top: 6px; margin-bottom: 8px;">
-                        <div class="label-group" style="margin-bottom: 8px;">
+                    <!-- View Mode Card -->
+                    <div style="background:var(--surface-card,rgba(255,255,255,0.04));border:1px solid var(--surface-border,rgba(255,255,255,0.08));border-radius:14px;padding:14px 16px;margin-bottom:16px;">
+                        <div class="label-group" style="margin-bottom: 10px;">
                             <span class="item-label" data-i18n="view_mode">View Mode</span>
                             <span class="item-sub" data-i18n="view_mode_sub">Classic / Liquid Glass / Coffee</span>
                         </div>
@@ -2090,16 +2128,17 @@
                         <div class="toggle" id="timeProfilesEnabledToggle"><div class="toggle-knob"></div></div>
                     </div>
                     <div class="time-profiles-section">
-                        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:12px; margin-bottom: 12px;">
                             <div class="label-group" style="min-width: 0; flex: 1;">
                                 <span class="item-label" data-i18n="time_profiles">Time Profiles</span>
                                 <span class="item-sub" data-i18n="time_profiles_sub" style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Keep PC awake only during these hours. Outside these hours, sleep prevention pauses.</span>
                             </div>
-                            <button id="addProfileBtn" class="icon-btn" data-i18n-title="add_profile">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            <button id="addProfileBtn" class="add-profile-header-btn" data-i18n-title="add_profile" title="Add Time Profile">
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                <span data-i18n="add_profile">Add</span>
                             </button>
                         </div>
-                        <div id="timeProfilesContainer" style="display:flex; flex-direction:column; gap:8px;">
+                        <div id="timeProfilesContainer" style="display:flex; flex-direction:column; gap:10px;">
                             <!-- Profiles injected by JS -->
                         </div>
                     </div>
