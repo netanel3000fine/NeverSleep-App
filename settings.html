@@ -1293,6 +1293,45 @@
             background: rgba(0, 0, 0, 0.18);
         }
 
+        .profile-days-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .profile-days-label {
+            color: var(--text-muted);
+            font-size: 10.5px;
+            font-weight: 700;
+            margin-right: 2px;
+        }
+
+        .profile-day-btn {
+            min-width: 32px;
+            padding: 5px 7px;
+            border: 1px solid var(--surface-border);
+            border-radius: 7px;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font: 600 10px inherit;
+            transition: all 0.18s ease;
+        }
+
+        .profile-day-btn:hover {
+            border-color: var(--theme-color);
+            color: var(--theme-color);
+        }
+
+        .profile-day-btn.active {
+            border-color: var(--theme-color);
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.18);
+            color: var(--theme-color);
+            box-shadow: 0 0 8px rgba(var(--theme-color-rgb, 249, 115, 22), 0.16);
+        }
+
         .profile-card-wrapper.expanded .profile-dial-collapse-panel {
             display: block;
         }
@@ -2756,11 +2795,14 @@
                     return {
                         startTime: p.time,
                         endTime: `${pad(endH)}:${pad(m)}`,
+                        days: Array.isArray(p.days) ? p.days : [0, 1, 2, 3, 4, 5, 6],
                         enabled: p.enabled !== false
                     };
                 }
                 if (!p.startTime) p.startTime = "08:00";
                 if (!p.endTime) p.endTime = "17:00";
+                p.days = Array.isArray(p.days) ? p.days : [0, 1, 2, 3, 4, 5, 6];
+                p.enabled = p.enabled !== false;
                 return p;
             });
 
@@ -2809,6 +2851,66 @@
                 let text = `${h}h`;
                 if (m > 0) text += ` ${m}m`;
                 return { diff, hours: h, minutes: m, label: text + ' awake', shortLabel: text };
+            }
+
+            const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const allDays = [0, 1, 2, 3, 4, 5, 6];
+
+            function normalizeProfileDays(profile) {
+                const days = Array.isArray(profile.days)
+                    ? profile.days.map(Number).filter(day => Number.isInteger(day) && day >= 0 && day <= 6)
+                    : allDays.slice();
+                profile.days = [...new Set(days)].sort((a, b) => a - b);
+                return profile.days;
+            }
+
+            function getProfileDayIntervals(profile, day) {
+                const start = timeToMinutes(profile.startTime);
+                const end = timeToMinutes(profile.endTime);
+                const intervals = [];
+                const days = normalizeProfileDays(profile);
+                const startsToday = days.includes(day);
+                const startsYesterday = days.includes((day + 6) % 7);
+                if (start < end && startsToday) {
+                    intervals.push([start, end]);
+                } else if (start > end && startsToday) {
+                    intervals.push([start, 1440]);
+                } else if (start === end && startsToday) {
+                    intervals.push([0, 1440]);
+                }
+                if (start > end && startsYesterday) intervals.push([0, end]);
+                return intervals;
+            }
+
+            function profilesConflict(candidate, candidateIndex = -1) {
+                normalizeProfileDays(candidate);
+                return window.timeProfiles.some((other, index) => {
+                    if (index === candidateIndex) return false;
+                    normalizeProfileDays(other);
+                    for (let day = 0; day < 7; day++) {
+                        const left = getProfileDayIntervals(candidate, day);
+                        const right = getProfileDayIntervals(other, day);
+                        if (left.some(a => right.some(b => Math.max(a[0], b[0]) < Math.min(a[1], b[1])))) return true;
+                    }
+                    return false;
+                });
+            }
+
+            function showProfileConflict() {
+                alert('This time overlaps another preset on one or more selected days. Choose different days or times.');
+            }
+
+            function updateProfileIfValid(index, updater) {
+                const profile = window.timeProfiles[index];
+                const previous = JSON.stringify(profile);
+                updater(profile);
+                normalizeProfileDays(profile);
+                if (profilesConflict(profile, index)) {
+                    Object.assign(profile, JSON.parse(previous));
+                    showProfileConflict();
+                    return false;
+                }
+                return true;
             }
 
             const CLOCK_CX = 100;
@@ -2911,6 +3013,8 @@
                 if (endKnob) endKnob.setAttribute('transform', `translate(${endPos.x.toFixed(2)}, ${endPos.y.toFixed(2)})`);
             }
 
+            window.timeProfiles.forEach(normalizeProfileDays);
+
             let expandedProfileIndices = new Set([0]);
 
             function renderTimeProfiles() {
@@ -2953,6 +3057,10 @@
                         </div>
                         <div class="profile-dial-collapse-panel">
                             <div class="clock-dial-container">
+                                <div class="profile-days-row">
+                                    <span class="profile-days-label">Days:</span>
+                                    ${dayLabels.map((label, day) => `<button type="button" class="profile-day-btn ${normalizeProfileDays(profile).includes(day) ? 'active' : ''}" data-day="${day}">${label}</button>`).join('')}
+                                </div>
                                 <div class="clock-svg-wrap" data-index="${index}">
                                     ${buildClockSvgMarkup()}
                                     <div class="clock-center-info">
@@ -3031,10 +3139,29 @@
                             const delta = parseInt(btn.dataset.delta, 10) || 0;
                             const current = timeToMinutes(window.timeProfiles[index][kind]);
                             const updated = (current + delta + 1440) % 1440;
-                            window.timeProfiles[index][kind] = minutesToTime(updated);
-                            updateClockDialVisuals(wrapper, window.timeProfiles[index]);
-                            saveSettings();
-                            refreshProfileGlow();
+                            if (updateProfileIfValid(index, profile => { profile[kind] = minutesToTime(updated); })) {
+                                updateClockDialVisuals(wrapper, window.timeProfiles[index]);
+                                saveSettings();
+                                refreshProfileGlow();
+                            }
+                        });
+                    });
+
+                    wrapper.querySelectorAll('.profile-day-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const day = Number(btn.dataset.day);
+                            const days = normalizeProfileDays(window.timeProfiles[index]);
+                            if (days.length === 1 && days.includes(day)) return;
+                            if (updateProfileIfValid(index, profile => {
+                                profile.days = days.includes(day)
+                                    ? days.filter(value => value !== day)
+                                    : [...days, day];
+                            })) {
+                                btn.classList.toggle('active', normalizeProfileDays(window.timeProfiles[index]).includes(day));
+                                saveSettings();
+                                refreshProfileGlow();
+                            }
                         });
                     });
 
@@ -3042,11 +3169,14 @@
                     wrapper.querySelectorAll('.dial-preset-chip').forEach(chip => {
                         chip.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            window.timeProfiles[index].startTime = chip.dataset.start;
-                            window.timeProfiles[index].endTime = chip.dataset.end;
-                            updateClockDialVisuals(wrapper, window.timeProfiles[index]);
-                            saveSettings();
-                            refreshProfileGlow();
+                            if (updateProfileIfValid(index, profile => {
+                                profile.startTime = chip.dataset.start;
+                                profile.endTime = chip.dataset.end;
+                            })) {
+                                updateClockDialVisuals(wrapper, window.timeProfiles[index]);
+                                saveSettings();
+                                refreshProfileGlow();
+                            }
                         });
                     });
 
@@ -3083,7 +3213,7 @@
                             const diffStart = Math.min(Math.abs(clickedMins - startM), 1440 - Math.abs(clickedMins - startM));
                             const diffEnd = Math.min(Math.abs(clickedMins - endM), 1440 - Math.abs(clickedMins - endM));
                             activeHandle = diffStart <= diffEnd ? 'startTime' : 'endTime';
-                            curProfile[activeHandle] = minutesToTime(clickedMins);
+                            if (!updateProfileIfValid(index, profile => { profile[activeHandle] = minutesToTime(clickedMins); })) return;
                             updateClockDialVisuals(wrapper, curProfile);
                         }
 
@@ -3092,7 +3222,7 @@
                         const onPointerMove = (moveEvt) => {
                             if (!activeHandle) return;
                             const mins = pointerToMins(moveEvt);
-                            window.timeProfiles[index][activeHandle] = minutesToTime(mins);
+                            updateProfileIfValid(index, profile => { profile[activeHandle] = minutesToTime(mins); });
                             updateClockDialVisuals(wrapper, window.timeProfiles[index]);
                         };
 
@@ -3127,7 +3257,15 @@
                 const h = padTimePart(start.getHours());
                 const m = padTimePart(start.getMinutes());
                 const endH = padTimePart(end.getHours());
-                const newIndex = window.timeProfiles.push({ startTime: `${h}:${m}`, endTime: `${endH}:${m}`, enabled: true }) - 1;
+                let newProfile = { startTime: `${h}:${m}`, endTime: `${endH}:${m}`, days: [now.getDay()], enabled: true };
+                for (let offset = 0; offset < 7 && profilesConflict(newProfile); offset++) {
+                    newProfile.days = [(now.getDay() + offset + 1) % 7];
+                }
+                if (profilesConflict(newProfile)) {
+                    showProfileConflict();
+                    return;
+                }
+                const newIndex = window.timeProfiles.push(newProfile) - 1;
                 expandedProfileIndices.add(newIndex);
                 updateParentToggleState(true);
                 renderTimeProfiles();
@@ -3144,14 +3282,17 @@
                 if (!schedEnabled) return false;
                 const now = new Date();
                 const nowMins = now.getHours() * 60 + now.getMinutes();
+                const today = now.getDay();
                 const [sh, sm] = (profile.startTime || '00:00').split(':').map(Number);
                 const [eh, em] = (profile.endTime   || '00:00').split(':').map(Number);
                 const startMins = sh * 60 + sm;
                 const endMins   = eh * 60 + em;
+                const days = normalizeProfileDays(profile);
                 if (startMins <= endMins) {
-                    return nowMins >= startMins && nowMins < endMins;
+                    return days.includes(today) && nowMins >= startMins && nowMins < endMins;
                 } else {
-                    return nowMins >= startMins || nowMins < endMins;
+                    return (days.includes(today) && nowMins >= startMins) ||
+                        (days.includes((today + 6) % 7) && nowMins < endMins);
                 }
             }
 

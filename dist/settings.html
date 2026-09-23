@@ -528,40 +528,6 @@
 
         .settings-item:first-of-type { padding-top: 0; }
 
-        /* ===== SETTINGS SECTION CARDS ===== */
-        .settings-section-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            border-radius: 14px;
-            padding: 12px 16px;
-            margin-bottom: 14px;
-            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
-            transition: border-color 0.2s, background 0.2s;
-        }
-
-        .settings-section-card:last-child {
-            margin-bottom: 0;
-        }
-
-        body.white-mode .settings-section-card {
-            background: #ffffff;
-            border-color: rgba(0, 0, 0, 0.12);
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
-        }
-
-        .settings-section-card .settings-item {
-            padding: 9px 0;
-        }
-
-        .settings-section-card .settings-item:first-of-type {
-            padding-top: 2px;
-        }
-
-        .settings-section-card .settings-item:last-child {
-            border-bottom: none;
-            padding-bottom: 2px;
-        }
-
         .label-group {
             display: flex;
             flex-direction: column;
@@ -996,36 +962,6 @@
         .bg-lime    { background: #84cc16; }
         .bg-brown   { background: #C47440; }
 
-        /* White Mode Swatch in Theme Color list */
-        .color-option.color-option-white {
-            background: #ffffff !important;
-            border: 2px solid rgba(255, 255, 255, 0.7) !important;
-            box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.4) !important;
-            position: relative;
-        }
-
-        .color-option.color-option-white:hover {
-            transform: scale(1.18);
-            border-color: #ffffff !important;
-            box-shadow: 0 0 12px rgba(255, 255, 255, 0.85), 0 0 0 1.5px rgba(0, 0, 0, 0.5) !important;
-        }
-
-        .color-option.color-option-white.selected {
-            border-color: #0f172a !important;
-            box-shadow: 0 0 0 2.5px #ffffff, 0 0 14px rgba(255, 255, 255, 0.9) !important;
-            transform: scale(1.15);
-        }
-
-        body.white-mode .color-option.color-option-white {
-            border-color: rgba(0, 0, 0, 0.3) !important;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2) !important;
-        }
-
-        body.white-mode .color-option.color-option-white.selected {
-            border-color: var(--theme-color) !important;
-            box-shadow: 0 0 0 2px var(--theme-color) !important;
-        }
-
         /* ===== TIME PROFILES ===== */
         .time-profiles-section {
             margin-top: 14px;
@@ -1355,6 +1291,45 @@
             border-top: 1px solid var(--surface-border);
             padding: 14px 12px 16px;
             background: rgba(0, 0, 0, 0.18);
+        }
+
+        .profile-days-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .profile-days-label {
+            color: var(--text-muted);
+            font-size: 10.5px;
+            font-weight: 700;
+            margin-right: 2px;
+        }
+
+        .profile-day-btn {
+            min-width: 32px;
+            padding: 5px 7px;
+            border: 1px solid var(--surface-border);
+            border-radius: 7px;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font: 600 10px inherit;
+            transition: all 0.18s ease;
+        }
+
+        .profile-day-btn:hover {
+            border-color: var(--theme-color);
+            color: var(--theme-color);
+        }
+
+        .profile-day-btn.active {
+            border-color: var(--theme-color);
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.18);
+            color: var(--theme-color);
+            box-shadow: 0 0 8px rgba(var(--theme-color-rgb, 249, 115, 22), 0.16);
         }
 
         .profile-card-wrapper.expanded .profile-dial-collapse-panel {
@@ -1838,7 +1813,7 @@
                 </div>
                 <div class="popup-body">
                     <!-- Card 1: Timings & Window Options -->
-                    <div class="settings-section-card">
+                    <div style="background:var(--surface-card,rgba(255,255,255,0.04));border:1px solid var(--surface-border,rgba(255,255,255,0.08));border-radius:14px;padding:6px 16px 4px;margin-bottom:14px;">
                         <div class="settings-item">
                             <div class="label-group"><span class="item-label" data-i18n="default_darken">Default Darken Time</span></div>
                             <div class="input-row">
@@ -1870,10 +1845,10 @@
                     </div><!-- end Card 1 -->
 
                     <!-- Card 2: Darken Method Selection -->
-                    <div class="settings-section-card">
-                        <div style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.09);">
+                    <div style="background:var(--surface-card,rgba(255,255,255,0.04));border:1px solid var(--surface-border,rgba(255,255,255,0.08));border-radius:14px;padding:14px 16px 16px;">
+                        <div style="margin-bottom:12px;">
                             <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--theme-color);" data-i18n="darken_method_title">Darken Method</span>
-                            <p style="font-size:11px;color:var(--text-secondary);margin-top:2px;" data-i18n="darken_method_sub">Choose how monitors are darkened or put to sleep</p>
+                            <p style="font-size:11px;color:var(--text-secondary);margin-top:3px;" data-i18n="darken_method_sub">Choose how monitors are darkened or put to sleep</p>
                         </div>
 
                         <div class="darken-methods-list" id="darkenMethodCardsList">
@@ -2051,8 +2026,8 @@
                 </div>
                 <div class="popup-body">
                     <!-- Language Card -->
-                    <div class="settings-section-card">
-                        <div class="settings-item">
+                    <div style="background:var(--surface-card,rgba(255,255,255,0.04));border:1px solid var(--surface-border,rgba(255,255,255,0.08));border-radius:14px;padding:6px 16px;margin-bottom:14px;">
+                        <div class="settings-item" style="border-bottom:none;">
                             <div class="label-group">
                                 <span class="item-label" data-i18n="language">Language</span>
                             </div>
@@ -2065,7 +2040,7 @@
                     </div>
 
                     <!-- View Mode Card -->
-                    <div class="settings-section-card">
+                    <div style="background:var(--surface-card,rgba(255,255,255,0.04));border:1px solid var(--surface-border,rgba(255,255,255,0.08));border-radius:14px;padding:14px 16px;margin-bottom:16px;">
                         <div class="label-group" style="margin-bottom: 10px;">
                             <span class="item-label" data-i18n="view_mode">View Mode</span>
                             <span class="item-sub" data-i18n="view_mode_sub">Classic / Liquid Glass / Coffee</span>
@@ -2109,7 +2084,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="color-section-label" data-i18n="theme_color">Theme Color</div>
                     <div class="color-picker-container">
                         <div class="color-option bg-orange selected" data-color="#f97316"></div>
@@ -2123,12 +2097,10 @@
                         <div class="color-option bg-lime" data-color="#84cc16"></div>
                         <div class="color-option bg-brown" data-color="#C47440" title="Fancy Brown"></div>
                         <!-- White Mode swatch: selecting activates white mode, deselecting restores dark -->
-                        <div class="color-option color-option-white" id="whiteModeSwatchBtn" title="White Mode (click to toggle)" data-white-mode="true">
-                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#0f172a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);" class="white-mode-sun">
-                                <circle cx="12" cy="12" r="4"/>
-                                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-                            </svg>
-                            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#0f172a" stroke-width="3.2" stroke-linecap="round" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none;" class="white-mode-check">
+                        <div class="color-option color-option-white" id="whiteModeSwatchBtn" title="White Mode (click to toggle)"
+                            data-white-mode="true"
+                            style="background:linear-gradient(135deg,#ffffff 55%,#d0d7e3 100%);border:2px solid rgba(255,255,255,0.45);box-shadow:0 0 0 1.5px rgba(0,0,0,0.35);">
+                            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#111" stroke-width="2.8" stroke-linecap="round" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none;" class="white-mode-check">
                                 <polyline points="20 6 9 17 4 12"/>
                             </svg>
                         </div>
@@ -2312,6 +2284,9 @@
                 swatch.classList.toggle('selected', !!active);
                 const check = swatch.querySelector('.white-mode-check');
                 if (check) check.style.display = active ? 'block' : 'none';
+                // When active, use dark border so selected ring shows on white swatch
+                swatch.style.borderColor = active ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.12)';
+                swatch.style.boxShadow = active ? '0 0 12px rgba(0,0,0,0.25)' : '';
             }
         }
 
@@ -2820,11 +2795,14 @@
                     return {
                         startTime: p.time,
                         endTime: `${pad(endH)}:${pad(m)}`,
+                        days: Array.isArray(p.days) ? p.days : [0, 1, 2, 3, 4, 5, 6],
                         enabled: p.enabled !== false
                     };
                 }
                 if (!p.startTime) p.startTime = "08:00";
                 if (!p.endTime) p.endTime = "17:00";
+                p.days = Array.isArray(p.days) ? p.days : [0, 1, 2, 3, 4, 5, 6];
+                p.enabled = p.enabled !== false;
                 return p;
             });
 
@@ -2873,6 +2851,66 @@
                 let text = `${h}h`;
                 if (m > 0) text += ` ${m}m`;
                 return { diff, hours: h, minutes: m, label: text + ' awake', shortLabel: text };
+            }
+
+            const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const allDays = [0, 1, 2, 3, 4, 5, 6];
+
+            function normalizeProfileDays(profile) {
+                const days = Array.isArray(profile.days)
+                    ? profile.days.map(Number).filter(day => Number.isInteger(day) && day >= 0 && day <= 6)
+                    : allDays.slice();
+                profile.days = [...new Set(days)].sort((a, b) => a - b);
+                return profile.days;
+            }
+
+            function getProfileDayIntervals(profile, day) {
+                const start = timeToMinutes(profile.startTime);
+                const end = timeToMinutes(profile.endTime);
+                const intervals = [];
+                const days = normalizeProfileDays(profile);
+                const startsToday = days.includes(day);
+                const startsYesterday = days.includes((day + 6) % 7);
+                if (start < end && startsToday) {
+                    intervals.push([start, end]);
+                } else if (start > end && startsToday) {
+                    intervals.push([start, 1440]);
+                } else if (start === end && startsToday) {
+                    intervals.push([0, 1440]);
+                }
+                if (start > end && startsYesterday) intervals.push([0, end]);
+                return intervals;
+            }
+
+            function profilesConflict(candidate, candidateIndex = -1) {
+                normalizeProfileDays(candidate);
+                return window.timeProfiles.some((other, index) => {
+                    if (index === candidateIndex) return false;
+                    normalizeProfileDays(other);
+                    for (let day = 0; day < 7; day++) {
+                        const left = getProfileDayIntervals(candidate, day);
+                        const right = getProfileDayIntervals(other, day);
+                        if (left.some(a => right.some(b => Math.max(a[0], b[0]) < Math.min(a[1], b[1])))) return true;
+                    }
+                    return false;
+                });
+            }
+
+            function showProfileConflict() {
+                alert('This time overlaps another preset on one or more selected days. Choose different days or times.');
+            }
+
+            function updateProfileIfValid(index, updater) {
+                const profile = window.timeProfiles[index];
+                const previous = JSON.stringify(profile);
+                updater(profile);
+                normalizeProfileDays(profile);
+                if (profilesConflict(profile, index)) {
+                    Object.assign(profile, JSON.parse(previous));
+                    showProfileConflict();
+                    return false;
+                }
+                return true;
             }
 
             const CLOCK_CX = 100;
@@ -2975,6 +3013,8 @@
                 if (endKnob) endKnob.setAttribute('transform', `translate(${endPos.x.toFixed(2)}, ${endPos.y.toFixed(2)})`);
             }
 
+            window.timeProfiles.forEach(normalizeProfileDays);
+
             let expandedProfileIndices = new Set([0]);
 
             function renderTimeProfiles() {
@@ -3017,6 +3057,10 @@
                         </div>
                         <div class="profile-dial-collapse-panel">
                             <div class="clock-dial-container">
+                                <div class="profile-days-row">
+                                    <span class="profile-days-label">Days:</span>
+                                    ${dayLabels.map((label, day) => `<button type="button" class="profile-day-btn ${normalizeProfileDays(profile).includes(day) ? 'active' : ''}" data-day="${day}">${label}</button>`).join('')}
+                                </div>
                                 <div class="clock-svg-wrap" data-index="${index}">
                                     ${buildClockSvgMarkup()}
                                     <div class="clock-center-info">
@@ -3095,10 +3139,29 @@
                             const delta = parseInt(btn.dataset.delta, 10) || 0;
                             const current = timeToMinutes(window.timeProfiles[index][kind]);
                             const updated = (current + delta + 1440) % 1440;
-                            window.timeProfiles[index][kind] = minutesToTime(updated);
-                            updateClockDialVisuals(wrapper, window.timeProfiles[index]);
-                            saveSettings();
-                            refreshProfileGlow();
+                            if (updateProfileIfValid(index, profile => { profile[kind] = minutesToTime(updated); })) {
+                                updateClockDialVisuals(wrapper, window.timeProfiles[index]);
+                                saveSettings();
+                                refreshProfileGlow();
+                            }
+                        });
+                    });
+
+                    wrapper.querySelectorAll('.profile-day-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const day = Number(btn.dataset.day);
+                            const days = normalizeProfileDays(window.timeProfiles[index]);
+                            if (days.length === 1 && days.includes(day)) return;
+                            if (updateProfileIfValid(index, profile => {
+                                profile.days = days.includes(day)
+                                    ? days.filter(value => value !== day)
+                                    : [...days, day];
+                            })) {
+                                btn.classList.toggle('active', normalizeProfileDays(window.timeProfiles[index]).includes(day));
+                                saveSettings();
+                                refreshProfileGlow();
+                            }
                         });
                     });
 
@@ -3106,11 +3169,14 @@
                     wrapper.querySelectorAll('.dial-preset-chip').forEach(chip => {
                         chip.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            window.timeProfiles[index].startTime = chip.dataset.start;
-                            window.timeProfiles[index].endTime = chip.dataset.end;
-                            updateClockDialVisuals(wrapper, window.timeProfiles[index]);
-                            saveSettings();
-                            refreshProfileGlow();
+                            if (updateProfileIfValid(index, profile => {
+                                profile.startTime = chip.dataset.start;
+                                profile.endTime = chip.dataset.end;
+                            })) {
+                                updateClockDialVisuals(wrapper, window.timeProfiles[index]);
+                                saveSettings();
+                                refreshProfileGlow();
+                            }
                         });
                     });
 
@@ -3147,7 +3213,7 @@
                             const diffStart = Math.min(Math.abs(clickedMins - startM), 1440 - Math.abs(clickedMins - startM));
                             const diffEnd = Math.min(Math.abs(clickedMins - endM), 1440 - Math.abs(clickedMins - endM));
                             activeHandle = diffStart <= diffEnd ? 'startTime' : 'endTime';
-                            curProfile[activeHandle] = minutesToTime(clickedMins);
+                            if (!updateProfileIfValid(index, profile => { profile[activeHandle] = minutesToTime(clickedMins); })) return;
                             updateClockDialVisuals(wrapper, curProfile);
                         }
 
@@ -3156,7 +3222,7 @@
                         const onPointerMove = (moveEvt) => {
                             if (!activeHandle) return;
                             const mins = pointerToMins(moveEvt);
-                            window.timeProfiles[index][activeHandle] = minutesToTime(mins);
+                            updateProfileIfValid(index, profile => { profile[activeHandle] = minutesToTime(mins); });
                             updateClockDialVisuals(wrapper, window.timeProfiles[index]);
                         };
 
@@ -3191,7 +3257,15 @@
                 const h = padTimePart(start.getHours());
                 const m = padTimePart(start.getMinutes());
                 const endH = padTimePart(end.getHours());
-                const newIndex = window.timeProfiles.push({ startTime: `${h}:${m}`, endTime: `${endH}:${m}`, enabled: true }) - 1;
+                let newProfile = { startTime: `${h}:${m}`, endTime: `${endH}:${m}`, days: [now.getDay()], enabled: true };
+                for (let offset = 0; offset < 7 && profilesConflict(newProfile); offset++) {
+                    newProfile.days = [(now.getDay() + offset + 1) % 7];
+                }
+                if (profilesConflict(newProfile)) {
+                    showProfileConflict();
+                    return;
+                }
+                const newIndex = window.timeProfiles.push(newProfile) - 1;
                 expandedProfileIndices.add(newIndex);
                 updateParentToggleState(true);
                 renderTimeProfiles();
@@ -3208,14 +3282,17 @@
                 if (!schedEnabled) return false;
                 const now = new Date();
                 const nowMins = now.getHours() * 60 + now.getMinutes();
+                const today = now.getDay();
                 const [sh, sm] = (profile.startTime || '00:00').split(':').map(Number);
                 const [eh, em] = (profile.endTime   || '00:00').split(':').map(Number);
                 const startMins = sh * 60 + sm;
                 const endMins   = eh * 60 + em;
+                const days = normalizeProfileDays(profile);
                 if (startMins <= endMins) {
-                    return nowMins >= startMins && nowMins < endMins;
+                    return days.includes(today) && nowMins >= startMins && nowMins < endMins;
                 } else {
-                    return nowMins >= startMins || nowMins < endMins;
+                    return (days.includes(today) && nowMins >= startMins) ||
+                        (days.includes((today + 6) % 7) && nowMins < endMins);
                 }
             }
 
