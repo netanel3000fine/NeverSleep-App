@@ -1,9 +1,12 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" dir="ltr">
 
 <head>
   <script src="lang.js"></script>
   <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Never Sleep</title>
   <style>
@@ -464,6 +467,57 @@
       white-space: nowrap;
     }
 
+    /* Top header activity icons: hidden in classic mode */
+    body.classic-mode .header .activity-icon {
+      display: none !important;
+    }
+
+    /* Timer Value Wrapper & Activity Overlay */
+    .timer-value-wrapper {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 38px;
+      width: 100%;
+    }
+
+    body.classic-mode .timer-value-wrapper {
+      min-height: 18px;
+      width: auto;
+    }
+
+    .timer-activity-container {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .timer-activity-icon {
+      width: 28px;
+      height: 28px;
+      display: none;
+      fill: var(--theme-color);
+      animation: popIn 0.3s;
+    }
+
+    .timer-activity-icon.show {
+      display: block;
+    }
+
+    body.classic-mode .timer-activity-icon {
+      width: 15px;
+      height: 15px;
+    }
+
+    .timer-value.hide-for-activity {
+      opacity: 0 !important;
+    }
+
     .coffee-mode .heartbeat-icon {
       width: 40%;
       z-index: 10;
@@ -601,6 +655,75 @@
       text-shadow: 0 0 20px rgba(var(--theme-color-rgb), 0.4);
       margin: 0;
       line-height: 1;
+    }
+
+    body:not(.classic-mode) #panelLeft .panel-content {
+      justify-content: stretch;
+      gap: 0;
+      min-height: 0;
+    }
+
+    body:not(.classic-mode) #panelLeft .toggle-row {
+      align-items: flex-start;
+      margin-bottom: 0;
+      flex: 0 0 auto;
+    }
+
+    body:not(.classic-mode) #panelLeft .toggle-label {
+      max-width: 140px;
+      font-size: 17px !important;
+      font-weight: 700 !important;
+      line-height: 1.18;
+      color: rgba(255, 255, 255, 0.72);
+      text-wrap: balance;
+    }
+
+    body:not(.classic-mode) #panelLeft .timer-section {
+      justify-content: center;
+      gap: 0;
+      min-height: 0;
+      padding: 2px 0 4px;
+    }
+
+    body:not(.classic-mode) #panelLeft .status-text {
+      min-width: 0;
+      width: 100%;
+      padding: 0;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.1;
+      color: rgba(255, 255, 255, 0.92);
+      text-align: center;
+    }
+
+    body:not(.classic-mode) #panelLeft .status-text span {
+      margin-top: 4px;
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.05;
+    }
+
+    body:not(.classic-mode) #darkenTimerContainer {
+      width: 100%;
+      margin-top: 11px;
+      text-align: center;
+      flex: 0 0 auto;
+    }
+
+    body:not(.classic-mode) #darkenLabel {
+      margin-top: 0 !important;
+      margin-bottom: 1px;
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.1;
+      color: rgba(255, 255, 255, 0.76);
+    }
+
+    body:not(.classic-mode) #darkenTimer {
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 0.98;
+      font-variant-numeric: tabular-nums;
     }
 
     .input-row {
@@ -1091,7 +1214,7 @@
         linear-gradient(135deg,
           rgba(20,20,20,0.85) 0%,
           rgba(10,10,10,0.80) 50%,
-          rgba(15,15,15,0.85) 100%);
+          rgba(15,15,20,0.85) 100%);
 
       display: flex;
       flex-direction: row;
@@ -1157,6 +1280,7 @@
     body.classic-mode .disable-toggle-pill .pill-label {
       font-size: 10px;
       letter-spacing: 0.2px;
+      display: none !important;
     }
 
     /* Disabled-banner: centered within the 44px classic bar */
@@ -1233,19 +1357,94 @@
       display: none !important;
     }
 
-    /* Styling */
-    body.classic-mode .icon-btn {
+    /* === Classic Mode Icon Button — Icon-only animations === */
+
+    /* Gear spins on hover */
+    @keyframes classicGearSpin {
+      0%   { transform: rotate(0deg); }
+      100% { transform: rotate(180deg); }
+    }
+
+    /* Gear reverse-snaps on click */
+    @keyframes classicGearClick {
+      0%   { transform: rotate(0deg); }
+      30%  { transform: rotate(-30deg); }
+      100% { transform: rotate(45deg); }
+    }
+
+    /* Tray arrow bounces toward bottom-right on hover */
+    @keyframes classicTrayBounce {
+      0%   { transform: translate(0,   0);   }
+      30%  { transform: translate(3px, 3px); }
+      55%  { transform: translate(-1px,-1px);}
+      75%  { transform: translate(2px, 2px); }
+      90%  { transform: translate(0px, 0px); }
+      100% { transform: translate(1px, 1px); }
+    }
+
+    /* Tray jolts on click */
+    @keyframes classicTrayClick {
+      0%   { transform: translate(0,   0);   }
+      20%  { transform: translate(5px, 5px); }
+      50%  { transform: translate(-2px,-2px);}
+      80%  { transform: translate(2px, 2px); }
+      100% { transform: translate(0,   0);   }
+    }
+
+    /* Styling — buttons themselves stay static */
+    body.classic-mode .icon-btn,
+    body.coffee-mode .icon-btn,
+    body.liquid-glass-mode .icon-btn {
       padding: 4px;
       width: 30px;
       height: 30px;
       display: flex;
       align-items: center;
       justify-content: center;
+      transition: color 0.18s ease;
     }
+
+    body.classic-mode .icon-btn:hover,
+    body.coffee-mode .icon-btn:hover,
+    body.liquid-glass-mode .icon-btn:hover {
+      color: var(--theme-color, #f0b43c);
+    }
+
+    /* Settings gear: smooth spin on hover */
+    body.classic-mode #settingsBtn:hover svg,
+    body.coffee-mode #settingsBtn:hover svg,
+    body.liquid-glass-mode #settingsBtn:hover svg {
+      animation: classicGearSpin 0.6s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
+      transform-origin: center;
+    }
+
+    body.classic-mode #settingsBtn:active svg,
+    body.coffee-mode #settingsBtn:active svg,
+    body.liquid-glass-mode #settingsBtn:active svg {
+      animation: classicGearClick 0.25s ease-out forwards;
+      transform-origin: center;
+    }
+
+    /* Tray arrow: bounces toward bottom-right corner on hover */
+    body.classic-mode #trayBtn:hover svg,
+    body.coffee-mode #trayBtn:hover svg,
+    body.liquid-glass-mode #trayBtn:hover svg {
+      animation: classicTrayBounce 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      transform-origin: center;
+    }
+
+    body.classic-mode #trayBtn:active svg,
+    body.coffee-mode #trayBtn:active svg,
+    body.liquid-glass-mode #trayBtn:active svg {
+      animation: classicTrayClick 0.3s ease-out forwards;
+      transform-origin: center;
+    }
+
+
 
     body.classic-mode .panel {
       position: relative;
-      padding: 0 6px;
+      padding: 0 10px;
       border-radius: 8px;
       flex-direction: row-reverse;
       align-items: center;
@@ -1340,7 +1539,7 @@
     body.classic-mode .toggle {
       width: 34px;
       height: 18px;
-      border-radius: 9px;
+      border-radius: 5px;
     }
 
     body.classic-mode .toggle-knob {
@@ -1348,6 +1547,7 @@
       height: 12px;
       top: 3px;
       right: 3px;
+      border-radius: 3px;
     }
 
     body.classic-mode .toggle.active .toggle-knob {
@@ -1357,8 +1557,7 @@
     /* Classic mode app-disabled blur effects: blur out the rest of the window */
     body.classic-mode .panel,
     body.classic-mode .status,
-    body.classic-mode #settingsBtn,
-    body.classic-mode #trayBtn {
+    body.classic-mode #settingsBtn {
       transition: filter 0.35s cubic-bezier(0.4, 0, 0.2, 1),
                   opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
                   transform 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
@@ -1366,8 +1565,7 @@
 
     body.classic-mode.app-disabled .panel,
     body.classic-mode.app-disabled .status,
-    body.classic-mode.app-disabled #settingsBtn,
-    body.classic-mode.app-disabled #trayBtn {
+    body.classic-mode.app-disabled #settingsBtn {
       filter: blur(4px) grayscale(40%);
       opacity: 0.25;
       pointer-events: none;
@@ -2023,6 +2221,64 @@
       height: 31px;
       top: 66%;
       animation: bean-anim-19 24s ease-in-out -3s infinite;
+    }
+
+    .activity-icon {
+      width: 18px;
+      height: 18px;
+      display: none;
+      fill: var(--theme-color);
+      animation: popIn 0.3s;
+    }
+
+    .activity-icon.show {
+      display: block;
+    }
+
+    .timer-activity-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .timer-activity-icon {
+      width: 32px;
+      height: 32px;
+      display: none;
+      fill: var(--theme-color);
+      animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .timer-activity-icon.show {
+      display: block;
+    }
+
+    #darkenTimer {
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    #darkenTimer.hide-for-activity {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+
+    body.liquid-glass-mode .timer-activity-icon {
+      fill: rgba(255, 255, 255, 0.96);
+      filter: drop-shadow(0 0 10px rgba(var(--theme-color-rgb), 0.65));
+    }
+
+    body.coffee-mode .timer-activity-icon {
+      fill: #f8d8a8;
+      filter: drop-shadow(0 0 8px rgba(240, 180, 100, 0.7));
+    }
+
+    body.white-mode .timer-activity-icon {
+      fill: #0f172a;
     }
 
     .bean-20 {
@@ -4929,6 +5185,33 @@
       background: #ffffff !important;
       border-color: #cbd5e1 !important;
     }
+
+    #settingsBtn.update-available {
+      position: relative;
+    }
+    #settingsBtn.update-available::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 7px;
+      height: 7px;
+      background-color: #f97316;
+      border-radius: 50%;
+      border: 1.5px solid var(--panel-bg, #232d3d);
+      animation: pulse-orange 2s infinite;
+    }
+    @keyframes pulse-orange {
+      0% {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 5px rgba(249, 115, 22, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+      }
+    }
   </style>
 </head>
 
@@ -5072,9 +5355,19 @@
           <div class="timer-section tooltip-target" id="darkenSection" data-tauri-drag-region>
             <div class="status-text" id="mainStatusText" data-tauri-drag-region data-i18n="pc_awake">Your PC is<br><span
                 data-tauri-drag-region>awake now</span></div>
-            <div id="darkenTimerContainer" data-tauri-drag-region>
+            <div id="darkenTimerContainer" data-tauri-drag-region style="position: relative;">
               <div class="timer-label" id="darkenLabel" style="margin-top:5px" data-tauri-drag-region data-i18n="time_to_darken">Time to darken</div>
-              <div class="timer-value" id="darkenTimer" data-tauri-drag-region>00:10:00</div>
+              <div class="timer-value-wrapper" data-tauri-drag-region>
+                <div class="timer-value" id="darkenTimer" data-tauri-drag-region>00:10:00</div>
+                <div id="timerActivityIconContainer" class="timer-activity-container">
+                  <svg class="timer-activity-icon" id="timerMouseIcon" viewBox="0 0 24 24">
+                    <path d="M7 2L19.2 13.2 13.4 13.7 16.7 21 14.5 21.9 11.3 14.6 6.9 18.9V2z" />
+                  </svg>
+                  <svg class="timer-activity-icon" id="timerKbdIcon" viewBox="0 0 24 24">
+                    <path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z" />
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -5262,79 +5555,74 @@
       return !!timeProfilesEnabled && Array.isArray(timeProfiles) && timeProfiles.some(p => p.enabled !== false);
     }
 
+    function getProfileDays(profile) {
+      return Array.isArray(profile.days) && profile.days.length
+        ? profile.days
+        : [0, 1, 2, 3, 4, 5, 6];
+    }
+
     function getActiveProfileTimes() {
       if (!timeProfiles || timeProfiles.length === 0) return null;
-      const enabledProfiles = timeProfiles.filter(p => p.enabled);
+      const enabledProfiles = timeProfiles.filter(p => p.enabled !== false);
       if (enabledProfiles.length === 0) return null;
 
       const now = new Date();
       const currentMin = now.getHours() * 60 + now.getMinutes();
+      const currentDay = now.getDay();
 
       for (const p of enabledProfiles) {
         if (!p.startTime || !p.endTime) continue;
         const [sh, sm] = p.startTime.split(':').map(Number);
         const [eh, em] = p.endTime.split(':').map(Number);
         if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) continue;
-
         const startMin = sh * 60 + sm;
         const endMin = eh * 60 + em;
+        const days = getProfileDays(p);
+        const startsToday = days.includes(currentDay);
+        const startsYesterday = days.includes((currentDay + 6) % 7);
+        const active = startMin <= endMin
+          ? startsToday && currentMin >= startMin && currentMin < endMin
+          : (startsToday && currentMin >= startMin) || (startsYesterday && currentMin < endMin);
+        if (!active) continue;
 
-        let active = false;
-        let start = new Date(now);
-        let end = new Date(now);
-
-        if (startMin <= endMin) {
-          active = currentMin >= startMin && currentMin < endMin;
+        const start = new Date(now);
+        const end = new Date(now);
+        if (startMin <= endMin || currentMin >= startMin) {
           start.setHours(sh, sm, 0, 0);
           end.setHours(eh, em, 0, 0);
+          if (end <= start) end.setDate(end.getDate() + 1);
         } else {
-          // Crosses midnight
-          active = currentMin >= startMin || currentMin < endMin;
-          if (currentMin >= startMin) {
-            start.setHours(sh, sm, 0, 0);
-            end.setHours(eh, em, 0, 0);
-            end.setDate(end.getDate() + 1);
-          } else {
-            start.setHours(sh, sm, 0, 0);
-            start.setDate(start.getDate() - 1);
-            end.setHours(eh, em, 0, 0);
-          }
+          start.setHours(sh, sm, 0, 0);
+          start.setDate(start.getDate() - 1);
+          end.setHours(eh, em, 0, 0);
         }
-
-        if (active) {
-          return { start, end };
-        }
+        return { start, end };
       }
       return null;
     }
 
     function getNextProfileWindow() {
       if (!hasEnabledTimeProfiles()) return null;
-      const enabledProfiles = timeProfiles.filter(p => p.enabled !== false);
       const now = new Date();
       let next = null;
-
-      enabledProfiles.forEach(p => {
+      timeProfiles.filter(p => p.enabled !== false).forEach(p => {
         if (!p.startTime || !p.endTime) return;
         const [sh, sm] = p.startTime.split(':').map(Number);
         const [eh, em] = p.endTime.split(':').map(Number);
         if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return;
-
         const startMin = sh * 60 + sm;
         const endMin = eh * 60 + em;
-        const start = new Date(now);
-        start.setHours(sh, sm, 0, 0);
-        if (start <= now) start.setDate(start.getDate() + 1);
-
-        const end = new Date(start);
-        end.setHours(eh, em, 0, 0);
-        if (endMin <= startMin) end.setDate(end.getDate() + 1);
-
-        if (!next || start < next.start) {
-          next = { start, end };
-        }
+        getProfileDays(p).forEach(day => {
+          const start = new Date(now);
+          start.setDate(start.getDate() + ((day - now.getDay() + 7) % 7));
+          start.setHours(sh, sm, 0, 0);
+          if (start <= now) start.setDate(start.getDate() + 7);
+          const end = new Date(start);
+          end.setHours(eh, em, 0, 0);
+          if (endMin <= startMin) end.setDate(end.getDate() + 1);
+          if (!next || start < next.start) next = { start, end };
+        });
       });
-
       if (!next) return null;
       next.secondsUntilStart = Math.max(0, Math.floor((next.start - now) / 1000));
       return next;
@@ -5342,39 +5630,34 @@
 
     function getProfileStatus() {
       if (!timeProfiles || timeProfiles.length === 0) return null;
-      const enabledProfiles = timeProfiles.filter(p => p.enabled);
+      const enabledProfiles = timeProfiles.filter(p => p.enabled !== false);
       if (enabledProfiles.length === 0) return null;
-
       const now = new Date();
-      const currentMin = now.getHours() * 60 + now.getMinutes();
 
-      function isMinutesCovered(minOfDay) {
-        const m = ((minOfDay % 1440) + 1440) % 1440;
+      function isMinutesCovered(date) {
+        const m = date.getHours() * 60 + date.getMinutes();
+        const day = date.getDay();
         return enabledProfiles.some(p => {
           if (!p.startTime || !p.endTime) return false;
           const [sh, sm] = p.startTime.split(':').map(Number);
           const [eh, em] = p.endTime.split(':').map(Number);
           if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return false;
-          
           const startMin = sh * 60 + sm;
           const endMin = eh * 60 + em;
-
-          if (startMin <= endMin) {
-            return m >= startMin && m < endMin;
-          } else {
-            // Crosses midnight
-            return m >= startMin || m < endMin;
-          }
+          const days = getProfileDays(p);
+          if (startMin <= endMin) return days.includes(day) && m >= startMin && m < endMin;
+          return (days.includes(day) && m >= startMin) ||
+            (days.includes((day + 6) % 7) && m < endMin);
         });
       }
 
-      const isCurrentActive = isMinutesCovered(currentMin);
-      
-      // Scan forward to find when state will change
+      const currentDate = new Date(now);
+      currentDate.setSeconds(0, 0);
+      const isCurrentCovered = isMinutesCovered(currentDate);
       let minutesDelta = 0;
       for (let i = 0; i <= 1440; i++) {
-        const covered = isMinutesCovered(currentMin + i);
-        if (covered !== isCurrentActive) {
+        const probe = new Date(currentDate.getTime() + i * 60000);
+        if (isMinutesCovered(probe) !== isCurrentCovered) {
           minutesDelta = i;
           break;
         }
@@ -5386,8 +5669,11 @@
         totalSecondsDelta = (minutesDelta - 1) * 60 + (60 - secondsInCurrentMinute);
       }
 
+      const isAwake = (scheduleActionMode === 'pause') ? !isCurrentCovered : isCurrentCovered;
+
       return {
-        isActive: isCurrentActive,
+        isInsideProfile: isCurrentCovered,
+        isActive: isAwake,
         remainingSeconds: Math.max(0, totalSecondsDelta)
       };
     }
@@ -5399,6 +5685,7 @@
     let timeProfiles = [];
     let timeProfilesEnabled = false;
     let profileControlledAwake = false;
+    let scheduleActionMode = 'keep_awake';
 
 
 
@@ -5418,6 +5705,8 @@
     let focusOnCountdown = false;
     let minimizeOnDarken = false;
     let quitFocusOnCountdown = true;
+    let darkenMethod = 'overlay';
+    let controlMyMonitorPath = '';
 
     // Runtime state
     let isSleeping = false;
@@ -5491,7 +5780,8 @@
 
       if (window.__TAURI__) {
         if (mode === 'classic') {
-          window.__TAURI__.invoke('set_window_size', { width: 560, height: 44 }).catch(() => { });
+          const classicWidth = window.currentLang === 'he' ? 560 : 580;
+          window.__TAURI__.invoke('set_window_size', { width: classicWidth, height: 44 }).catch(() => { });
         } else {
           if (darkenTimerContainer) darkenTimerContainer.style.display = 'block';
           window.__TAURI__.invoke('set_window_size', { width: 500, height: 260 }).catch(() => { });
@@ -5549,6 +5839,7 @@
       }
 
       updateSleepNextProfile();
+      syncTrayState();
     }
 
     async function checkAct() {
@@ -5562,24 +5853,38 @@
 
           const mouseIcon = document.getElementById('mouseIcon');
           const kbdIcon = document.getElementById('kbdIcon');
+          const timerMouseIcon = document.getElementById('timerMouseIcon');
+          const timerKbdIcon = document.getElementById('timerKbdIcon');
+          const darkenTimerEl = document.getElementById('darkenTimer');
           const now = Date.now();
 
           if (!isScreenOn && (now - lastActivityIconAt > 1000)) {
             lastActivityIconAt = now;
+            if (darkenTimerEl) darkenTimerEl.classList.add('hide-for-activity');
             if (type === 'mouse') {
               if (mouseIcon) mouseIcon.classList.add('show');
               if (kbdIcon) kbdIcon.classList.remove('show');
+              if (timerMouseIcon) timerMouseIcon.classList.add('show');
+              if (timerKbdIcon) timerKbdIcon.classList.remove('show');
             } else {
               if (kbdIcon) kbdIcon.classList.add('show');
               if (mouseIcon) mouseIcon.classList.remove('show');
+              if (timerKbdIcon) timerKbdIcon.classList.add('show');
+              if (timerMouseIcon) timerMouseIcon.classList.remove('show');
             }
             setTimeout(() => {
               if (mouseIcon) mouseIcon.classList.remove('show');
               if (kbdIcon) kbdIcon.classList.remove('show');
+              if (timerMouseIcon) timerMouseIcon.classList.remove('show');
+              if (timerKbdIcon) timerKbdIcon.classList.remove('show');
+              if (darkenTimerEl) darkenTimerEl.classList.remove('hide-for-activity');
             }, 800);
           } else if (isScreenOn) {
             if (mouseIcon) mouseIcon.classList.remove('show');
             if (kbdIcon) kbdIcon.classList.remove('show');
+            if (timerMouseIcon) timerMouseIcon.classList.remove('show');
+            if (timerKbdIcon) timerKbdIcon.classList.remove('show');
+            if (darkenTimerEl) darkenTimerEl.classList.remove('hide-for-activity');
           }
 
           if (!isScreenOn && !isSleeping) {
@@ -5588,7 +5893,7 @@
 
           if (screenDarkened) {
             screenDarkened = false;
-            if (window.__TAURI__) window.__TAURI__.invoke('close_screen_overlay').catch(() => { });
+            if (window.__TAURI__) window.__TAURI__.invoke('close_screen_overlay', { method: darkenMethod, customPath: controlMyMonitorPath || null }).catch(() => { });
           }
         }
       } catch (e) { }
@@ -5601,7 +5906,8 @@
       resizeTimer = setTimeout(() => {
         const s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
         if (s.viewMode === 'classic') {
-          if (window.innerWidth !== 560 || window.innerHeight !== 44) {
+          const targetWidth = window.currentLang === 'he' ? 560 : 580;
+          if (window.innerWidth !== targetWidth || window.innerHeight !== 44) {
             applyViewMode('classic');
           }
         }
@@ -5625,7 +5931,13 @@
       const h = Math.floor(s / 3600);
       const m = Math.floor((s % 3600) / 60);
       const sec = Math.floor(s % 60);
-      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+      if (h > 0) {
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+      } else if (m > 0) {
+        return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+      } else {
+        return `${String(sec).padStart(2, '0')}`;
+      }
     }
 
     function formatClockTime(date) {
@@ -5649,17 +5961,28 @@
 
       const status = getProfileStatus();
       const next = getNextProfileWindow();
-      const shouldShow = isSleeping && profileControlledAwake && status && !status.isActive && next;
+      const shouldShow = isSleeping && profileControlledAwake && status && !status.isActive && (scheduleActionMode === 'pause' ? true : !!next);
       box.classList.toggle('show', !!shouldShow);
       if (overlay) overlay.classList.toggle('has-next-profile', !!shouldShow);
       if (!shouldShow) return;
 
-      startEl.textContent = formatClockTime(next.start);
-      endEl.textContent = formatClockTime(next.end);
-      const startsIn = translations[window.currentLang] && translations[window.currentLang].starts_in
-        ? translations[window.currentLang].starts_in
-        : 'Starts in';
-      countdownEl.textContent = `${startsIn} ${formatTime(next.secondsUntilStart)}`;
+      const arrow = box.querySelector('.sleep-next-arrow');
+      if (scheduleActionMode === 'pause') {
+        const resumeDate = new Date(Date.now() + status.remainingSeconds * 1000);
+        startEl.textContent = formatClockTime(resumeDate);
+        endEl.textContent = '';
+        if (arrow) arrow.style.display = 'none';
+        const resumesIn = (window.currentLang === 'he' ? 'מתחדש בעוד' : (window.currentLang === 'ru' ? 'Возобновится через' : 'Resumes in'));
+        countdownEl.textContent = `${resumesIn} ${formatTime(status.remainingSeconds)}`;
+      } else {
+        if (arrow) arrow.style.display = '';
+        startEl.textContent = formatClockTime(next.start);
+        endEl.textContent = formatClockTime(next.end);
+        const startsIn = translations[window.currentLang] && translations[window.currentLang].starts_in
+          ? translations[window.currentLang].starts_in
+          : 'Starts in';
+        countdownEl.textContent = `${startsIn} ${formatTime(next.secondsUntilStart)}`;
+      }
     }
 
     // Load Settings
@@ -5669,10 +5992,23 @@
       localStorage.setItem('neverSleepToggles', JSON.stringify({
         isScreenOn: isScreenOn
       }));
+      try {
+        let s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+        s.isScreenOn = isScreenOn;
+        const serialized = JSON.stringify(s);
+        localStorage.setItem('neverSleepSettings', serialized);
+        if (window.__TAURI__) {
+          window.__TAURI__.invoke('save_settings', { settings: serialized }).catch(() => {});
+        }
+      } catch (e) {}
     }
 
-    function loadTogglesState() {
+    function loadTogglesState(settingsObj) {
       try {
+        if (settingsObj && typeof settingsObj.isScreenOn === 'boolean') {
+          isScreenOn = settingsObj.isScreenOn;
+          return;
+        }
         const saved = JSON.parse(localStorage.getItem('neverSleepToggles') || '{}');
         if (typeof saved.isScreenOn === 'boolean') {
           isScreenOn = saved.isScreenOn;
@@ -5682,10 +6018,10 @@
       }
     }
 
-    function loadSet() {
+    function loadSet(customSettings) {
       try {
-        const s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
-        loadTogglesState();
+        const s = customSettings || JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+        loadTogglesState(s);
         window.currentLang = s.language || 'en';
         if(typeof applyLanguage === 'function') applyLanguage(window.currentLang);
         if (s.themeColor) applyTheme(s.themeColor);
@@ -5699,12 +6035,14 @@
 
         timeProfiles = s.timeProfiles || [];
         timeProfilesEnabled = s.timeProfilesEnabled === undefined ? (timeProfiles.length > 0) : !!s.timeProfilesEnabled;
+        scheduleActionMode = s.scheduleActionMode || 'keep_awake';
         applySchedulePanelVisibility();
         profileControlledAwake = hasEnabledTimeProfiles();
         autoShutdown = profileControlledAwake;
 
         darkenHours = s.darkenHours === undefined ? 0 : s.darkenHours;
         darkenMinutes = s.darkenMinutes === undefined ? 10 : s.darkenMinutes;
+
 
         breakH = s.breakHours === undefined ? 1 : s.breakHours;
         breakM = s.breakMinutes === undefined ? 0 : s.breakMinutes;
@@ -5715,6 +6053,8 @@
         focusOnCountdown = s.focusOnCountdown === undefined ? false : s.focusOnCountdown;
         minimizeOnDarken = s.minimizeOnDarken === undefined ? false : s.minimizeOnDarken;
         quitFocusOnCountdown = s.quitFocusOnCountdown === undefined ? true : s.quitFocusOnCountdown;
+        darkenMethod = s.darkenMethod === 'displaysleep' ? 'overlay' : (s.darkenMethod || 'overlay');
+        controlMyMonitorPath = s.controlMyMonitorPath || '';
 
         if (window.__TAURI__ && s.pinned !== undefined) {
           window.__TAURI__.invoke('set_pinned', { pinned: !!s.pinned }).catch(() => { });
@@ -5737,8 +6077,6 @@
       darkenTargetTime = Date.now() + (total * 1000);
     }
 
-
-
     function resetShutdownTimer() {
       const secs = getNextProfileSeconds();
       if (secs !== null) {
@@ -5749,7 +6087,7 @@
     }
 
     function createOverlay() {
-      if (window.__TAURI__) window.__TAURI__.invoke('create_screen_overlay').catch(() => { });
+      if (window.__TAURI__) window.__TAURI__.invoke('create_screen_overlay', { method: darkenMethod, customPath: controlMyMonitorPath || null }).catch(() => { });
       screenDarkened = true;
     }
 
@@ -5854,7 +6192,7 @@
       isScreenOn = true;
       screenDarkened = false;
       if (window.__TAURI__) {
-        window.__TAURI__.invoke('close_screen_overlay').catch(() => { });
+        window.__TAURI__.invoke('close_screen_overlay', { method: darkenMethod, customPath: controlMyMonitorPath || null }).catch(() => { });
         window.__TAURI__.invoke('prevent_sleep').catch(() => { });
       }
       resetDarkenTimer();
@@ -5866,8 +6204,19 @@
       autoShutdown = profileControlledAwake;
 
       if (!profileControlledAwake) {
-        exitSleepModeAndPreventSleep();
+        isSleeping = false;
+        const sleepOverlay = document.getElementById('sleepOverlay');
+        if (sleepOverlay) sleepOverlay.classList.remove('show');
+        screenDarkened = false;
+        if (window.__TAURI__) {
+          window.__TAURI__.invoke('close_screen_overlay', { method: darkenMethod, customPath: controlMyMonitorPath || null }).catch(() => { });
+          window.__TAURI__.invoke('prevent_sleep').catch(() => { });
+        }
         shutdownTargetTime = 0;
+        if (!isScreenOn) {
+          resetDarkenTimer();
+        }
+        updateUI();
         return;
       }
 
@@ -6004,7 +6353,128 @@
         updateUI();
         updateCoffeePour();
       }
+      syncTrayState();
     };
+
+    let activeDurationMins = null;
+    let durationTimerId = null;
+
+    function setDurationTimer(mins) {
+      if (durationTimerId) {
+        clearTimeout(durationTimerId);
+        durationTimerId = null;
+      }
+      if (!mins) {
+        activeDurationMins = null;
+        syncTrayState();
+        return;
+      }
+      activeDurationMins = mins;
+      syncTrayState();
+
+      durationTimerId = setTimeout(() => {
+        activeDurationMins = null;
+        durationTimerId = null;
+        setAppDisabled(true);
+        syncTrayState();
+      }, mins * 60 * 1000);
+    }
+
+    function syncTrayState() {
+      if (!window.__TAURI__) return;
+      const isScheduleActive = profileControlledAwake && !appDisabled;
+      let statusText = '⚡ Never Sleep: Active';
+      if (appDisabled) {
+        statusText = '💤 Never Sleep: Disabled';
+      } else if (isScheduleActive) {
+        statusText = '🕒 Never Sleep: Schedule Active';
+      } else if (!isScreenOn) {
+        statusText = '🌙 Never Sleep: Screen Darken';
+      }
+
+      window.__TAURI__.invoke('check_autostart').then((autostart) => {
+        let s = {};
+        try {
+          s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+        } catch(e){}
+
+        window.__TAURI__.invoke('update_tray_menu_state', {
+          statusText: statusText,
+          disabled: !!appDisabled,
+          keepAwake: !!isScreenOn,
+          scheduleModeActive: !!isScheduleActive,
+          activeDurationMins: activeDurationMins,
+          mediaEnabled: !!disableOnVideo,
+          notificationsEnabled: !!notificationsEnabled,
+          pinned: !!s.pinned,
+          autostart: !!autostart
+        }).catch(() => {});
+      }).catch(() => {});
+    }
+
+    if (window.__TAURI__ && window.__TAURI__.event) {
+      window.__TAURI__.event.listen('tray-action', (event) => {
+        const action = event.payload;
+        if (!action) return;
+
+        if (action === 'disable_app') {
+          disabledByMedia = false;
+          setAppDisabled(!appDisabled);
+        } else if (action === 'keep_awake') {
+          if (appDisabled) {
+            setAppDisabled(false);
+          }
+          isScreenOn = !isScreenOn;
+          saveTogglesState();
+          if (isScreenOn) {
+            const darkenTimerContainer = document.getElementById('darkenTimerContainer');
+            if (darkenTimerContainer) darkenTimerContainer.style.display = 'none';
+            if (window.__TAURI__) window.__TAURI__.invoke('prevent_sleep').catch(() => {});
+            minimizeTriggered = false;
+          } else {
+            resetDarkenTimer();
+            screenDarkened = false;
+            focusTriggered = false;
+            darkModeStartTime = 0;
+          }
+          updateUI();
+        } else if (action.startsWith('timer_')) {
+          if (action === 'timer_cancel') {
+            setDurationTimer(null);
+          } else {
+            const map = { timer_15m: 15, timer_30m: 30, timer_1h: 60, timer_2h: 120, timer_4h: 240 };
+            const mins = map[action];
+            if (mins) setDurationTimer(mins);
+          }
+        } else if (action === 'feat_media') {
+          disableOnVideo = !disableOnVideo;
+          let s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+          s.disableOnVideo = disableOnVideo;
+          const serialized = JSON.stringify(s);
+          localStorage.setItem('neverSleepSettings', serialized);
+          if (window.__TAURI__) window.__TAURI__.invoke('save_settings', { settings: serialized }).catch(() => {});
+          syncTrayState();
+        } else if (action === 'feat_notifications') {
+          notificationsEnabled = !notificationsEnabled;
+          let s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+          s.notificationsEnabled = notificationsEnabled;
+          const serialized = JSON.stringify(s);
+          localStorage.setItem('neverSleepSettings', serialized);
+          if (window.__TAURI__) window.__TAURI__.invoke('save_settings', { settings: serialized }).catch(() => {});
+          syncTrayState();
+        } else if (action === 'feat_pinned') {
+          let s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+          s.pinned = !s.pinned;
+          const serialized = JSON.stringify(s);
+          localStorage.setItem('neverSleepSettings', serialized);
+          if (window.__TAURI__) {
+            window.__TAURI__.invoke('save_settings', { settings: serialized }).catch(() => {});
+            window.__TAURI__.invoke('set_pinned', { pinned: s.pinned }).catch(() => {});
+          }
+          syncTrayState();
+        }
+      });
+    }
 
     document.getElementById('disableTogglePill').onclick = function (e) {
       e.stopPropagation();
@@ -6439,10 +6909,71 @@
       if (window._startCoffeeCanvas) window._startCoffeeCanvas();
     }
 
+    // Custom Background Update Check
+    const isVersionBigger = (current, remote) => {
+      const c = current.replace(/^v/, '').split('.').map(Number);
+      const r = remote.replace(/^v/, '').split('.').map(Number);
+      for (let i = 0; i < Math.max(c.length, r.length); i++) {
+        const cVal = c[i] || 0;
+        const rVal = r[i] || 0;
+        if (rVal > cVal) return true;
+        if (rVal < cVal) return false;
+      }
+      return false;
+    };
+
+    const checkCustomUpdate = async () => {
+      const currentVersion = window.__TAURI__ ? await window.__TAURI__.app.getVersion() : "13.0.0";
+      if (window.__TAURI__) {
+        // Use Rust backend to fetch & parse — avoids CSP/CORS
+        return await window.__TAURI__.invoke('check_for_update', { currentVersion });
+      }
+      return { shouldUpdate: false };
+    };
+
+    async function checkForUpdatesInBackground() {
+      try {
+        const result = await checkCustomUpdate();
+        if (result.shouldUpdate) {
+          // Show a system notification
+          if (window.__TAURI__) {
+            await window.__TAURI__.invoke('show_notification', {
+              title: 'Never Sleep Update',
+              body: `Version ${result.version} is available. Go to settings to download.`
+            });
+          }
+          // Add a visual indicator to the settings button
+          const settingsBtn = document.getElementById('settingsBtn');
+          if (settingsBtn) {
+            settingsBtn.classList.add('update-available');
+          }
+        }
+      } catch (e) {
+        console.error('Background update check error:', e);
+      }
+    }
+
     // Setup
     loadSet(); resetDarkenTimer();
     applyProfileControlledPowerState({ focus: false });
     updateCoffeePour(); // sync pour state on load
+    setTimeout(checkForUpdatesInBackground, 5000);
+
+    if (window.__TAURI__) {
+      window.__TAURI__.invoke('load_settings').then(saved => {
+        if (saved) {
+          try {
+            const s = JSON.parse(saved);
+            loadSet(s);
+            if (!appDisabled) {
+              applyProfileControlledPowerState({ focus: false });
+            }
+            updateUI();
+            updateCoffeePour();
+          } catch (e) { }
+        }
+      }).catch(() => { });
+    }
 
     window.addEventListener('storage', (e) => {
       if (e.key === 'neverSleepSettings' || e.key === 'neverSleepCommand') {

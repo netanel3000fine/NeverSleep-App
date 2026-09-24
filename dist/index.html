@@ -4,6 +4,9 @@
 <head>
   <script src="lang.js"></script>
   <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Never Sleep</title>
   <style>
@@ -1536,7 +1539,7 @@
     body.classic-mode .toggle {
       width: 34px;
       height: 18px;
-      border-radius: 9px;
+      border-radius: 5px;
     }
 
     body.classic-mode .toggle-knob {
@@ -1544,6 +1547,7 @@
       height: 12px;
       top: 3px;
       right: 3px;
+      border-radius: 3px;
     }
 
     body.classic-mode .toggle.active .toggle-knob {
@@ -5551,79 +5555,74 @@
       return !!timeProfilesEnabled && Array.isArray(timeProfiles) && timeProfiles.some(p => p.enabled !== false);
     }
 
+    function getProfileDays(profile) {
+      return Array.isArray(profile.days) && profile.days.length
+        ? profile.days
+        : [0, 1, 2, 3, 4, 5, 6];
+    }
+
     function getActiveProfileTimes() {
       if (!timeProfiles || timeProfiles.length === 0) return null;
-      const enabledProfiles = timeProfiles.filter(p => p.enabled);
+      const enabledProfiles = timeProfiles.filter(p => p.enabled !== false);
       if (enabledProfiles.length === 0) return null;
 
       const now = new Date();
       const currentMin = now.getHours() * 60 + now.getMinutes();
+      const currentDay = now.getDay();
 
       for (const p of enabledProfiles) {
         if (!p.startTime || !p.endTime) continue;
         const [sh, sm] = p.startTime.split(':').map(Number);
         const [eh, em] = p.endTime.split(':').map(Number);
         if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) continue;
-
         const startMin = sh * 60 + sm;
         const endMin = eh * 60 + em;
+        const days = getProfileDays(p);
+        const startsToday = days.includes(currentDay);
+        const startsYesterday = days.includes((currentDay + 6) % 7);
+        const active = startMin <= endMin
+          ? startsToday && currentMin >= startMin && currentMin < endMin
+          : (startsToday && currentMin >= startMin) || (startsYesterday && currentMin < endMin);
+        if (!active) continue;
 
-        let active = false;
-        let start = new Date(now);
-        let end = new Date(now);
-
-        if (startMin <= endMin) {
-          active = currentMin >= startMin && currentMin < endMin;
+        const start = new Date(now);
+        const end = new Date(now);
+        if (startMin <= endMin || currentMin >= startMin) {
           start.setHours(sh, sm, 0, 0);
           end.setHours(eh, em, 0, 0);
+          if (end <= start) end.setDate(end.getDate() + 1);
         } else {
-          // Crosses midnight
-          active = currentMin >= startMin || currentMin < endMin;
-          if (currentMin >= startMin) {
-            start.setHours(sh, sm, 0, 0);
-            end.setHours(eh, em, 0, 0);
-            end.setDate(end.getDate() + 1);
-          } else {
-            start.setHours(sh, sm, 0, 0);
-            start.setDate(start.getDate() - 1);
-            end.setHours(eh, em, 0, 0);
-          }
+          start.setHours(sh, sm, 0, 0);
+          start.setDate(start.getDate() - 1);
+          end.setHours(eh, em, 0, 0);
         }
-
-        if (active) {
-          return { start, end };
-        }
+        return { start, end };
       }
       return null;
     }
 
     function getNextProfileWindow() {
       if (!hasEnabledTimeProfiles()) return null;
-      const enabledProfiles = timeProfiles.filter(p => p.enabled !== false);
       const now = new Date();
       let next = null;
-
-      enabledProfiles.forEach(p => {
+      timeProfiles.filter(p => p.enabled !== false).forEach(p => {
         if (!p.startTime || !p.endTime) return;
         const [sh, sm] = p.startTime.split(':').map(Number);
         const [eh, em] = p.endTime.split(':').map(Number);
         if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return;
-
         const startMin = sh * 60 + sm;
         const endMin = eh * 60 + em;
-        const start = new Date(now);
-        start.setHours(sh, sm, 0, 0);
-        if (start <= now) start.setDate(start.getDate() + 1);
-
-        const end = new Date(start);
-        end.setHours(eh, em, 0, 0);
-        if (endMin <= startMin) end.setDate(end.getDate() + 1);
-
-        if (!next || start < next.start) {
-          next = { start, end };
-        }
+        getProfileDays(p).forEach(day => {
+          const start = new Date(now);
+          start.setDate(start.getDate() + ((day - now.getDay() + 7) % 7));
+          start.setHours(sh, sm, 0, 0);
+          if (start <= now) start.setDate(start.getDate() + 7);
+          const end = new Date(start);
+          end.setHours(eh, em, 0, 0);
+          if (endMin <= startMin) end.setDate(end.getDate() + 1);
+          if (!next || start < next.start) next = { start, end };
+        });
       });
-
       if (!next) return null;
       next.secondsUntilStart = Math.max(0, Math.floor((next.start - now) / 1000));
       return next;
@@ -5631,39 +5630,34 @@
 
     function getProfileStatus() {
       if (!timeProfiles || timeProfiles.length === 0) return null;
-      const enabledProfiles = timeProfiles.filter(p => p.enabled);
+      const enabledProfiles = timeProfiles.filter(p => p.enabled !== false);
       if (enabledProfiles.length === 0) return null;
-
       const now = new Date();
-      const currentMin = now.getHours() * 60 + now.getMinutes();
 
-      function isMinutesCovered(minOfDay) {
-        const m = ((minOfDay % 1440) + 1440) % 1440;
+      function isMinutesCovered(date) {
+        const m = date.getHours() * 60 + date.getMinutes();
+        const day = date.getDay();
         return enabledProfiles.some(p => {
           if (!p.startTime || !p.endTime) return false;
           const [sh, sm] = p.startTime.split(':').map(Number);
           const [eh, em] = p.endTime.split(':').map(Number);
           if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return false;
-          
           const startMin = sh * 60 + sm;
           const endMin = eh * 60 + em;
-
-          if (startMin <= endMin) {
-            return m >= startMin && m < endMin;
-          } else {
-            // Crosses midnight
-            return m >= startMin || m < endMin;
-          }
+          const days = getProfileDays(p);
+          if (startMin <= endMin) return days.includes(day) && m >= startMin && m < endMin;
+          return (days.includes(day) && m >= startMin) ||
+            (days.includes((day + 6) % 7) && m < endMin);
         });
       }
 
-      const isCurrentActive = isMinutesCovered(currentMin);
-      
-      // Scan forward to find when state will change
+      const currentDate = new Date(now);
+      currentDate.setSeconds(0, 0);
+      const isCurrentCovered = isMinutesCovered(currentDate);
       let minutesDelta = 0;
       for (let i = 0; i <= 1440; i++) {
-        const covered = isMinutesCovered(currentMin + i);
-        if (covered !== isCurrentActive) {
+        const probe = new Date(currentDate.getTime() + i * 60000);
+        if (isMinutesCovered(probe) !== isCurrentCovered) {
           minutesDelta = i;
           break;
         }
@@ -5675,8 +5669,11 @@
         totalSecondsDelta = (minutesDelta - 1) * 60 + (60 - secondsInCurrentMinute);
       }
 
+      const isAwake = (scheduleActionMode === 'pause') ? !isCurrentCovered : isCurrentCovered;
+
       return {
-        isActive: isCurrentActive,
+        isInsideProfile: isCurrentCovered,
+        isActive: isAwake,
         remainingSeconds: Math.max(0, totalSecondsDelta)
       };
     }
@@ -5688,6 +5685,7 @@
     let timeProfiles = [];
     let timeProfilesEnabled = false;
     let profileControlledAwake = false;
+    let scheduleActionMode = 'keep_awake';
 
 
 
@@ -5933,7 +5931,13 @@
       const h = Math.floor(s / 3600);
       const m = Math.floor((s % 3600) / 60);
       const sec = Math.floor(s % 60);
-      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+      if (h > 0) {
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+      } else if (m > 0) {
+        return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+      } else {
+        return `${String(sec).padStart(2, '0')}`;
+      }
     }
 
     function formatClockTime(date) {
@@ -5957,17 +5961,28 @@
 
       const status = getProfileStatus();
       const next = getNextProfileWindow();
-      const shouldShow = isSleeping && profileControlledAwake && status && !status.isActive && next;
+      const shouldShow = isSleeping && profileControlledAwake && status && !status.isActive && (scheduleActionMode === 'pause' ? true : !!next);
       box.classList.toggle('show', !!shouldShow);
       if (overlay) overlay.classList.toggle('has-next-profile', !!shouldShow);
       if (!shouldShow) return;
 
-      startEl.textContent = formatClockTime(next.start);
-      endEl.textContent = formatClockTime(next.end);
-      const startsIn = translations[window.currentLang] && translations[window.currentLang].starts_in
-        ? translations[window.currentLang].starts_in
-        : 'Starts in';
-      countdownEl.textContent = `${startsIn} ${formatTime(next.secondsUntilStart)}`;
+      const arrow = box.querySelector('.sleep-next-arrow');
+      if (scheduleActionMode === 'pause') {
+        const resumeDate = new Date(Date.now() + status.remainingSeconds * 1000);
+        startEl.textContent = formatClockTime(resumeDate);
+        endEl.textContent = '';
+        if (arrow) arrow.style.display = 'none';
+        const resumesIn = (window.currentLang === 'he' ? 'מתחדש בעוד' : (window.currentLang === 'ru' ? 'Возобновится через' : 'Resumes in'));
+        countdownEl.textContent = `${resumesIn} ${formatTime(status.remainingSeconds)}`;
+      } else {
+        if (arrow) arrow.style.display = '';
+        startEl.textContent = formatClockTime(next.start);
+        endEl.textContent = formatClockTime(next.end);
+        const startsIn = translations[window.currentLang] && translations[window.currentLang].starts_in
+          ? translations[window.currentLang].starts_in
+          : 'Starts in';
+        countdownEl.textContent = `${startsIn} ${formatTime(next.secondsUntilStart)}`;
+      }
     }
 
     // Load Settings
@@ -5977,10 +5992,23 @@
       localStorage.setItem('neverSleepToggles', JSON.stringify({
         isScreenOn: isScreenOn
       }));
+      try {
+        let s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+        s.isScreenOn = isScreenOn;
+        const serialized = JSON.stringify(s);
+        localStorage.setItem('neverSleepSettings', serialized);
+        if (window.__TAURI__) {
+          window.__TAURI__.invoke('save_settings', { settings: serialized }).catch(() => {});
+        }
+      } catch (e) {}
     }
 
-    function loadTogglesState() {
+    function loadTogglesState(settingsObj) {
       try {
+        if (settingsObj && typeof settingsObj.isScreenOn === 'boolean') {
+          isScreenOn = settingsObj.isScreenOn;
+          return;
+        }
         const saved = JSON.parse(localStorage.getItem('neverSleepToggles') || '{}');
         if (typeof saved.isScreenOn === 'boolean') {
           isScreenOn = saved.isScreenOn;
@@ -5990,10 +6018,10 @@
       }
     }
 
-    function loadSet() {
+    function loadSet(customSettings) {
       try {
-        const s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
-        loadTogglesState();
+        const s = customSettings || JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+        loadTogglesState(s);
         window.currentLang = s.language || 'en';
         if(typeof applyLanguage === 'function') applyLanguage(window.currentLang);
         if (s.themeColor) applyTheme(s.themeColor);
@@ -6007,6 +6035,7 @@
 
         timeProfiles = s.timeProfiles || [];
         timeProfilesEnabled = s.timeProfilesEnabled === undefined ? (timeProfiles.length > 0) : !!s.timeProfilesEnabled;
+        scheduleActionMode = s.scheduleActionMode || 'keep_awake';
         applySchedulePanelVisibility();
         profileControlledAwake = hasEnabledTimeProfiles();
         autoShutdown = profileControlledAwake;
@@ -6024,7 +6053,7 @@
         focusOnCountdown = s.focusOnCountdown === undefined ? false : s.focusOnCountdown;
         minimizeOnDarken = s.minimizeOnDarken === undefined ? false : s.minimizeOnDarken;
         quitFocusOnCountdown = s.quitFocusOnCountdown === undefined ? true : s.quitFocusOnCountdown;
-        darkenMethod = s.darkenMethod || 'overlay';
+        darkenMethod = s.darkenMethod === 'displaysleep' ? 'overlay' : (s.darkenMethod || 'overlay');
         controlMyMonitorPath = s.controlMyMonitorPath || '';
 
         if (window.__TAURI__ && s.pinned !== undefined) {
@@ -6175,8 +6204,19 @@
       autoShutdown = profileControlledAwake;
 
       if (!profileControlledAwake) {
-        exitSleepModeAndPreventSleep();
+        isSleeping = false;
+        const sleepOverlay = document.getElementById('sleepOverlay');
+        if (sleepOverlay) sleepOverlay.classList.remove('show');
+        screenDarkened = false;
+        if (window.__TAURI__) {
+          window.__TAURI__.invoke('close_screen_overlay', { method: darkenMethod, customPath: controlMyMonitorPath || null }).catch(() => { });
+          window.__TAURI__.invoke('prevent_sleep').catch(() => { });
+        }
         shutdownTargetTime = 0;
+        if (!isScreenOn) {
+          resetDarkenTimer();
+        }
+        updateUI();
         return;
       }
 
@@ -6918,6 +6958,22 @@
     applyProfileControlledPowerState({ focus: false });
     updateCoffeePour(); // sync pour state on load
     setTimeout(checkForUpdatesInBackground, 5000);
+
+    if (window.__TAURI__) {
+      window.__TAURI__.invoke('load_settings').then(saved => {
+        if (saved) {
+          try {
+            const s = JSON.parse(saved);
+            loadSet(s);
+            if (!appDisabled) {
+              applyProfileControlledPowerState({ focus: false });
+            }
+            updateUI();
+            updateCoffeePour();
+          } catch (e) { }
+        }
+      }).catch(() => { });
+    }
 
     window.addEventListener('storage', (e) => {
       if (e.key === 'neverSleepSettings' || e.key === 'neverSleepCommand') {

@@ -247,7 +247,7 @@ fn create_laptop_overlay_window(
     app: &tauri::AppHandle,
     state: &tauri::State<'_, AppState>,
 ) -> Result<(), String> {
-    let laptop_rects = ddcci_incompatible_monitor_rects()?;
+    let incompatible_mons = ddcci_incompatible_monitors()?;
     let main_window = app.get_window("main").ok_or("Main window not found")?;
     let monitors = main_window
         .available_monitors()
@@ -257,11 +257,14 @@ fn create_laptop_overlay_window(
     for (i, monitor) in monitors.iter().enumerate() {
         let position = monitor.position();
         let size = monitor.size();
-        let is_laptop_display = laptop_rects.iter().any(|(x, y, width, height)| {
-            position.x == *x
-                && position.y == *y
-                && size.width == *width
-                && size.height == *height
+        let mon_name = monitor.name().map(|s| s.to_string()).unwrap_or_default();
+
+        let is_laptop_display = incompatible_mons.iter().any(|info| {
+            (!info.device_name.is_empty() && info.device_name == mon_name)
+                || (position.x == info.x
+                    && position.y == info.y
+                    && size.width == info.width
+                    && size.height == info.height)
         });
 
         if !is_laptop_display {
@@ -269,6 +272,10 @@ fn create_laptop_overlay_window(
         }
 
         let label = format!("overlay_laptop_{}", i);
+        if let Some(existing) = app.get_window(&label) {
+            let _ = existing.close();
+        }
+
         let window = tauri::WindowBuilder::new(
             app,
             &label,
@@ -283,11 +290,13 @@ fn create_laptop_overlay_window(
         .build()
         .map_err(|e| format!("Failed to create laptop overlay: {}", e))?;
 
+        let _ = window.maximize();
         let _ = window.set_position(tauri::Position::Physical(position.clone()));
         let _ = window.set_size(tauri::Size::Physical(size.clone()));
         window
             .show()
             .map_err(|e| format!("Failed to show laptop overlay: {}", e))?;
+        let _ = window.set_focus();
         overlay_windows.push(label);
     }
 
@@ -311,11 +320,9 @@ async fn create_screen_overlay(
 ) -> Result<(), String> {
     let m = method.unwrap_or_else(|| "overlay".to_string());
     match m.as_str() {
-        "displaysleep" => create_darken_display_sleep(),
         "win32" => create_darken_win32(),
         "gamma" => create_darken_gamma(),
-        "ddcci" => send_ddcci_vcp_power(4),
-        "ddcci_laptop_overlay" => {
+        "ddcci" | "ddcci_laptop_overlay" => {
             match send_ddcci_vcp_power(4) {
                 Ok(()) => {}
                 Err(error) if error.contains("No DDC/CI compatible physical monitors") => {}
@@ -338,11 +345,9 @@ async fn close_screen_overlay(
 ) -> Result<(), String> {
     let m = method.unwrap_or_else(|| "overlay".to_string());
     match m.as_str() {
-        "displaysleep" => close_darken_display_sleep(),
         "win32" => close_darken_win32(),
         "gamma" => close_darken_gamma(),
-        "ddcci" => send_ddcci_vcp_power(1),
-        "ddcci_laptop_overlay" => {
+        "ddcci" | "ddcci_laptop_overlay" => {
             let close_result = {
                 let mut overlay_windows = state.overlay_windows.lock().unwrap();
                 for label in overlay_windows.iter() {
@@ -374,32 +379,6 @@ async fn close_screen_overlay(
             Ok(())
         }
     }
-}
-
-// ===== DISPLAY SLEEP METHOD (Windows SC_MONITORPOWER) =====
-
-fn create_darken_display_sleep() -> Result<(), String> {
-    #[cfg(target_os = "windows")]
-    {
-        use winapi::um::winuser::{SendMessageW, HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER};
-        unsafe {
-            // 2 = Monitor Power Off / Standby
-            SendMessageW(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, 2);
-        }
-    }
-    Ok(())
-}
-
-fn close_darken_display_sleep() -> Result<(), String> {
-    #[cfg(target_os = "windows")]
-    {
-        use winapi::um::winuser::{SendMessageW, HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER};
-        unsafe {
-            // -1 = Monitor Power On
-            SendMessageW(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, -1);
-        }
-    }
-    Ok(())
 }
 
 // ===== BRIGHTNESS METHOD (via PowerShell WMI) =====
@@ -496,10 +475,10 @@ fn create_darken_win32() -> Result<(), String> {
             use winapi::um::winuser::{
                 CreateWindowExW, ShowWindow, UpdateWindow, DefWindowProcW,
                 GetSystemMetrics, RegisterClassW, GetMessageW, TranslateMessage,
-                DispatchMessageW, PostQuitMessage, DestroyWindow,
+                DispatchMessageW, PostQuitMessage, DestroyWindow, SetWindowPos,
                 SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN, SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN,
                 SW_SHOW, WNDCLASSW, WS_EX_TOPMOST, WS_EX_TOOLWINDOW,
-                WS_EX_TRANSPARENT, WS_POPUP, CS_HREDRAW, CS_VREDRAW, WM_CLOSE, WM_DESTROY,
+                WS_POPUP, CS_HREDRAW, CS_VREDRAW, WM_CLOSE, WM_DESTROY,
                 WM_ERASEBKGND,
             };
             use winapi::um::libloaderapi::GetModuleHandleW;
@@ -510,6 +489,9 @@ fn create_darken_win32() -> Result<(), String> {
                 fn GetStockObject(i: i32) -> HGDIOBJ;
             }
             const BLACK_BRUSH: i32 = 4;
+            const WS_EX_NOACTIVATE: u32 = 0x08000000;
+            const SWP_SHOWWINDOW: u32 = 0x0040;
+            const HWND_TOPMOST: isize = -1;
 
             unsafe extern "system" fn darken_wnd_proc(
                 hwnd: HWND,
@@ -517,8 +499,29 @@ fn create_darken_win32() -> Result<(), String> {
                 wparam: WPARAM,
                 lparam: LPARAM,
             ) -> LRESULT {
+                const WM_NCHITTEST: UINT = 0x0084;
+                const WM_PAINT: UINT = 0x000F;
                 match msg {
-                    WM_ERASEBKGND => 1,
+                    WM_NCHITTEST => -1, // HTTRANSPARENT: let mouse pass through
+                    WM_ERASEBKGND => {
+                        use winapi::um::winuser::{FillRect, GetClientRect};
+                        use winapi::shared::windef::RECT;
+                        let hdc = wparam as winapi::shared::windef::HDC;
+                        let mut rc: RECT = std::mem::zeroed();
+                        GetClientRect(hwnd, &mut rc);
+                        let black_brush = GetStockObject(BLACK_BRUSH) as HBRUSH;
+                        FillRect(hdc, &rc, black_brush);
+                        1
+                    }
+                    WM_PAINT => {
+                        use winapi::um::winuser::{BeginPaint, EndPaint, FillRect, PAINTSTRUCT};
+                        let mut ps: PAINTSTRUCT = std::mem::zeroed();
+                        let hdc = BeginPaint(hwnd, &mut ps);
+                        let black_brush = GetStockObject(BLACK_BRUSH) as HBRUSH;
+                        FillRect(hdc, &ps.rcPaint, black_brush);
+                        EndPaint(hwnd, &ps);
+                        0
+                    }
                     WM_CLOSE => {
                         DestroyWindow(hwnd);
                         0
@@ -557,10 +560,10 @@ fn create_darken_win32() -> Result<(), String> {
                 let h = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
                 let hwnd: HWND = CreateWindowExW(
-                    WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_TRANSPARENT,
+                    WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
                     class_name.as_ptr(),
                     title.as_ptr(),
-                    WS_POPUP,
+                    WS_POPUP | winapi::um::winuser::WS_VISIBLE,
                     x, y, w, h,
                     ptr::null_mut(),
                     ptr::null_mut(),
@@ -576,6 +579,7 @@ fn create_darken_win32() -> Result<(), String> {
                 WIN32_DARKEN_HWND.store(hwnd as isize, std::sync::atomic::Ordering::SeqCst);
                 let _ = tx.send(hwnd as isize);
 
+                SetWindowPos(hwnd, HWND_TOPMOST as HWND, x, y, w, h, SWP_SHOWWINDOW);
                 ShowWindow(hwnd, SW_SHOW);
                 UpdateWindow(hwnd);
 
@@ -616,41 +620,48 @@ fn close_darken_win32() -> Result<(), String> {
     Ok(())
 }
 
-// ===== GAMMA RAMP METHOD =====
+// ===== DESKTOP COLOR ENGINE (Windows Magnification API) =====
 
 #[cfg(target_os = "windows")]
-static SAVED_GAMMA_RAMP: Mutex<Option<Vec<u16>>> = Mutex::new(None);
+static COLOR_ENGINE_ACTIVE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 fn create_darken_gamma() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
-        use winapi::um::winuser::{GetDC, ReleaseDC};
-        use winapi::shared::windef::HDC;
-
-        #[link(name = "gdi32")]
-        extern "system" {
-            fn GetDeviceGammaRamp(hdc: HDC, lpRamp: *mut std::ffi::c_void) -> winapi::shared::minwindef::BOOL;
-            fn SetDeviceGammaRamp(hdc: HDC, lpRamp: *const std::ffi::c_void) -> winapi::shared::minwindef::BOOL;
-        }
-
+        use winapi::um::libloaderapi::{LoadLibraryA, GetProcAddress};
         unsafe {
-            let hdc = GetDC(std::ptr::null_mut());
-            if hdc.is_null() {
-                return Err("Failed to get primary display DC".to_string());
+            let lib = LoadLibraryA(b"Magnification.dll\0".as_ptr() as *const i8);
+            if lib.is_null() {
+                return Err("Failed to load Magnification.dll".to_string());
             }
 
-            let mut original_ramp = vec![0u16; 3 * 256];
-            if GetDeviceGammaRamp(hdc, original_ramp.as_mut_ptr() as *mut std::ffi::c_void) != 0 {
-                let mut saved = SAVED_GAMMA_RAMP.lock().unwrap();
-                *saved = Some(original_ramp);
+            type MagInitFn = unsafe extern "system" fn() -> winapi::shared::minwindef::BOOL;
+            type MagSetEffectFn = unsafe extern "system" fn(*const f32) -> winapi::shared::minwindef::BOOL;
 
-                let black_ramp = vec![0u16; 3 * 256];
-                SetDeviceGammaRamp(hdc, black_ramp.as_ptr() as *const std::ffi::c_void);
-            } else {
-                ReleaseDC(std::ptr::null_mut(), hdc);
-                return Err("Display driver does not support hardware gamma ramp".to_string());
+            let init_proc = GetProcAddress(lib, b"MagInitialize\0".as_ptr() as *const i8);
+            let set_effect_proc = GetProcAddress(lib, b"MagSetFullscreenColorEffect\0".as_ptr() as *const i8);
+
+            if init_proc.is_null() || set_effect_proc.is_null() {
+                return Err("Failed to locate Magnification API entry points".to_string());
             }
-            ReleaseDC(std::ptr::null_mut(), hdc);
+
+            let mag_init: MagInitFn = std::mem::transmute(init_proc);
+            let mag_set_effect: MagSetEffectFn = std::mem::transmute(set_effect_proc);
+
+            if mag_init() == 0 {
+                return Err("MagInitialize failed".to_string());
+            }
+
+            // 5x5 color matrix with zero RGB multipliers (transforms screen to pure black)
+            let mut black_matrix = [0.0f32; 25];
+            black_matrix[18] = 1.0; // alpha multiplier
+            black_matrix[24] = 1.0; // identity scale
+
+            if mag_set_effect(black_matrix.as_ptr()) == 0 {
+                return Err("MagSetFullscreenColorEffect failed".to_string());
+            }
+
+            COLOR_ENGINE_ACTIVE.store(true, std::sync::atomic::Ordering::SeqCst);
         }
     }
     Ok(())
@@ -659,21 +670,35 @@ fn create_darken_gamma() -> Result<(), String> {
 fn close_darken_gamma() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
-        use winapi::um::winuser::{GetDC, ReleaseDC};
-        use winapi::shared::windef::HDC;
-
-        #[link(name = "gdi32")]
-        extern "system" {
-            fn SetDeviceGammaRamp(hdc: HDC, lpRamp: *const std::ffi::c_void) -> winapi::shared::minwindef::BOOL;
+        if !COLOR_ENGINE_ACTIVE.swap(false, std::sync::atomic::Ordering::SeqCst) {
+            return Ok(());
         }
 
+        use winapi::um::libloaderapi::{LoadLibraryA, GetProcAddress};
         unsafe {
-            let mut saved = SAVED_GAMMA_RAMP.lock().unwrap();
-            if let Some(ramp) = saved.take() {
-                let hdc = GetDC(std::ptr::null_mut());
-                if !hdc.is_null() {
-                    SetDeviceGammaRamp(hdc, ramp.as_ptr() as *const std::ffi::c_void);
-                    ReleaseDC(std::ptr::null_mut(), hdc);
+            let lib = LoadLibraryA(b"Magnification.dll\0".as_ptr() as *const i8);
+            if !lib.is_null() {
+                type MagSetEffectFn = unsafe extern "system" fn(*const f32) -> winapi::shared::minwindef::BOOL;
+                type MagUninitFn = unsafe extern "system" fn() -> winapi::shared::minwindef::BOOL;
+
+                let set_effect_proc = GetProcAddress(lib, b"MagSetFullscreenColorEffect\0".as_ptr() as *const i8);
+                let uninit_proc = GetProcAddress(lib, b"MagUninitialize\0".as_ptr() as *const i8);
+
+                if !set_effect_proc.is_null() {
+                    let mag_set_effect: MagSetEffectFn = std::mem::transmute(set_effect_proc);
+                    // 5x5 identity matrix
+                    let mut identity = [0.0f32; 25];
+                    identity[0] = 1.0;
+                    identity[6] = 1.0;
+                    identity[12] = 1.0;
+                    identity[18] = 1.0;
+                    identity[24] = 1.0;
+                    let _ = mag_set_effect(identity.as_ptr());
+                }
+
+                if !uninit_proc.is_null() {
+                    let mag_uninit: MagUninitFn = std::mem::transmute(uninit_proc);
+                    let _ = mag_uninit();
                 }
             }
         }
@@ -692,15 +717,33 @@ struct PHYSICAL_MONITOR {
 }
 
 #[cfg(target_os = "windows")]
-fn ddcci_incompatible_monitor_rects() -> Result<Vec<(i32, i32, u32, u32)>, String> {
+#[derive(Clone, Debug)]
+struct IncompatibleMonitorInfo {
+    device_name: String,
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+}
+
+#[cfg(target_os = "windows")]
+fn ddcci_incompatible_monitors() -> Result<Vec<IncompatibleMonitorInfo>, String> {
     use winapi::shared::minwindef::{BOOL, LPARAM, TRUE};
-    use winapi::shared::windef::{HDC, HMONITOR, LPRECT, RECT};
-    use winapi::um::winuser::{
-        EnumDisplayMonitors, GetMonitorInfoW, MONITORINFO,
-    };
+    use winapi::shared::windef::{HDC, HMONITOR, LPRECT};
+    use winapi::um::winuser::{EnumDisplayMonitors, GetMonitorInfoW, MONITORINFOEXW};
+    use winapi::um::libloaderapi::{LoadLibraryA, GetProcAddress, FreeLibrary};
+
+    type FnGetNumberOfPhysicalMonitors = unsafe extern "system" fn(HMONITOR, *mut u32) -> BOOL;
+    type FnGetPhysicalMonitors = unsafe extern "system" fn(HMONITOR, u32, *mut PHYSICAL_MONITOR) -> BOOL;
+    type FnGetVCPFeature = unsafe extern "system" fn(*mut std::ffi::c_void, u8, *mut u8, *mut u32, *mut u32) -> BOOL;
+    type FnDestroyPhysicalMonitors = unsafe extern "system" fn(u32, *mut PHYSICAL_MONITOR) -> BOOL;
 
     struct MonitorContext {
-        rects: Vec<(i32, i32, u32, u32)>,
+        p_get_count: Option<FnGetNumberOfPhysicalMonitors>,
+        p_get_mons: Option<FnGetPhysicalMonitors>,
+        p_get_vcp: Option<FnGetVCPFeature>,
+        p_destroy: Option<FnDestroyPhysicalMonitors>,
+        incompatible: Vec<IncompatibleMonitorInfo>,
     }
 
     unsafe extern "system" fn monitor_enum_proc(
@@ -710,32 +753,52 @@ fn ddcci_incompatible_monitor_rects() -> Result<Vec<(i32, i32, u32, u32)>, Strin
         lparam: LPARAM,
     ) -> BOOL {
         let context = &mut *(lparam as *mut MonitorContext);
-        let mut physical_count = 0u32;
+        let mut has_d6_support = false;
 
-        if get_physical_monitor_count(h_monitor, &mut physical_count) && physical_count == 0 {
-            let mut info = MONITORINFO {
-                cbSize: std::mem::size_of::<MONITORINFO>() as u32,
-                rcMonitor: RECT {
-                    left: 0,
-                    top: 0,
-                    right: 0,
-                    bottom: 0,
-                },
-                rcWork: RECT {
-                    left: 0,
-                    top: 0,
-                    right: 0,
-                    bottom: 0,
-                },
-                dwFlags: 0,
-            };
-            if GetMonitorInfoW(h_monitor, &mut info) != 0 {
-                context.rects.push((
-                    info.rcMonitor.left,
-                    info.rcMonitor.top,
-                    (info.rcMonitor.right - info.rcMonitor.left) as u32,
-                    (info.rcMonitor.bottom - info.rcMonitor.top) as u32,
-                ));
+        if let (Some(p_get_count), Some(p_get_mons), Some(p_get_vcp), Some(p_destroy)) = (
+            context.p_get_count,
+            context.p_get_mons,
+            context.p_get_vcp,
+            context.p_destroy,
+        ) {
+            let mut count = 0u32;
+            if p_get_count(h_monitor, &mut count) != 0 && count > 0 {
+                let mut physical_mons = Vec::<PHYSICAL_MONITOR>::with_capacity(count as usize);
+                physical_mons.set_len(count as usize);
+                if p_get_mons(h_monitor, count, physical_mons.as_mut_ptr()) != 0 {
+                    for mon in &physical_mons {
+                        let mut vcp_type = 0u8;
+                        let mut current_value = 0u32;
+                        let mut maximum_value = 0u32;
+                        if p_get_vcp(
+                            mon.hPhysicalMonitor,
+                            0xD6,
+                            &mut vcp_type,
+                            &mut current_value,
+                            &mut maximum_value,
+                        ) != 0 {
+                            has_d6_support = true;
+                            break;
+                        }
+                    }
+                    p_destroy(count, physical_mons.as_mut_ptr());
+                }
+            }
+        }
+
+        if !has_d6_support {
+            let mut info: MONITORINFOEXW = std::mem::zeroed();
+            info.cbSize = std::mem::size_of::<MONITORINFOEXW>() as u32;
+            if GetMonitorInfoW(h_monitor, &mut info as *mut _ as *mut _) != 0 {
+                let len = info.szDevice.iter().position(|&c| c == 0).unwrap_or(info.szDevice.len());
+                let dev_name = String::from_utf16_lossy(&info.szDevice[..len]);
+                context.incompatible.push(IncompatibleMonitorInfo {
+                    device_name: dev_name,
+                    x: info.rcMonitor.left,
+                    y: info.rcMonitor.top,
+                    width: (info.rcMonitor.right - info.rcMonitor.left) as u32,
+                    height: (info.rcMonitor.bottom - info.rcMonitor.top) as u32,
+                });
             }
         }
 
@@ -743,46 +806,50 @@ fn ddcci_incompatible_monitor_rects() -> Result<Vec<(i32, i32, u32, u32)>, Strin
     }
 
     unsafe {
-        let mut context = MonitorContext { rects: Vec::new() };
+        let dxva2 = LoadLibraryA("dxva2.dll\0".as_ptr() as *const i8);
+        let mut p_get_count = None;
+        let mut p_get_mons = None;
+        let mut p_get_vcp = None;
+        let mut p_destroy = None;
+
+        if !dxva2.is_null() {
+            let p1 = GetProcAddress(dxva2, "GetNumberOfPhysicalMonitorsFromHMONITOR\0".as_ptr() as *const i8);
+            let p2 = GetProcAddress(dxva2, "GetPhysicalMonitorsFromHMONITOR\0".as_ptr() as *const i8);
+            let p3 = GetProcAddress(dxva2, "GetVCPFeatureAndVCPFeatureReply\0".as_ptr() as *const i8);
+            let p4 = GetProcAddress(dxva2, "DestroyPhysicalMonitors\0".as_ptr() as *const i8);
+
+            if !p1.is_null() && !p2.is_null() && !p3.is_null() && !p4.is_null() {
+                p_get_count = Some(std::mem::transmute(p1));
+                p_get_mons = Some(std::mem::transmute(p2));
+                p_get_vcp = Some(std::mem::transmute(p3));
+                p_destroy = Some(std::mem::transmute(p4));
+            }
+        }
+
+        let mut context = MonitorContext {
+            p_get_count,
+            p_get_mons,
+            p_get_vcp,
+            p_destroy,
+            incompatible: Vec::new(),
+        };
+
         if EnumDisplayMonitors(
             std::ptr::null_mut(),
             std::ptr::null_mut(),
             Some(monitor_enum_proc),
             &mut context as *mut _ as LPARAM,
-        ) == 0
-        {
+        ) == 0 {
+            if !dxva2.is_null() { FreeLibrary(dxva2); }
             return Err("Windows could not enumerate displays".to_string());
         }
-        Ok(context.rects)
-    }
-}
 
-#[cfg(target_os = "windows")]
-unsafe fn get_physical_monitor_count(
-    h_monitor: winapi::shared::windef::HMONITOR,
-    count: *mut u32,
-) -> bool {
-    use winapi::um::libloaderapi::{FreeLibrary, GetProcAddress, LoadLibraryA};
-    use winapi::shared::windef::HMONITOR;
-    let dxva2 = LoadLibraryA("dxva2.dll\0".as_ptr() as *const i8);
-    if dxva2.is_null() {
-        return false;
-    }
+        if !dxva2.is_null() {
+            FreeLibrary(dxva2);
+        }
 
-    type GetCount = unsafe extern "system" fn(HMONITOR, *mut u32) -> i32;
-    let proc = GetProcAddress(
-        dxva2,
-        "GetNumberOfPhysicalMonitorsFromHMONITOR\0".as_ptr() as *const i8,
-    );
-    if proc.is_null() {
-        FreeLibrary(dxva2);
-        return false;
+        Ok(context.incompatible)
     }
-
-    let get_count: GetCount = std::mem::transmute(proc);
-    let result = get_count(h_monitor, count) != 0;
-    FreeLibrary(dxva2);
-    result
 }
 
 #[cfg(target_os = "windows")]
@@ -858,25 +925,38 @@ fn send_ddcci_vcp_power(power_value: u32) -> Result<(), String> {
                 physical_mons.set_len(count as usize);
                 if (ctx.p_get_mons)(h_monitor, count, physical_mons.as_mut_ptr()) != 0 {
                     for mon in &physical_mons {
-                        ctx.physical_monitor_count += 1;
-                        // VCP 0xD6 is standard VESA Power Mode: 4 = Standby/Off, 1 = On
-                        if (ctx.p_set_vcp)(mon.hPhysicalMonitor, 0xD6, ctx.power_value) != 0 {
-                            ctx.success_count += 1;
-                        }
-                        if ctx.power_value == 1 {
-                            let mut vcp_type = 0u8;
-                            let mut current_value = 0u32;
-                            let mut maximum_value = 0u32;
-                            if (ctx.p_get_vcp)(
-                                mon.hPhysicalMonitor,
-                                0xD6,
-                                &mut vcp_type,
-                                &mut current_value,
-                                &mut maximum_value,
-                            ) != 0
-                                && current_value == 1
-                            {
-                                ctx.verified_on_count += 1;
+                        let mut vcp_type = 0u8;
+                        let mut current_value = 0u32;
+                        let mut maximum_value = 0u32;
+                        let supports_d6 = (ctx.p_get_vcp)(
+                            mon.hPhysicalMonitor,
+                            0xD6,
+                            &mut vcp_type,
+                            &mut current_value,
+                            &mut maximum_value,
+                        ) != 0;
+
+                        if supports_d6 {
+                            ctx.physical_monitor_count += 1;
+                            // VCP 0xD6 is standard VESA Power Mode: 4 = Standby/Off, 1 = On
+                            if (ctx.p_set_vcp)(mon.hPhysicalMonitor, 0xD6, ctx.power_value) != 0 {
+                                ctx.success_count += 1;
+                            }
+                            if ctx.power_value == 1 {
+                                let mut vcp_type2 = 0u8;
+                                let mut cur2 = 0u32;
+                                let mut max2 = 0u32;
+                                if (ctx.p_get_vcp)(
+                                    mon.hPhysicalMonitor,
+                                    0xD6,
+                                    &mut vcp_type2,
+                                    &mut cur2,
+                                    &mut max2,
+                                ) != 0
+                                    && cur2 == 1
+                                {
+                                    ctx.verified_on_count += 1;
+                                }
                             }
                         }
                     }
@@ -1891,7 +1971,23 @@ fn update_tray_menu_state(
     Ok(())
 }
 
+fn clear_webview_http_cache() {
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(local_appdata) = std::env::var("LOCALAPPDATA") {
+            let base = std::path::PathBuf::from(local_appdata)
+                .join("com.neversleep.app")
+                .join("EBWebView")
+                .join("Default");
+            let _ = std::fs::remove_dir_all(base.join("Cache"));
+            let _ = std::fs::remove_dir_all(base.join("Code Cache"));
+        }
+    }
+}
+
 fn main() {
+    clear_webview_http_cache();
+
     // Single Instance Check using WinAPI Mutex
     #[cfg(target_os = "windows")]
     {
@@ -2103,8 +2199,9 @@ fn main() {
                 "feat_autostart" => {
                     if let Ok(res) = check_autostart() {
                         let current = res.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false);
+                        let minimized = res.get("minimized").and_then(|v| v.as_bool()).unwrap_or(false);
                         let new_state = !current;
-                        let _ = set_autostart(new_state, false);
+                        let _ = set_autostart(new_state, minimized);
                         let _ = app.tray_handle().get_item("feat_autostart").set_selected(new_state);
                         let _ = app.emit_all("tray-action", "autostart-toggled");
                     }

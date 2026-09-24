@@ -5,6 +5,7 @@
   "scripts": {
     "tauri": "tauri",
     "dev": "tauri dev",
+    "prebuild": "powershell -Command \"Get-ChildItem src-tauri/target/release/build/ -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'app-*' } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue; (Get-Item src-tauri/build.rs).LastWriteTime = Get-Date\"",
     "build": "tauri build"
   },
   "devDependencies": {

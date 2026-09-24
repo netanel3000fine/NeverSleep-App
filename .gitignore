@@ -1,4 +1,6 @@
 node_modules/
+target/
+Cargo.lock
 src-tauri/target/
 
 # Local signing credentials
@@ -8,3 +10,5 @@ Public Key.txt
 
 # Local sync configuration
 SyncConfig.json
+stdout.txt
+stderr.txt
