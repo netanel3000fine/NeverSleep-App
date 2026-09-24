@@ -35,7 +35,7 @@
 
         body {
             background: transparent;
-            font-family: 'Inter', 'Fredoka', 'Segoe UI', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             color: var(--text-primary);
             user-select: none;
             height: 100vh;
@@ -177,6 +177,7 @@
         }
 
         .header-icon-wrap {
+            position: relative;
             width: 40px;
             height: 40px;
             border-radius: 12px;
@@ -187,11 +188,45 @@
             justify-content: center;
             flex-shrink: 0;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            overflow: hidden;
+            padding: 0;
         }
 
-        .header-icon-wrap svg {
-            width: 20px;
-            height: 20px;
+        .header-icon-bg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.35;
+            filter: blur(3px);
+            transform: scale(1.15);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .header-icon-fg {
+            position: relative;
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            display: block;
+            z-index: 1;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+        }
+
+        .header-title-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .header-title-icon {
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
+            border-radius: 3px;
+            flex-shrink: 0;
         }
 
         .header-text h2 {
@@ -227,20 +262,57 @@
 
         .clickable-category-card {
             cursor: pointer;
-            transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
             user-select: none;
             padding: 15px 18px;
+            display: grid;
+            grid-template-rows: auto 0fr;
+            overflow: hidden;
+            transition: background 0.22s ease, border-color 0.22s ease,
+                        box-shadow 0.22s ease, grid-template-rows 0.55s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .clickable-category-card:hover {
             background: var(--surface-hover);
             border-color: rgba(var(--theme-color-rgb, 249, 115, 22), 0.38);
-            transform: translateY(-2px);
             box-shadow: 0 6px 22px rgba(0, 0, 0, 0.26);
+            grid-template-rows: auto 1fr;
         }
 
         .clickable-category-card:active {
-            transform: translateY(0) scale(0.99);
+            transform: scale(0.99);
+        }
+
+        /* ===== HOVER EXPLAINER PANEL ===== */
+        .card-explainer {
+            overflow: hidden;
+            min-height: 0;
+            min-width: 0;
+        }
+
+        .card-explainer-inner {
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.07);
+            margin-top: 10px;
+            font-size: 11.5px;
+            line-height: 1.55;
+            color: var(--text-secondary);
+            pointer-events: none;
+            min-width: 0;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+            opacity: 0;
+            transform: translateY(-4px);
+            transition: opacity 0.32s ease, transform 0.4s ease;
+        }
+
+        .clickable-category-card:hover .card-explainer-inner {
+            opacity: 1;
+            transform: translateY(0);
+            transition-delay: 0.12s;
+        }
+
+        body.white-mode .card-explainer-inner {
+            border-top-color: rgba(0, 0, 0, 0.07);
         }
 
         .category-card-header {
@@ -321,11 +393,10 @@
 
         .clickable-category-card:hover .nav-arrow-badge svg {
             color: var(--theme-color);
-            transform: translateX(2px);
         }
 
         body[dir="rtl"] .clickable-category-card:hover .nav-arrow-badge svg {
-            transform: translateX(-2px) rotate(180deg);
+            transform: rotate(180deg);
         }
 
         body[dir="rtl"] .nav-arrow-badge svg {
@@ -579,6 +650,14 @@
 
         .toggle.active .toggle-knob {
             transform: translateX(-18px);
+        }
+
+        /* ===== CLASSIC MODE: squarish toggles ===== */
+        #appContainer.classic-mode .toggle {
+            border-radius: 6px;
+        }
+        #appContainer.classic-mode .toggle-knob {
+            border-radius: 3px;
         }
 
         /* ===== INPUTS ===== */
@@ -928,6 +1007,7 @@
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
+            padding: 4px 2px;
         }
 
         .color-option {
@@ -949,6 +1029,17 @@
 
         body.white-mode .color-option.selected {
             border-color: #0f172a;
+        }
+
+        .color-option-white {
+            background: linear-gradient(135deg, #ffffff 55%, #d0d7e3 100%);
+            border-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .color-option-white.selected {
+            border-color: #0f172a;
+            box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px rgba(15, 23, 42, 0.75), 0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
         .bg-orange  { background: #f97316; }
@@ -1206,11 +1297,13 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px 12px;
+            padding: 8px 10px;
             cursor: pointer;
-            gap: 10px;
+            gap: 6px;
             user-select: none;
             transition: background 0.18s;
+            min-width: 0;
+            overflow: hidden;
         }
 
         .profile-card-header:hover {
@@ -1220,14 +1313,14 @@
         .profile-header-left {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 5px;
             min-width: 0;
-            flex: 1;
+            flex-shrink: 0;
         }
 
         .profile-live-dot {
-            width: 7px;
-            height: 7px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             background: #22c55e;
             box-shadow: 0 0 6px #22c55e;
@@ -1236,46 +1329,180 @@
             flex-shrink: 0;
         }
 
-        .profile-active-now .profile-live-dot {
+        .profile-card-wrapper.profile-active-now .profile-live-dot {
             opacity: 1;
         }
 
         .profile-time-range-display {
-            font-size: 13.5px;
-            font-weight: 700;
-            font-family: 'JetBrains Mono', 'Consolas', monospace;
-            color: var(--text-primary);
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 3px;
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.2px;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .profile-arrow {
-            color: var(--text-muted);
-            font-size: 12px;
+            font-size: 10.5px;
+            opacity: 0.6;
+            margin: 0 1px;
         }
 
         .profile-duration-badge {
-            font-size: 10.5px;
-            font-weight: 600;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 1px 4.5px;
+            border-radius: 4px;
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.15);
             color: var(--theme-color);
-            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.12);
-            padding: 2px 7px;
-            border-radius: 999px;
-            border: 1px solid rgba(var(--theme-color-rgb, 249, 115, 22), 0.25);
+            border: 1px solid rgba(var(--theme-color-rgb, 249, 115, 22), 0.28);
+            flex-shrink: 0;
             white-space: nowrap;
+            line-height: 1.2;
+        }
+
+        .profile-header-days {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2.5px;
+            margin: 0 2px;
+            flex-shrink: 0;
+        }
+
+        .profile-header-day-btn {
+            width: 18px;
+            height: 18px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--surface-border);
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font: 700 8.5px inherit;
+            line-height: 1;
+            transition: all 0.16s ease;
+            flex-shrink: 0;
+            user-select: none;
+        }
+
+        .profile-header-day-btn:hover {
+            border-color: var(--theme-color);
+            color: var(--theme-color);
+        }
+
+        .profile-header-day-btn.active {
+            border-color: var(--theme-color);
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.2);
+            color: var(--theme-color);
+            box-shadow: 0 0 6px rgba(var(--theme-color-rgb, 249, 115, 22), 0.2);
+        }
+
+        body.white-mode .profile-header-day-btn {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body.white-mode .profile-header-day-btn.active {
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.18);
+        }
+
+        /* ===== SCHEDULE ACTION MODE SLIDER ===== */
+        .schedule-action-segmented {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--surface-border);
+            border-radius: 10px;
+            padding: 3px;
+            gap: 4px;
+            margin-bottom: 14px;
+        }
+
+        body.white-mode .schedule-action-segmented {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        .schedule-action-btn {
+            flex: 1;
+            height: 34px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
+        }
+
+        .schedule-action-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        body.white-mode .schedule-action-btn:hover {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        .schedule-action-btn.active {
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.18);
+            border-color: rgba(var(--theme-color-rgb, 249, 115, 22), 0.4);
+            color: var(--theme-color);
+            box-shadow: 0 2px 8px rgba(var(--theme-color-rgb, 249, 115, 22), 0.2);
+            font-weight: 700;
+        }
+
+        .schedule-action-btn svg {
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+
+        .schedule-action-btn.active svg {
+            transform: scale(1.08);
         }
 
         .profile-actions {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 5px;
             flex-shrink: 0;
         }
 
+        .profile-actions .toggle {
+            transform: scale(0.78) !important;
+            transform-origin: center;
+            margin: 0 -2px;
+        }
+
+        .profile-actions .remove-btn {
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .profile-actions .remove-btn svg {
+            width: 13px;
+            height: 13px;
+        }
+
         .profile-expand-chevron {
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
             color: var(--text-secondary);
             transition: transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1), color 0.2s;
             flex-shrink: 0;
@@ -1593,11 +1820,14 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
-            margin-top: 24px;
+            position: fixed;
+            left: 20px;
+            right: 20px;
+            bottom: 20px;
+            margin: 0;
             font-size: 11px;
             color: var(--text-muted);
-            position: relative;
-            z-index: 1;
+            z-index: 2;
         }
 
         .version-badge {
@@ -1641,14 +1871,13 @@
         <!-- Header -->
         <div class="header">
             <div class="header-icon-wrap">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--theme-color)">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
-                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07M8.46 8.46a5 5 0 0 0 0 7.07"/>
-                </svg>
+                <img id="headerAppIconBg" src="IMG_6276.png" alt="" class="header-icon-bg">
+                <img id="headerAppIcon" src="IMG_6276.png" alt="App Icon" class="header-icon-fg">
             </div>
             <div class="header-text">
-                <h2 data-i18n="settings_title">Settings</h2>
+                <div class="header-title-row">
+                    <h2 data-i18n="settings_title">Settings</h2>
+                </div>
                 <p data-i18n="app_title_text">Never Sleep App</p>
             </div>
         </div>
@@ -1671,6 +1900,9 @@
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
                     </div>
                 </div>
+                <div class="card-explainer">
+                    <div class="card-explainer-inner" data-i18n="system_explainer">Start with Windows automatically, pin the app on top of other windows, pause sleep prevention when a video is playing, and track your session uptime.</div>
+                </div>
             </div>
 
             <!-- 2. Category Card: Black Screen -->
@@ -1689,6 +1921,9 @@
                         <span class="active-method-tag" id="currentDarkenMethodBadge">Default</span>
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
                     </div>
+                </div>
+                <div class="card-explainer">
+                    <div class="card-explainer-inner" data-i18n="darken_explainer">Set how long before the screen darkens, show a countdown popup beforehand, choose your darken method (overlay, display sleep, gamma, DDC/CI & more), and configure auto-minimize.</div>
                 </div>
             </div>
 
@@ -1709,6 +1944,9 @@
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
                     </div>
                 </div>
+                <div class="card-explainer">
+                    <div class="card-explainer-inner" data-i18n="design_explainer">Switch UI language, pick a theme color, choose between Classic, Liquid Glass, or Coffee view modes, and change the app tray icon.</div>
+                </div>
             </div>
 
             <!-- 4. Category Card: Schedule -->
@@ -1728,6 +1966,9 @@
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
                     </div>
                 </div>
+                <div class="card-explainer">
+                    <div class="card-explainer-inner" data-i18n="schedule_explainer">Define time windows when the app actively keeps your PC awake. Outside those hours, sleep prevention is automatically paused until the next profile starts.</div>
+                </div>
             </div>
 
             <!-- 5. Category Card: Notifications -->
@@ -1746,6 +1987,9 @@
                         <span class="active-method-tag" id="currentNotificationsBadge">On</span>
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
                     </div>
+                </div>
+                <div class="card-explainer">
+                    <div class="card-explainer-inner" data-i18n="notifications_explainer">Enable or disable Windows toast notifications, toggle system sounds, and set a break reminder that alerts you after a chosen interval.</div>
                 </div>
             </div>
 
@@ -1846,9 +2090,9 @@
 
                     <!-- Card 2: Darken Method Selection -->
                     <div style="background:var(--surface-card,rgba(255,255,255,0.04));border:1px solid var(--surface-border,rgba(255,255,255,0.08));border-radius:14px;padding:14px 16px 16px;">
-                        <div style="margin-bottom:12px;">
-                            <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--theme-color);" data-i18n="darken_method_title">Darken Method</span>
-                            <p style="font-size:11px;color:var(--text-secondary);margin-top:3px;" data-i18n="darken_method_sub">Choose how monitors are darkened or put to sleep</p>
+                        <div class="label-group" style="margin-bottom:12px;">
+                            <span class="item-label" data-i18n="darken_method_title">Darken Method</span>
+                            <span class="item-sub" data-i18n="darken_method_sub">Choose how monitors are darkened or put to sleep</span>
                         </div>
 
                         <div class="darken-methods-list" id="darkenMethodCardsList">
@@ -2098,8 +2342,7 @@
                         <div class="color-option bg-brown" data-color="#C47440" title="Fancy Brown"></div>
                         <!-- White Mode swatch: selecting activates white mode, deselecting restores dark -->
                         <div class="color-option color-option-white" id="whiteModeSwatchBtn" title="White Mode (click to toggle)"
-                            data-white-mode="true"
-                            style="background:linear-gradient(135deg,#ffffff 55%,#d0d7e3 100%);border:2px solid rgba(255,255,255,0.45);box-shadow:0 0 0 1.5px rgba(0,0,0,0.35);">
+                            data-white-mode="true">
                             <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#111" stroke-width="2.8" stroke-linecap="round" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none;" class="white-mode-check">
                                 <polyline points="20 6 9 17 4 12"/>
                             </svg>
@@ -2166,16 +2409,26 @@
                         </div>
                         <div class="toggle" id="timeProfilesEnabledToggle"><div class="toggle-knob"></div></div>
                     </div>
+                    <div class="schedule-action-segmented" id="scheduleActionModeWrap">
+                        <button type="button" class="schedule-action-btn active" data-action="keep_awake" id="schedActionKeepAwakeBtn">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                            <span data-i18n="sched_action_keep_awake">Keep PC Awake</span>
+                        </button>
+                        <button type="button" class="schedule-action-btn" data-action="pause" id="schedActionPauseBtn">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                            <span data-i18n="sched_action_pause">Pause Prevention</span>
+                        </button>
+                    </div>
                     <div class="time-profiles-section">
-                        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:12px; margin-bottom: 12px;">
-                            <div class="label-group" style="min-width: 0; flex: 1;">
+                        <div class="time-profiles-header-wrap" style="margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                                 <span class="item-label" data-i18n="time_profiles">Time Profiles</span>
-                                <span class="item-sub" data-i18n="time_profiles_sub" style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Keep PC awake only during these hours. Outside these hours, sleep prevention pauses.</span>
+                                <button id="addProfileBtn" class="add-profile-header-btn" data-i18n-title="add_profile" title="Add Time Profile">
+                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                    <span data-i18n="add_profile">Add Profile</span>
+                                </button>
                             </div>
-                            <button id="addProfileBtn" class="add-profile-header-btn" data-i18n-title="add_profile" title="Add Time Profile">
-                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                                <span data-i18n="add_profile">Add</span>
-                            </button>
+                            <span class="item-sub" data-i18n="time_profiles_sub" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; display: block;">Keep PC awake only during these hours. Outside these hours, sleep prevention pauses.</span>
                         </div>
                         <div id="timeProfilesContainer" style="display:flex; flex-direction:column; gap:10px;">
                             <!-- Profiles injected by JS -->
@@ -2255,9 +2508,10 @@
 
         function applySettingsViewMode(mode) {
             const container = document.getElementById('appContainer');
-            container.classList.remove('liquid-glass-mode', 'coffee-mode');
+            container.classList.remove('liquid-glass-mode', 'coffee-mode', 'classic-mode');
             if (mode === 'liquid-glass') container.classList.add('liquid-glass-mode');
             else if (mode === 'coffee') container.classList.add('coffee-mode');
+            else container.classList.add('classic-mode');
         }
 
         function hexToRgb(hex) {
@@ -2284,9 +2538,6 @@
                 swatch.classList.toggle('selected', !!active);
                 const check = swatch.querySelector('.white-mode-check');
                 if (check) check.style.display = active ? 'block' : 'none';
-                // When active, use dark border so selected ring shows on white swatch
-                swatch.style.borderColor = active ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.12)';
-                swatch.style.boxShadow = active ? '0 0 12px rgba(0,0,0,0.25)' : '';
             }
         }
 
@@ -2827,6 +3078,37 @@
                 updateBadges();
             });
 
+            function setScheduleActionMode(mode, save = true) {
+                settings.scheduleActionMode = (mode === 'pause') ? 'pause' : 'keep_awake';
+                const keepBtn = document.getElementById('schedActionKeepAwakeBtn');
+                const pauseBtn = document.getElementById('schedActionPauseBtn');
+                if (keepBtn && pauseBtn) {
+                    keepBtn.classList.toggle('active', settings.scheduleActionMode === 'keep_awake');
+                    pauseBtn.classList.toggle('active', settings.scheduleActionMode === 'pause');
+                }
+                const subEl = document.querySelector('[data-i18n="time_profiles_sub"]');
+                if (subEl) {
+                    const lang = window.currentLang || 'en';
+                    const key = settings.scheduleActionMode === 'pause' ? 'sched_action_pause_sub' : 'sched_action_keep_awake_sub';
+                    if (typeof translations !== 'undefined' && translations[lang] && translations[lang][key]) {
+                        subEl.textContent = translations[lang][key];
+                    }
+                }
+                refreshProfileGlow();
+                if (save) saveSettings();
+            }
+
+            document.getElementById('schedActionKeepAwakeBtn')?.addEventListener('click', () => setScheduleActionMode('keep_awake'));
+            document.getElementById('schedActionPauseBtn')?.addEventListener('click', () => setScheduleActionMode('pause'));
+            setScheduleActionMode(settings.scheduleActionMode || 'keep_awake', false);
+
+            function getHeaderDayLabels() {
+                const lang = window.currentLang || 'en';
+                if (lang === 'he') return ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
+                if (lang === 'ru') return ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+                return ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+            }
+
             const padTimePart = (n) => String(n).padStart(2, '0');
 
             function timeToMinutes(timeStr) {
@@ -3036,6 +3318,8 @@
 
                     const dur = getDurationInfo(profile.startTime, profile.endTime);
 
+                    const headerDays = getHeaderDayLabels();
+
                     wrapper.innerHTML = `
                         <div class="profile-card-header">
                             <div class="profile-header-left">
@@ -3047,8 +3331,11 @@
                                 </div>
                                 <span class="profile-duration-badge">${dur.shortLabel}</span>
                             </div>
+                            <div class="profile-header-days">
+                                ${headerDays.map((label, day) => `<button type="button" class="profile-header-day-btn ${normalizeProfileDays(profile).includes(day) ? 'active' : ''}" data-day="${day}">${label}</button>`).join('')}
+                            </div>
                             <div class="profile-actions">
-                                <div class="toggle ${profile.enabled ? 'active' : ''}" style="transform:scale(0.85)"><div class="toggle-knob"></div></div>
+                                <div class="toggle ${profile.enabled ? 'active' : ''}" style="transform:scale(0.78)"><div class="toggle-knob"></div></div>
                                 <button class="icon-btn remove-btn" title="Remove">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                 </button>
@@ -3147,7 +3434,7 @@
                         });
                     });
 
-                    wrapper.querySelectorAll('.profile-day-btn').forEach(btn => {
+                    wrapper.querySelectorAll('.profile-header-day-btn, .profile-day-btn').forEach(btn => {
                         btn.addEventListener('click', (e) => {
                             e.stopPropagation();
                             const day = Number(btn.dataset.day);
@@ -3158,7 +3445,10 @@
                                     ? days.filter(value => value !== day)
                                     : [...days, day];
                             })) {
-                                btn.classList.toggle('active', normalizeProfileDays(window.timeProfiles[index]).includes(day));
+                                const currentDays = normalizeProfileDays(window.timeProfiles[index]);
+                                wrapper.querySelectorAll('.profile-header-day-btn, .profile-day-btn').forEach(b => {
+                                    b.classList.toggle('active', currentDays.includes(Number(b.dataset.day)));
+                                });
                                 saveSettings();
                                 refreshProfileGlow();
                             }
@@ -3339,6 +3629,14 @@
             document.querySelectorAll('.app-icon-option').forEach(opt => {
                 opt.classList.toggle('selected', opt.dataset.icon === filename);
             });
+            // Update the settings header icons (box background + box foreground + inline title)
+            const headerBg = document.getElementById('headerAppIconBg');
+            const headerImg = document.getElementById('headerAppIcon');
+            const headerSmall = document.getElementById('headerAppIconSmall');
+            if (headerBg && filename) headerBg.src = filename;
+            if (headerImg && filename) headerImg.src = filename;
+            if (headerSmall && filename) headerSmall.src = filename;
+
             if (invokeBackend) {
                 if (!window.__TAURI__) {
                     return true;
@@ -3453,6 +3751,7 @@
                 ...settings,
                 themeColor: themeColor,
                 appIcon: settings.appIcon || null,
+                scheduleActionMode: settings.scheduleActionMode || 'keep_awake',
                 timeProfiles: window.timeProfiles,
                 timeProfilesEnabled: getToggle('timeProfilesEnabledToggle'),
                 darkenMethod: activeDarkenMethod,
