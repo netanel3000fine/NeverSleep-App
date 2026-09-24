@@ -128,7 +128,17 @@ const translations = {
     "tip_darken": "<div style=\"direction:ltr\">After countdown, screen goes dark but PC stays awake. Any mouse or keyboard touch resets the timer.</div>",
     "tip_shutdown": "<div style=\"direction:ltr\">When timer is active, PC will sleep after time ends.</div>",
     "notify_break_title": "Break Time",
-    "notify_break_body": "Take a break!"
+    "notify_break_body": "Take a break!",
+
+    "system_explainer": "Start with Windows automatically, pin the app on top of other windows, pause sleep prevention when a video is playing, and track your session uptime.",
+    "darken_explainer": "Set how long before the screen darkens, show a countdown popup beforehand, choose your darken method (overlay, display sleep, gamma, DDC/CI & more), and configure auto-minimize.",
+    "design_explainer": "Switch UI language, pick a theme color, choose between Classic, Liquid Glass, or Coffee view modes, and change the app tray icon.",
+    "schedule_explainer": "Define time windows when the app actively keeps your PC awake. Outside those hours, sleep prevention is automatically paused until the next profile starts.",
+    "notifications_explainer": "Enable or disable Windows toast notifications, toggle system sounds, and set a break reminder that alerts you after a chosen interval.",
+    "sched_action_keep_awake": "Keep PC Awake",
+    "sched_action_pause": "Pause Prevention",
+    "sched_action_keep_awake_sub": "Keep PC awake only during these hours. Outside these hours, sleep prevention pauses.",
+    "sched_action_pause_sub": "Pause sleep prevention during these hours. Outside these hours, PC stays awake."
   },
   he: {
     "pill_active": "פעיל",
@@ -252,7 +262,17 @@ const translations = {
     "tip_darken": "<div style=\"direction:rtl\">לאחר הספירה לאחור המסך יחשך אבל יישאר ער ברקע, כל נגיעה בעכבר ובמקלדת מאפסת את הספירה.</div>",
     "tip_shutdown": "<div style=\"direction:rtl\">כשהטיימר פעיל, בסיום הזמן המחשב לא ישאר ערני.</div>",
     "notify_break_title": "זמן להפסקה",
-    "notify_break_body": "קח זמן להפסקה!"
+    "notify_break_body": "קח זמן להפסקה!",
+
+    "system_explainer": "הפעל אוטומטית עם Windows, הצמד את האפליקציה מעל חלונות אחרים, השהה מניעת שינה בזמן וידאו ועקוב אחרי זמן הריצה.",
+    "darken_explainer": "הגדר כמה זמן לפני שהמסך מחשיך, הצג ספירה לאחור, בחר שיטת החשכה (שכבה, שינת תצוגה, גמא, DDC/CI ועוד) והגדר מזעור אוטומטי.",
+    "design_explainer": "החלף שפת ממשק, בחר צבע ערכת נושא, עבור בין מצבי תצוגה (חסכני, Liquid Glass, קפה) ושנה את אייקון המגש.",
+    "schedule_explainer": "הגדר חלונות זמן שבהם האפליקציה שומרת את המחשב ער. מחוץ לשעות אלו, מניעת השינה מושהית אוטומטית עד לפרופיל הבא.",
+    "notifications_explainer": "הפעל או כבה התראות Windows, הפעל צלילי מערכת והגדר תזכורת הפסקה שתתריע לאחר פרק זמן רצוף.",
+    "sched_action_keep_awake": "שומר ער",
+    "sched_action_pause": "משהה פעילות",
+    "sched_action_keep_awake_sub": "שומר את המחשב ער רק בשעות אלו. מחוץ לשעות, מניעת השינה מושהית.",
+    "sched_action_pause_sub": "משהה מניעת שינה בשעות אלו. מחוץ לשעות, המחשב נשאר ער."
   },
   ru: {
     "pill_active": "Активен",
@@ -376,7 +396,17 @@ const translations = {
     "tip_darken": "<div style=\"direction:ltr\">После обратного отсчета экран погаснет, но ПК останется активным. Любое касание сбрасывает таймер.</div>",
     "tip_shutdown": "<div style=\"direction:ltr\">Когда таймер активен, ПК перейдет в спящий режим по истечении времени.</div>",
     "notify_break_title": "Время перерыва",
-    "notify_break_body": "Сделайте перерыв!"
+    "notify_break_body": "Сделайте перерыв!",
+
+    "system_explainer": "Запускайте автоматически с Windows, закрепите поверх других окон, ставьте на паузу при видео и отслеживайте время работы.",
+    "darken_explainer": "Задайте время до затемнения, покажите обратный отсчёт, выберите метод (оверлей, спящий режим, гамма, DDC/CI и др.) и настройте авто-сворачивание.",
+    "design_explainer": "Смените язык, выберите цвет темы, переключитесь между режимами (Классический, Liquid Glass, Кофе) и измените иконку трея.",
+    "schedule_explainer": "Задайте временные окна, в которых ПК поддерживается активным. В остальное время предотвращение сна автоматически паузируется.",
+    "notifications_explainer": "Включайте или отключайте уведомления, управляйте звуками и настраивайте напоминание о перерыве через заданный интервал.",
+    "sched_action_keep_awake": "Поддерживать активность",
+    "sched_action_pause": "Приостанавливать",
+    "sched_action_keep_awake_sub": "Поддерживать ПК активным только в эти часы. В остальное время предотвращение сна приостанавливается.",
+    "sched_action_pause_sub": "Приостанавливать предотвращение сна в эти часы. В остальное время ПК поддерживается активным."
   }
 };
 

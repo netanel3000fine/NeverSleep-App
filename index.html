@@ -1539,7 +1539,7 @@
     body.classic-mode .toggle {
       width: 34px;
       height: 18px;
-      border-radius: 9px;
+      border-radius: 5px;
     }
 
     body.classic-mode .toggle-knob {
@@ -1547,6 +1547,7 @@
       height: 12px;
       top: 3px;
       right: 3px;
+      border-radius: 3px;
     }
 
     body.classic-mode .toggle.active .toggle-knob {
@@ -5652,11 +5653,11 @@
 
       const currentDate = new Date(now);
       currentDate.setSeconds(0, 0);
-      const isCurrentActive = isMinutesCovered(currentDate);
+      const isCurrentCovered = isMinutesCovered(currentDate);
       let minutesDelta = 0;
       for (let i = 0; i <= 1440; i++) {
         const probe = new Date(currentDate.getTime() + i * 60000);
-        if (isMinutesCovered(probe) !== isCurrentActive) {
+        if (isMinutesCovered(probe) !== isCurrentCovered) {
           minutesDelta = i;
           break;
         }
@@ -5668,8 +5669,11 @@
         totalSecondsDelta = (minutesDelta - 1) * 60 + (60 - secondsInCurrentMinute);
       }
 
+      const isAwake = (scheduleActionMode === 'pause') ? !isCurrentCovered : isCurrentCovered;
+
       return {
-        isActive: isCurrentActive,
+        isInsideProfile: isCurrentCovered,
+        isActive: isAwake,
         remainingSeconds: Math.max(0, totalSecondsDelta)
       };
     }
@@ -5681,6 +5685,7 @@
     let timeProfiles = [];
     let timeProfilesEnabled = false;
     let profileControlledAwake = false;
+    let scheduleActionMode = 'keep_awake';
 
 
 
@@ -5926,7 +5931,13 @@
       const h = Math.floor(s / 3600);
       const m = Math.floor((s % 3600) / 60);
       const sec = Math.floor(s % 60);
-      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+      if (h > 0) {
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+      } else if (m > 0) {
+        return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+      } else {
+        return `${String(sec).padStart(2, '0')}`;
+      }
     }
 
     function formatClockTime(date) {
@@ -5950,17 +5961,28 @@
 
       const status = getProfileStatus();
       const next = getNextProfileWindow();
-      const shouldShow = isSleeping && profileControlledAwake && status && !status.isActive && next;
+      const shouldShow = isSleeping && profileControlledAwake && status && !status.isActive && (scheduleActionMode === 'pause' ? true : !!next);
       box.classList.toggle('show', !!shouldShow);
       if (overlay) overlay.classList.toggle('has-next-profile', !!shouldShow);
       if (!shouldShow) return;
 
-      startEl.textContent = formatClockTime(next.start);
-      endEl.textContent = formatClockTime(next.end);
-      const startsIn = translations[window.currentLang] && translations[window.currentLang].starts_in
-        ? translations[window.currentLang].starts_in
-        : 'Starts in';
-      countdownEl.textContent = `${startsIn} ${formatTime(next.secondsUntilStart)}`;
+      const arrow = box.querySelector('.sleep-next-arrow');
+      if (scheduleActionMode === 'pause') {
+        const resumeDate = new Date(Date.now() + status.remainingSeconds * 1000);
+        startEl.textContent = formatClockTime(resumeDate);
+        endEl.textContent = '';
+        if (arrow) arrow.style.display = 'none';
+        const resumesIn = (window.currentLang === 'he' ? 'מתחדש בעוד' : (window.currentLang === 'ru' ? 'Возобновится через' : 'Resumes in'));
+        countdownEl.textContent = `${resumesIn} ${formatTime(status.remainingSeconds)}`;
+      } else {
+        if (arrow) arrow.style.display = '';
+        startEl.textContent = formatClockTime(next.start);
+        endEl.textContent = formatClockTime(next.end);
+        const startsIn = translations[window.currentLang] && translations[window.currentLang].starts_in
+          ? translations[window.currentLang].starts_in
+          : 'Starts in';
+        countdownEl.textContent = `${startsIn} ${formatTime(next.secondsUntilStart)}`;
+      }
     }
 
     // Load Settings
@@ -6013,6 +6035,7 @@
 
         timeProfiles = s.timeProfiles || [];
         timeProfilesEnabled = s.timeProfilesEnabled === undefined ? (timeProfiles.length > 0) : !!s.timeProfilesEnabled;
+        scheduleActionMode = s.scheduleActionMode || 'keep_awake';
         applySchedulePanelVisibility();
         profileControlledAwake = hasEnabledTimeProfiles();
         autoShutdown = profileControlledAwake;
