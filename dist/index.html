@@ -5561,6 +5561,25 @@
         : [0, 1, 2, 3, 4, 5, 6];
     }
 
+    function normalizeTimeProfile(profile) {
+      const start = profile.startTime || '00:00';
+      const end = profile.endTime || '00:00';
+      const [startHour, startMinute] = start.split(':').map(Number);
+      const [endHour, endMinute] = end.split(':').map(Number);
+      const startMinutes = startHour * 60 + startMinute;
+      const endMinutes = endHour * 60 + endMinute;
+
+      if (profile.allDay || (startMinutes === 0 && endMinutes === 0)) {
+        profile.allDay = true;
+        profile.startTime = '00:00';
+        profile.endTime = '00:00';
+      } else if (endMinutes < startMinutes && endMinutes !== 0) {
+        profile.allDay = false;
+        profile.endTime = '00:00';
+      }
+      return profile;
+    }
+
     function getActiveProfileTimes() {
       if (!timeProfiles || timeProfiles.length === 0) return null;
       const enabledProfiles = timeProfiles.filter(p => p.enabled !== false);
@@ -5576,29 +5595,44 @@
         const [eh, em] = p.endTime.split(':').map(Number);
         if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) continue;
         const startMin = sh * 60 + sm;
-        const endMin = eh * 60 + em;
+        const endMin = !p.allDay && startMin > 0 && eh === 0 && em === 0 ? 1440 : eh * 60 + em;
         const days = getProfileDays(p);
         const startsToday = days.includes(currentDay);
-        const startsYesterday = days.includes((currentDay + 6) % 7);
-        const active = startMin <= endMin
-          ? startsToday && currentMin >= startMin && currentMin < endMin
-          : (startsToday && currentMin >= startMin) || (startsYesterday && currentMin < endMin);
+        const active = p.allDay
+          ? startsToday
+          : startsToday && currentMin >= startMin && currentMin < endMin;
         if (!active) continue;
 
         const start = new Date(now);
         const end = new Date(now);
-        if (startMin <= endMin || currentMin >= startMin) {
-          start.setHours(sh, sm, 0, 0);
-          end.setHours(eh, em, 0, 0);
-          if (end <= start) end.setDate(end.getDate() + 1);
+        if (p.allDay) {
+          start.setHours(0, 0, 0, 0);
+          end.setHours(0, 0, 0, 0);
+          end.setDate(end.getDate() + 1);
         } else {
           start.setHours(sh, sm, 0, 0);
-          start.setDate(start.getDate() - 1);
           end.setHours(eh, em, 0, 0);
+          if (endMin === 1440) end.setDate(end.getDate() + 1);
         }
         return { start, end };
       }
       return null;
+    }
+
+    function parseProfileMinutes(value, fallback) {
+      const match = /^(\d{1,2}):(\d{1,2})$/.exec(value || '');
+      if (!match) return fallback;
+      const hours = Number(match[1]);
+      const minutes = Number(match[2]);
+      if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return fallback;
+      return Math.min(1439, Math.max(0, hours * 60 + minutes));
+    }
+
+    function getProfileDurationMinutes(startTime, endTime) {
+      const start = parseProfileMinutes(startTime, 0);
+      const end = parseProfileMinutes(endTime, 0);
+      const duration = end - start;
+      return duration > 0 ? duration : duration + 1440;
     }
 
     function getNextProfileWindow() {
@@ -5610,16 +5644,19 @@
         const [sh, sm] = p.startTime.split(':').map(Number);
         const [eh, em] = p.endTime.split(':').map(Number);
         if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return;
-        const startMin = sh * 60 + sm;
-        const endMin = eh * 60 + em;
+        const startMin = parseProfileMinutes(p.startTime, 0);
+        const endMin = parseProfileMinutes(p.endTime, 0);
         getProfileDays(p).forEach(day => {
           const start = new Date(now);
           start.setDate(start.getDate() + ((day - now.getDay() + 7) % 7));
           start.setHours(sh, sm, 0, 0);
           if (start <= now) start.setDate(start.getDate() + 7);
           const end = new Date(start);
-          end.setHours(eh, em, 0, 0);
-          if (endMin <= startMin) end.setDate(end.getDate() + 1);
+          if (p.allDay) {
+            end.setDate(end.getDate() + 1);
+          } else {
+            end.setTime(start.getTime() + getProfileDurationMinutes(p.startTime, p.endTime) * 60000);
+          }
           if (!next || start < next.start) next = { start, end };
         });
       });
@@ -5642,12 +5679,12 @@
           const [sh, sm] = p.startTime.split(':').map(Number);
           const [eh, em] = p.endTime.split(':').map(Number);
           if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return false;
-          const startMin = sh * 60 + sm;
-          const endMin = eh * 60 + em;
+          const startMin = parseProfileMinutes(p.startTime, 0);
+          const rawEndMin = parseProfileMinutes(p.endTime, 0);
+          const endMin = !p.allDay && startMin > 0 && rawEndMin === 0 ? 1440 : rawEndMin;
           const days = getProfileDays(p);
-          if (startMin <= endMin) return days.includes(day) && m >= startMin && m < endMin;
-          return (days.includes(day) && m >= startMin) ||
-            (days.includes((day + 6) % 7) && m < endMin);
+          if (p.allDay) return days.includes(day);
+          return days.includes(day) && m >= startMin && m < endMin;
         });
       }
 
@@ -5813,7 +5850,12 @@
         if (kbdIcon) kbdIcon.classList.remove('show');
         if (statusTextEl) statusTextEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].status_active : 'Active';
         if (greenDot) greenDot.classList.add('show');
-        if (mainStatusEl) mainStatusEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].pc_awake : 'Your PC is<br><span>awake now</span>';
+        if (mainStatusEl) {
+          const paused = appDisabled || (profileControlledAwake && isSleeping);
+          mainStatusEl.innerHTML = paused
+            ? (translations[window.currentLang] ? translations[window.currentLang].sleep_active_sub : 'Your PC is not kept awake right now')
+            : (translations[window.currentLang] ? translations[window.currentLang].pc_awake : 'Your PC is<br><span>awake now</span>');
+        }
         if (darkenLabelEl) darkenLabelEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].time_to_darken : 'Time to darken';
         if (darkenTimerEl) darkenTimerEl.textContent = formatTime(darkTotal);
       } else {
@@ -6033,7 +6075,7 @@
         applyViewMode(currentMode);
         applyWhiteMode(!!s.whiteMode);
 
-        timeProfiles = s.timeProfiles || [];
+        timeProfiles = (s.timeProfiles || []).map(normalizeTimeProfile);
         timeProfilesEnabled = s.timeProfilesEnabled === undefined ? (timeProfiles.length > 0) : !!s.timeProfilesEnabled;
         scheduleActionMode = s.scheduleActionMode || 'keep_awake';
         applySchedulePanelVisibility();
@@ -6401,7 +6443,7 @@
         window.__TAURI__.invoke('update_tray_menu_state', {
           statusText: statusText,
           disabled: !!appDisabled,
-          keepAwake: !!isScreenOn,
+          keepAwake: !!isScreenOn && !appDisabled && !isSleeping,
           scheduleModeActive: !!isScheduleActive,
           activeDurationMins: activeDurationMins,
           mediaEnabled: !!disableOnVideo,
