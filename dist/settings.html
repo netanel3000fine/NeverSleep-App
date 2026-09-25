@@ -1527,9 +1527,10 @@
         .profile-days-row {
             display: flex;
             align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
+            gap: 4px;
+            flex-wrap: nowrap;
             margin-bottom: 12px;
+            width: 100%;
         }
 
         .profile-days-label {
@@ -1539,9 +1540,38 @@
             margin-right: 2px;
         }
 
+        .profile-all-day-control {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: auto;
+            color: var(--text-secondary);
+            font-size: 9.5px;
+            font-weight: 700;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .profile-all-day-toggle {
+            width: 30px;
+            height: 18px;
+            margin: 0;
+        }
+
+        .profile-all-day-toggle .toggle-knob {
+            top: 2px;
+            right: 2px;
+            width: 12px;
+            height: 12px;
+        }
+
+        .profile-all-day-toggle.active .toggle-knob {
+            transform: translateX(-14px);
+        }
+
         .profile-day-btn {
-            min-width: 32px;
-            padding: 5px 7px;
+            min-width: 30px;
+            padding: 5px 4px;
             border: 1px solid var(--surface-border);
             border-radius: 7px;
             background: rgba(255, 255, 255, 0.04);
@@ -1582,8 +1612,8 @@
 
         .clock-svg-wrap {
             position: relative;
-            width: 200px;
-            height: 200px;
+            width: 260px;
+            height: 260px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1592,6 +1622,8 @@
         }
 
         .clock-svg {
+            width: 100%;
+            height: 100%;
             overflow: visible;
         }
 
@@ -1641,79 +1673,6 @@
         .clock-knob:active {
             cursor: grabbing;
             filter: brightness(1.25);
-        }
-
-        .dial-controls-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            flex-wrap: wrap;
-            width: 100%;
-        }
-
-        .dial-step-btn {
-            background: var(--surface);
-            border: 1px solid var(--surface-border);
-            color: var(--text-primary);
-            border-radius: 8px;
-            padding: 5px 9px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 3px;
-        }
-
-        .dial-step-btn:hover {
-            background: var(--surface-hover);
-            border-color: var(--theme-color);
-            color: var(--theme-color);
-        }
-
-        .dial-presets-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            flex-wrap: wrap;
-            width: 100%;
-        }
-
-        .dial-preset-chip {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--surface-border);
-            color: var(--text-secondary);
-            border-radius: 999px;
-            padding: 3px 8px;
-            font-size: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-
-        .dial-preset-chip:hover {
-            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.14);
-            border-color: var(--theme-color);
-            color: var(--theme-color);
-        }
-
-        .dial-all-day-btn {
-            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.12);
-            border: 1px solid rgba(var(--theme-color-rgb, 249, 115, 22), 0.35);
-            color: var(--theme-color);
-            border-radius: 999px;
-            padding: 3px 8px;
-            font-size: 10px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .dial-all-day-btn.active {
-            background: var(--theme-color);
-            color: #ffffff;
         }
 
         /* ===== APP ICON PICKER ===== */
@@ -3119,6 +3078,7 @@
                         subEl.textContent = translations[lang][key];
                     }
                 }
+                refreshProfileDurationLabels();
                 refreshProfileGlow();
                 if (save) saveSettings();
             }
@@ -3191,6 +3151,8 @@
                     profile.allDay = true;
                     profile.startTime = '00:00';
                     profile.endTime = '00:00';
+                } else if (end < start) {
+                    profile.endTime = '00:00';
                 }
             }
 
@@ -3202,7 +3164,7 @@
                 if (handle === 'startTime') {
                     profile.startTime = minutesToTime(Math.max(0, Math.min(minutes, end - minimumDuration)));
                 } else {
-                    const requestedEnd = minutes <= 5 ? 1440 : minutes;
+                    const requestedEnd = start > 0 && (minutes >= 1435 || minutes <= 5) ? 1440 : minutes;
                     profile.endTime = minutesToTime(Math.min(1440, Math.max(requestedEnd, start + minimumDuration)));
                 }
             }
@@ -3357,6 +3319,21 @@
                 if (endKnob) endKnob.setAttribute('transform', `translate(${endPos.x.toFixed(2)}, ${endPos.y.toFixed(2)})`);
             }
 
+            function refreshProfileDurationLabels() {
+                document.querySelectorAll('.profile-item[data-profile-index]').forEach(wrapper => {
+                    const index = Number(wrapper.dataset.profileIndex);
+                    const profile = window.timeProfiles[index];
+                    const label = wrapper.querySelector('.clock-center-duration');
+                    if (!profile || !label) return;
+
+                    label.textContent = getDurationInfo(profile).label;
+                    label.animate([
+                        { opacity: 0.45, transform: 'scale(0.94)' },
+                        { opacity: 1, transform: 'scale(1)' }
+                    ], { duration: 180, easing: 'ease-out' });
+                });
+            }
+
             window.timeProfiles.forEach(profile => {
                 normalizeProfileDays(profile);
                 normalizeProfileTimeRange(profile);
@@ -3408,6 +3385,10 @@
                                 <div class="profile-days-row">
                                     <span class="profile-days-label">Days:</span>
                                     ${dayLabels.map((label, day) => `<button type="button" class="profile-day-btn ${normalizeProfileDays(profile).includes(day) ? 'active' : ''}" data-day="${day}">${label}</button>`).join('')}
+                                    <div class="profile-all-day-control">
+                                        <span>All day</span>
+                                        <div class="toggle profile-all-day-toggle ${profile.allDay ? 'active' : ''}" title="All day"><div class="toggle-knob"></div></div>
+                                    </div>
                                 </div>
                                 <div class="clock-svg-wrap" data-index="${index}">
                                     ${buildClockSvgMarkup()}
@@ -3415,21 +3396,6 @@
                                         <div class="clock-center-times">${profile.allDay ? '<span class="dial-start-txt">All day</span>' : `<span class="dial-start-txt">${profile.startTime}</span><span style="color:var(--text-muted); font-size:12px;">–</span><span class="dial-end-txt">${profile.endTime}</span>`}</div>
                                         <div class="clock-center-duration">${dur.label}</div>
                                     </div>
-                                </div>
-                                <div class="dial-controls-row">
-                                    <span style="font-size:11px; color:var(--text-muted); font-weight:600; margin-right:2px;">☀️ Start:</span>
-                                    <button type="button" class="dial-step-btn" data-step-kind="startTime" data-delta="-15">-15m</button>
-                                    <button type="button" class="dial-step-btn" data-step-kind="startTime" data-delta="15">+15m</button>
-                                    <span style="font-size:11px; color:var(--text-muted); font-weight:600; margin:0 2px 0 8px;">🌙 End:</span>
-                                    <button type="button" class="dial-step-btn" data-step-kind="endTime" data-delta="-15">-15m</button>
-                                    <button type="button" class="dial-step-btn" data-step-kind="endTime" data-delta="15">+15m</button>
-                                </div>
-                                <div class="dial-presets-row">
-                                    <span style="font-size:10.5px; color:var(--text-muted); font-weight:600;">Presets:</span>
-                                    <button type="button" class="dial-preset-chip" data-start="09:00" data-end="17:00">Work 09-17</button>
-                                    <button type="button" class="dial-preset-chip" data-start="08:00" data-end="12:00">Morning 08-12</button>
-                                    <button type="button" class="dial-preset-chip" data-start="18:00" data-end="23:00">Evening 18-23</button>
-                                    <button type="button" class="dial-all-day-btn ${profile.allDay ? 'active' : ''}" data-all-day="true">All day</button>
                                 </div>
                             </div>
                         </div>
@@ -3475,31 +3441,7 @@
                         refreshProfileGlow();
                     });
 
-                    // Step Buttons (+/-15m)
-                    wrapper.querySelectorAll('.dial-step-btn').forEach(btn => {
-                        btn.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            const kind = btn.dataset.stepKind;
-                            const delta = parseInt(btn.dataset.delta, 10) || 0;
-                            const profile = window.timeProfiles[index];
-                            if (profile.allDay) return;
-                            const current = kind === 'endTime' ? getProfileEndMinutes(profile) : timeToMinutes(profile[kind]);
-                            const limit = kind === 'startTime'
-                                ? getProfileEndMinutes(profile) - 5
-                                : 1440;
-                            const floor = kind === 'startTime'
-                                ? 0
-                                : timeToMinutes(profile.startTime) + 5;
-                            const updated = Math.max(floor, Math.min(limit, current + delta));
-                            if (updateProfileIfValid(index, profile => { setProfileHandle(profile, kind, updated); })) {
-                                updateClockDialVisuals(wrapper, window.timeProfiles[index]);
-                                saveSettings();
-                                refreshProfileGlow();
-                            }
-                        });
-                    });
-
-                    wrapper.querySelector('.dial-all-day-btn')?.addEventListener('click', (e) => {
+                    wrapper.querySelector('.profile-all-day-toggle')?.addEventListener('click', (e) => {
                         e.stopPropagation();
                         if (updateProfileIfValid(index, profile => {
                             profile.allDay = !profile.allDay;
@@ -3538,22 +3480,6 @@
                         });
                     });
 
-                    // Preset Chips
-                    wrapper.querySelectorAll('.dial-preset-chip').forEach(chip => {
-                        chip.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            if (updateProfileIfValid(index, profile => {
-                                profile.allDay = false;
-                                profile.startTime = chip.dataset.start;
-                                profile.endTime = chip.dataset.end;
-                            })) {
-                                updateClockDialVisuals(wrapper, window.timeProfiles[index]);
-                                saveSettings();
-                                refreshProfileGlow();
-                            }
-                        });
-                    });
-
                     // Interactive Circular Dial Drag & Touch
                     const svgWrap = wrapper.querySelector('.clock-svg-wrap');
                     let activeHandle = null;
@@ -3574,29 +3500,25 @@
                         return (Math.round(rawMins / 5) * 5) % 1440;
                     }
 
+                    function endDragMinutes(minutes) {
+                        // Keep a generous, stable target around the top of the dial.
+                        return minutes >= 1410 || minutes <= 30 ? 1440 : minutes;
+                    }
+
                     svgWrap.addEventListener('pointerdown', (e) => {
                         const targetKnob = e.target.closest('.clock-knob');
                         const curProfile = window.timeProfiles[index];
-                        if (curProfile.allDay) return;
-                        if (targetKnob) {
-                            activeHandle = targetKnob.dataset.handle === 'start' ? 'startTime' : 'endTime';
-                        } else {
-                            // If clicked on track, choose closest handle
-                            const clickedMins = pointerToMins(e);
-                            const startM = timeToMinutes(curProfile.startTime);
-                            const endM = getProfileEndMinutes(curProfile);
-                            const diffStart = Math.min(Math.abs(clickedMins - startM), 1440 - Math.abs(clickedMins - startM));
-                            const diffEnd = Math.min(Math.abs(clickedMins - endM), 1440 - Math.abs(clickedMins - endM));
-                            activeHandle = diffStart <= diffEnd ? 'startTime' : 'endTime';
-                            if (!updateProfileIfValid(index, profile => { setProfileHandle(profile, activeHandle, clickedMins); })) return;
-                            updateClockDialVisuals(wrapper, curProfile);
-                        }
+                        if (curProfile.allDay || !targetKnob) return;
+                        activeHandle = targetKnob.dataset.handle === 'start' ? 'startTime' : 'endTime';
 
                         svgWrap.setPointerCapture(e.pointerId);
 
                         const onPointerMove = (moveEvt) => {
                             if (!activeHandle) return;
-                            const mins = pointerToMins(moveEvt);
+                            const pointerMinutes = pointerToMins(moveEvt);
+                            const mins = activeHandle === 'endTime'
+                                ? endDragMinutes(pointerMinutes)
+                                : pointerMinutes;
                             updateProfileIfValid(index, profile => { setProfileHandle(profile, activeHandle, mins); });
                             updateClockDialVisuals(wrapper, window.timeProfiles[index]);
                         };

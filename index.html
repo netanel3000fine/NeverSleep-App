@@ -5569,13 +5569,13 @@
       const startMinutes = startHour * 60 + startMinute;
       const endMinutes = endHour * 60 + endMinute;
 
-      if (profile.allDay || startMinutes === endMinutes) {
+      if (profile.allDay || (startMinutes === 0 && endMinutes === 0)) {
         profile.allDay = true;
         profile.startTime = '00:00';
         profile.endTime = '00:00';
-      } else if (endMinutes < startMinutes) {
+      } else if (endMinutes < startMinutes && endMinutes !== 0) {
         profile.allDay = false;
-        profile.endTime = '23:55';
+        profile.endTime = '00:00';
       }
       return profile;
     }
@@ -5595,7 +5595,7 @@
         const [eh, em] = p.endTime.split(':').map(Number);
         if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) continue;
         const startMin = sh * 60 + sm;
-        const endMin = eh * 60 + em;
+        const endMin = !p.allDay && startMin > 0 && eh === 0 && em === 0 ? 1440 : eh * 60 + em;
         const days = getProfileDays(p);
         const startsToday = days.includes(currentDay);
         const active = p.allDay
@@ -5612,6 +5612,7 @@
         } else {
           start.setHours(sh, sm, 0, 0);
           end.setHours(eh, em, 0, 0);
+          if (endMin === 1440) end.setDate(end.getDate() + 1);
         }
         return { start, end };
       }
@@ -5679,13 +5680,11 @@
           const [eh, em] = p.endTime.split(':').map(Number);
           if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return false;
           const startMin = parseProfileMinutes(p.startTime, 0);
-          const endMin = parseProfileMinutes(p.endTime, 0);
+          const rawEndMin = parseProfileMinutes(p.endTime, 0);
+          const endMin = !p.allDay && startMin > 0 && rawEndMin === 0 ? 1440 : rawEndMin;
           const days = getProfileDays(p);
           if (p.allDay) return days.includes(day);
-          if (startMin <= endMin) {
-            return days.includes(day) && m >= startMin && m < endMin;
-          }
-          return days.includes(day) && (m >= startMin || m < endMin);
+          return days.includes(day) && m >= startMin && m < endMin;
         });
       }
 
