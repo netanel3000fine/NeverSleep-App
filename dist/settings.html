@@ -3142,21 +3142,29 @@
             }
 
             function minutesToTime(mins) {
-                mins = ((mins % 1440) + 1440) % 1440;
+                if (mins >= 1440) return '00:00';
+                mins = Math.max(0, mins);
                 const h = Math.floor(mins / 60);
                 const m = mins % 60;
                 return `${padTimePart(h)}:${padTimePart(m)}`;
             }
 
+            function getProfileEndMinutes(profile) {
+                const start = timeToMinutes(profile.startTime);
+                const end = timeToMinutes(profile.endTime);
+                return !profile.allDay && end === 0 && start > 0 ? 1440 : end;
+            }
+
             function getDurationInfo(profile) {
                 const s = timeToMinutes(profile.startTime);
-                const e = timeToMinutes(profile.endTime);
+                const e = getProfileEndMinutes(profile);
                 const diff = profile.allDay ? 1440 : Math.max(0, e - s);
                 const h = Math.floor(diff / 60);
                 const m = diff % 60;
                 let text = `${h}h`;
                 if (m > 0) text += ` ${m}m`;
-                return { diff, hours: h, minutes: m, label: text + ' awake', shortLabel: text };
+                const suffix = settings.scheduleActionMode === 'pause' ? ' paused' : ' awake';
+                return { diff, hours: h, minutes: m, label: text + suffix, shortLabel: text };
             }
 
             const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -3183,26 +3191,25 @@
                     profile.allDay = true;
                     profile.startTime = '00:00';
                     profile.endTime = '00:00';
-                } else if (end < start) {
-                    profile.endTime = '23:55';
                 }
             }
 
             function setProfileHandle(profile, handle, minutes) {
                 const minimumDuration = 5;
                 const start = timeToMinutes(profile.startTime);
-                const end = timeToMinutes(profile.endTime);
+                const end = getProfileEndMinutes(profile);
                 profile.allDay = false;
                 if (handle === 'startTime') {
                     profile.startTime = minutesToTime(Math.max(0, Math.min(minutes, end - minimumDuration)));
                 } else {
-                    profile.endTime = minutesToTime(Math.min(1435, Math.max(minutes, start + minimumDuration)));
+                    const requestedEnd = minutes <= 5 ? 1440 : minutes;
+                    profile.endTime = minutesToTime(Math.min(1440, Math.max(requestedEnd, start + minimumDuration)));
                 }
             }
 
             function getProfileDayIntervals(profile, day) {
                 const start = timeToMinutes(profile.startTime);
-                const end = timeToMinutes(profile.endTime);
+                const end = getProfileEndMinutes(profile);
                 const intervals = [];
                 const days = normalizeProfileDays(profile);
                 const startsToday = days.includes(day);
@@ -3318,7 +3325,7 @@
             function updateClockDialVisuals(wrapper, profile) {
                 if (!wrapper || !profile) return;
                 const startMins = timeToMinutes(profile.startTime);
-                const endMins = timeToMinutes(profile.endTime);
+                const endMins = getProfileEndMinutes(profile);
                 const startAngle = (startMins / 1440) * 360;
                 const endAngle = (endMins / 1440) * 360;
                 const dur = getDurationInfo(profile);
@@ -3476,10 +3483,10 @@
                             const delta = parseInt(btn.dataset.delta, 10) || 0;
                             const profile = window.timeProfiles[index];
                             if (profile.allDay) return;
-                            const current = timeToMinutes(profile[kind]);
+                            const current = kind === 'endTime' ? getProfileEndMinutes(profile) : timeToMinutes(profile[kind]);
                             const limit = kind === 'startTime'
-                                ? timeToMinutes(profile.endTime) - 5
-                                : 1435;
+                                ? getProfileEndMinutes(profile) - 5
+                                : 1440;
                             const floor = kind === 'startTime'
                                 ? 0
                                 : timeToMinutes(profile.startTime) + 5;
@@ -3577,7 +3584,7 @@
                             // If clicked on track, choose closest handle
                             const clickedMins = pointerToMins(e);
                             const startM = timeToMinutes(curProfile.startTime);
-                            const endM = timeToMinutes(curProfile.endTime);
+                            const endM = getProfileEndMinutes(curProfile);
                             const diffStart = Math.min(Math.abs(clickedMins - startM), 1440 - Math.abs(clickedMins - startM));
                             const diffEnd = Math.min(Math.abs(clickedMins - endM), 1440 - Math.abs(clickedMins - endM));
                             activeHandle = diffStart <= diffEnd ? 'startTime' : 'endTime';
