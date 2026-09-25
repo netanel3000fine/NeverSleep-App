@@ -1373,6 +1373,10 @@
             flex-shrink: 0;
         }
 
+        .profile-card-wrapper.expanded .profile-header-days {
+            display: none;
+        }
+
         .profile-header-day-btn {
             width: 18px;
             height: 18px;
@@ -1591,6 +1595,11 @@
             overflow: visible;
         }
 
+        .clock-midnight-stop {
+            filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.45));
+            pointer-events: none;
+        }
+
         .clock-center-info {
             position: absolute;
             inset: 0;
@@ -1689,6 +1698,22 @@
             background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.14);
             border-color: var(--theme-color);
             color: var(--theme-color);
+        }
+
+        .dial-all-day-btn {
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.12);
+            border: 1px solid rgba(var(--theme-color-rgb, 249, 115, 22), 0.35);
+            color: var(--theme-color);
+            border-radius: 999px;
+            padding: 3px 8px;
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .dial-all-day-btn.active {
+            background: var(--theme-color);
+            color: #ffffff;
         }
 
         /* ===== APP ICON PICKER ===== */
@@ -3123,11 +3148,10 @@
                 return `${padTimePart(h)}:${padTimePart(m)}`;
             }
 
-            function getDurationInfo(startTime, endTime) {
-                const s = timeToMinutes(startTime);
-                const e = timeToMinutes(endTime);
-                let diff = (e - s + 1440) % 1440;
-                if (diff === 0 && startTime === endTime) diff = 1440;
+            function getDurationInfo(profile) {
+                const s = timeToMinutes(profile.startTime);
+                const e = timeToMinutes(profile.endTime);
+                const diff = profile.allDay ? 1440 : Math.max(0, e - s);
                 const h = Math.floor(diff / 60);
                 const m = diff % 60;
                 let text = `${h}h`;
@@ -3146,21 +3170,47 @@
                 return profile.days;
             }
 
+            function normalizeProfileTimeRange(profile) {
+                if (profile.allDay) {
+                    profile.startTime = '00:00';
+                    profile.endTime = '00:00';
+                    return;
+                }
+
+                const start = timeToMinutes(profile.startTime);
+                const end = timeToMinutes(profile.endTime);
+                if (start === end) {
+                    profile.allDay = true;
+                    profile.startTime = '00:00';
+                    profile.endTime = '00:00';
+                } else if (end < start) {
+                    profile.endTime = '23:55';
+                }
+            }
+
+            function setProfileHandle(profile, handle, minutes) {
+                const minimumDuration = 5;
+                const start = timeToMinutes(profile.startTime);
+                const end = timeToMinutes(profile.endTime);
+                profile.allDay = false;
+                if (handle === 'startTime') {
+                    profile.startTime = minutesToTime(Math.max(0, Math.min(minutes, end - minimumDuration)));
+                } else {
+                    profile.endTime = minutesToTime(Math.min(1435, Math.max(minutes, start + minimumDuration)));
+                }
+            }
+
             function getProfileDayIntervals(profile, day) {
                 const start = timeToMinutes(profile.startTime);
                 const end = timeToMinutes(profile.endTime);
                 const intervals = [];
                 const days = normalizeProfileDays(profile);
                 const startsToday = days.includes(day);
-                const startsYesterday = days.includes((day + 6) % 7);
-                if (start < end && startsToday) {
-                    intervals.push([start, end]);
-                } else if (start > end && startsToday) {
-                    intervals.push([start, 1440]);
-                } else if (start === end && startsToday) {
+                if (profile.allDay && startsToday) {
                     intervals.push([0, 1440]);
+                } else if (start < end && startsToday) {
+                    intervals.push([start, end]);
                 }
-                if (start > end && startsYesterday) intervals.push([0, end]);
                 return intervals;
             }
 
@@ -3187,6 +3237,7 @@
                 const previous = JSON.stringify(profile);
                 updater(profile);
                 normalizeProfileDays(profile);
+                normalizeProfileTimeRange(profile);
                 if (profilesConflict(profile, index)) {
                     Object.assign(profile, JSON.parse(previous));
                     showProfileConflict();
@@ -3244,6 +3295,10 @@
                         
                         <!-- Glowing active awake arc -->
                         <path class="clock-active-arc" fill="none" stroke="var(--theme-color)" stroke-width="12" stroke-linecap="round"/>
+                        <g class="clock-midnight-stop" aria-label="Midnight boundary">
+                            <line x1="100" y1="23" x2="100" y2="36" stroke="var(--theme-color)" stroke-width="3" stroke-linecap="round"/>
+                            <circle cx="100" cy="29.5" r="3" fill="#0f172a" stroke="var(--theme-color)" stroke-width="1.5"/>
+                        </g>
                         
                         <!-- Start Knob (☀️ Wake) -->
                         <g class="clock-knob knob-start" data-handle="start">
@@ -3266,7 +3321,7 @@
                 const endMins = timeToMinutes(profile.endTime);
                 const startAngle = (startMins / 1440) * 360;
                 const endAngle = (endMins / 1440) * 360;
-                const dur = getDurationInfo(profile.startTime, profile.endTime);
+                const dur = getDurationInfo(profile);
 
                 const rangeStart = wrapper.querySelector('.range-start');
                 const rangeEnd = wrapper.querySelector('.range-end');
@@ -3275,10 +3330,10 @@
                 const centerEnd = wrapper.querySelector('.dial-end-txt');
                 const centerDur = wrapper.querySelector('.clock-center-duration');
 
-                if (rangeStart) rangeStart.textContent = profile.startTime;
-                if (rangeEnd) rangeEnd.textContent = profile.endTime;
+                if (rangeStart) rangeStart.textContent = profile.allDay ? 'All day' : profile.startTime;
+                if (rangeEnd) rangeEnd.textContent = profile.allDay ? '' : profile.endTime;
                 if (badge) badge.textContent = dur.shortLabel;
-                if (centerStart) centerStart.textContent = profile.startTime;
+                if (centerStart) centerStart.textContent = profile.allDay ? 'All day' : profile.startTime;
                 if (centerEnd) centerEnd.textContent = profile.endTime;
                 if (centerDur) centerDur.textContent = dur.label;
 
@@ -3295,7 +3350,10 @@
                 if (endKnob) endKnob.setAttribute('transform', `translate(${endPos.x.toFixed(2)}, ${endPos.y.toFixed(2)})`);
             }
 
-            window.timeProfiles.forEach(normalizeProfileDays);
+            window.timeProfiles.forEach(profile => {
+                normalizeProfileDays(profile);
+                normalizeProfileTimeRange(profile);
+            });
 
             let expandedProfileIndices = new Set([0]);
 
@@ -3316,7 +3374,7 @@
                     wrapper.className = `profile-card-wrapper profile-item ${isExpanded ? 'expanded' : ''}`;
                     wrapper.dataset.profileIndex = index;
 
-                    const dur = getDurationInfo(profile.startTime, profile.endTime);
+                    const dur = getDurationInfo(profile);
 
                     const headerDays = getHeaderDayLabels();
 
@@ -3324,11 +3382,7 @@
                         <div class="profile-card-header">
                             <div class="profile-header-left">
                                 <div class="profile-live-dot" title="Running now"></div>
-                                <div class="profile-time-range-display">
-                                    <span class="range-start">${profile.startTime}</span>
-                                    <span class="profile-arrow">→</span>
-                                    <span class="range-end">${profile.endTime}</span>
-                                </div>
+                                <div class="profile-time-range-display">${profile.allDay ? '<span class="range-start">All day</span>' : `<span class="range-start">${profile.startTime}</span><span class="profile-arrow">→</span><span class="range-end">${profile.endTime}</span>`}</div>
                                 <span class="profile-duration-badge">${dur.shortLabel}</span>
                             </div>
                             <div class="profile-header-days">
@@ -3351,11 +3405,7 @@
                                 <div class="clock-svg-wrap" data-index="${index}">
                                     ${buildClockSvgMarkup()}
                                     <div class="clock-center-info">
-                                        <div class="clock-center-times">
-                                            <span class="dial-start-txt">${profile.startTime}</span>
-                                            <span style="color:var(--text-muted); font-size:12px;">–</span>
-                                            <span class="dial-end-txt">${profile.endTime}</span>
-                                        </div>
+                                        <div class="clock-center-times">${profile.allDay ? '<span class="dial-start-txt">All day</span>' : `<span class="dial-start-txt">${profile.startTime}</span><span style="color:var(--text-muted); font-size:12px;">–</span><span class="dial-end-txt">${profile.endTime}</span>`}</div>
                                         <div class="clock-center-duration">${dur.label}</div>
                                     </div>
                                 </div>
@@ -3372,7 +3422,7 @@
                                     <button type="button" class="dial-preset-chip" data-start="09:00" data-end="17:00">Work 09-17</button>
                                     <button type="button" class="dial-preset-chip" data-start="08:00" data-end="12:00">Morning 08-12</button>
                                     <button type="button" class="dial-preset-chip" data-start="18:00" data-end="23:00">Evening 18-23</button>
-                                    <button type="button" class="dial-preset-chip" data-start="23:00" data-end="07:00">Night 23-07</button>
+                                    <button type="button" class="dial-all-day-btn ${profile.allDay ? 'active' : ''}" data-all-day="true">All day</button>
                                 </div>
                             </div>
                         </div>
@@ -3424,14 +3474,40 @@
                             e.stopPropagation();
                             const kind = btn.dataset.stepKind;
                             const delta = parseInt(btn.dataset.delta, 10) || 0;
-                            const current = timeToMinutes(window.timeProfiles[index][kind]);
-                            const updated = (current + delta + 1440) % 1440;
-                            if (updateProfileIfValid(index, profile => { profile[kind] = minutesToTime(updated); })) {
+                            const profile = window.timeProfiles[index];
+                            if (profile.allDay) return;
+                            const current = timeToMinutes(profile[kind]);
+                            const limit = kind === 'startTime'
+                                ? timeToMinutes(profile.endTime) - 5
+                                : 1435;
+                            const floor = kind === 'startTime'
+                                ? 0
+                                : timeToMinutes(profile.startTime) + 5;
+                            const updated = Math.max(floor, Math.min(limit, current + delta));
+                            if (updateProfileIfValid(index, profile => { setProfileHandle(profile, kind, updated); })) {
                                 updateClockDialVisuals(wrapper, window.timeProfiles[index]);
                                 saveSettings();
                                 refreshProfileGlow();
                             }
                         });
+                    });
+
+                    wrapper.querySelector('.dial-all-day-btn')?.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (updateProfileIfValid(index, profile => {
+                            profile.allDay = !profile.allDay;
+                            if (profile.allDay) {
+                                profile.startTime = '00:00';
+                                profile.endTime = '00:00';
+                            } else {
+                                profile.startTime = '09:00';
+                                profile.endTime = '17:00';
+                            }
+                        })) {
+                            renderTimeProfiles();
+                            saveSettings();
+                            refreshProfileGlow();
+                        }
                     });
 
                     wrapper.querySelectorAll('.profile-header-day-btn, .profile-day-btn').forEach(btn => {
@@ -3460,6 +3536,7 @@
                         chip.addEventListener('click', (e) => {
                             e.stopPropagation();
                             if (updateProfileIfValid(index, profile => {
+                                profile.allDay = false;
                                 profile.startTime = chip.dataset.start;
                                 profile.endTime = chip.dataset.end;
                             })) {
@@ -3493,6 +3570,7 @@
                     svgWrap.addEventListener('pointerdown', (e) => {
                         const targetKnob = e.target.closest('.clock-knob');
                         const curProfile = window.timeProfiles[index];
+                        if (curProfile.allDay) return;
                         if (targetKnob) {
                             activeHandle = targetKnob.dataset.handle === 'start' ? 'startTime' : 'endTime';
                         } else {
@@ -3503,7 +3581,7 @@
                             const diffStart = Math.min(Math.abs(clickedMins - startM), 1440 - Math.abs(clickedMins - startM));
                             const diffEnd = Math.min(Math.abs(clickedMins - endM), 1440 - Math.abs(clickedMins - endM));
                             activeHandle = diffStart <= diffEnd ? 'startTime' : 'endTime';
-                            if (!updateProfileIfValid(index, profile => { profile[activeHandle] = minutesToTime(clickedMins); })) return;
+                            if (!updateProfileIfValid(index, profile => { setProfileHandle(profile, activeHandle, clickedMins); })) return;
                             updateClockDialVisuals(wrapper, curProfile);
                         }
 
@@ -3512,7 +3590,7 @@
                         const onPointerMove = (moveEvt) => {
                             if (!activeHandle) return;
                             const mins = pointerToMins(moveEvt);
-                            updateProfileIfValid(index, profile => { profile[activeHandle] = minutesToTime(mins); });
+                            updateProfileIfValid(index, profile => { setProfileHandle(profile, activeHandle, mins); });
                             updateClockDialVisuals(wrapper, window.timeProfiles[index]);
                         };
 
@@ -3544,6 +3622,7 @@
                 if (start <= now) start.setMinutes(start.getMinutes() + 5);
                 const end = new Date(start);
                 end.setHours(end.getHours() + 1);
+                if (end.getDate() !== start.getDate()) end.setHours(23, 55, 0, 0);
                 const h = padTimePart(start.getHours());
                 const m = padTimePart(start.getMinutes());
                 const endH = padTimePart(end.getHours());
@@ -3573,17 +3652,13 @@
                 const now = new Date();
                 const nowMins = now.getHours() * 60 + now.getMinutes();
                 const today = now.getDay();
+                if (profile.allDay) return normalizeProfileDays(profile).includes(today);
                 const [sh, sm] = (profile.startTime || '00:00').split(':').map(Number);
                 const [eh, em] = (profile.endTime   || '00:00').split(':').map(Number);
                 const startMins = sh * 60 + sm;
                 const endMins   = eh * 60 + em;
                 const days = normalizeProfileDays(profile);
-                if (startMins <= endMins) {
-                    return days.includes(today) && nowMins >= startMins && nowMins < endMins;
-                } else {
-                    return (days.includes(today) && nowMins >= startMins) ||
-                        (days.includes((today + 6) % 7) && nowMins < endMins);
-                }
+                return days.includes(today) && nowMins >= startMins && nowMins < endMins;
             }
 
             function refreshProfileGlow() {

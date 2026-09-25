@@ -5561,6 +5561,25 @@
         : [0, 1, 2, 3, 4, 5, 6];
     }
 
+    function normalizeTimeProfile(profile) {
+      const start = profile.startTime || '00:00';
+      const end = profile.endTime || '00:00';
+      const [startHour, startMinute] = start.split(':').map(Number);
+      const [endHour, endMinute] = end.split(':').map(Number);
+      const startMinutes = startHour * 60 + startMinute;
+      const endMinutes = endHour * 60 + endMinute;
+
+      if (profile.allDay || startMinutes === endMinutes) {
+        profile.allDay = true;
+        profile.startTime = '00:00';
+        profile.endTime = '00:00';
+      } else if (endMinutes < startMinutes) {
+        profile.allDay = false;
+        profile.endTime = '23:55';
+      }
+      return profile;
+    }
+
     function getActiveProfileTimes() {
       if (!timeProfiles || timeProfiles.length === 0) return null;
       const enabledProfiles = timeProfiles.filter(p => p.enabled !== false);
@@ -5579,21 +5598,19 @@
         const endMin = eh * 60 + em;
         const days = getProfileDays(p);
         const startsToday = days.includes(currentDay);
-        const startsYesterday = days.includes((currentDay + 6) % 7);
-        const active = startMin <= endMin
-          ? startsToday && currentMin >= startMin && currentMin < endMin
-          : (startsToday && currentMin >= startMin) || (startsYesterday && currentMin < endMin);
+        const active = p.allDay
+          ? startsToday
+          : startsToday && currentMin >= startMin && currentMin < endMin;
         if (!active) continue;
 
         const start = new Date(now);
         const end = new Date(now);
-        if (startMin <= endMin || currentMin >= startMin) {
-          start.setHours(sh, sm, 0, 0);
-          end.setHours(eh, em, 0, 0);
-          if (end <= start) end.setDate(end.getDate() + 1);
+        if (p.allDay) {
+          start.setHours(0, 0, 0, 0);
+          end.setHours(0, 0, 0, 0);
+          end.setDate(end.getDate() + 1);
         } else {
           start.setHours(sh, sm, 0, 0);
-          start.setDate(start.getDate() - 1);
           end.setHours(eh, em, 0, 0);
         }
         return { start, end };
@@ -5619,7 +5636,7 @@
           if (start <= now) start.setDate(start.getDate() + 7);
           const end = new Date(start);
           end.setHours(eh, em, 0, 0);
-          if (endMin <= startMin) end.setDate(end.getDate() + 1);
+          if (p.allDay) end.setDate(end.getDate() + 1);
           if (!next || start < next.start) next = { start, end };
         });
       });
@@ -5645,9 +5662,8 @@
           const startMin = sh * 60 + sm;
           const endMin = eh * 60 + em;
           const days = getProfileDays(p);
-          if (startMin <= endMin) return days.includes(day) && m >= startMin && m < endMin;
-          return (days.includes(day) && m >= startMin) ||
-            (days.includes((day + 6) % 7) && m < endMin);
+          if (p.allDay) return days.includes(day);
+          return days.includes(day) && m >= startMin && m < endMin;
         });
       }
 
@@ -6033,7 +6049,7 @@
         applyViewMode(currentMode);
         applyWhiteMode(!!s.whiteMode);
 
-        timeProfiles = s.timeProfiles || [];
+        timeProfiles = (s.timeProfiles || []).map(normalizeTimeProfile);
         timeProfilesEnabled = s.timeProfilesEnabled === undefined ? (timeProfiles.length > 0) : !!s.timeProfilesEnabled;
         scheduleActionMode = s.scheduleActionMode || 'keep_awake';
         applySchedulePanelVisibility();
