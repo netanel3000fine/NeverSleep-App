@@ -283,6 +283,21 @@
       display: block;
     }
 
+    .status-darken-dot {
+      width: 8px;
+      height: 8px;
+      background: #000000;
+      border-radius: 50%;
+      box-shadow: 0 0 9px rgba(255, 255, 255, 0.95), 0 0 4px #ffffff, 0 0 2px #ffffff;
+      margin-left: 2px;
+      display: none;
+      flex-shrink: 0;
+    }
+
+    .status-darken-dot.show {
+      display: block;
+    }
+
 
 
     .activity-icon {
@@ -5304,6 +5319,7 @@
             <path
               d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z" />
           </svg>
+          <div class="status-darken-dot" id="darkenDot"></div>
           <span id="statusText" data-tauri-drag-region data-i18n="status_active">Active</span>
         </div>
         <!-- Settings Button -->
@@ -5839,6 +5855,7 @@
       const mouseIcon = document.getElementById('mouseIcon');
       const kbdIcon = document.getElementById('kbdIcon');
       const greenDot = document.getElementById('greenDot');
+      const darkenDot = document.getElementById('darkenDot');
       const activateToggle = document.getElementById('activateToggle');
 
       if (activateToggle) activateToggle.classList.toggle('active', isScreenOn);
@@ -5850,6 +5867,7 @@
         if (kbdIcon) kbdIcon.classList.remove('show');
         if (statusTextEl) statusTextEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].status_active : 'Active';
         if (greenDot) greenDot.classList.add('show');
+        if (darkenDot) darkenDot.classList.remove('show');
         if (mainStatusEl) {
           const paused = appDisabled || (profileControlledAwake && isSleeping);
           mainStatusEl.innerHTML = paused
@@ -5862,6 +5880,7 @@
         if (darkenTimerContainer) darkenTimerContainer.style.display = 'block';
         if (statusTextEl) statusTextEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].status_darken : 'Darken<br>Mode';
         if (greenDot) greenDot.classList.remove('show');
+        if (darkenDot) darkenDot.classList.add('show');
         const remDark = Math.max(0, Math.floor((darkenTargetTime - Date.now()) / 1000));
         if (darkenLabelEl) darkenLabelEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].time_to_darken : 'Time to darken';
         if (darkenTimerEl) darkenTimerEl.textContent = formatTime(remDark);

@@ -271,7 +271,8 @@
                         box-shadow 0.22s ease, grid-template-rows 0.55s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .clickable-category-card:hover {
+        .clickable-category-card:hover,
+        .clickable-category-card.expanded {
             background: var(--surface-hover);
             border-color: rgba(var(--theme-color-rgb, 249, 115, 22), 0.38);
             box-shadow: 0 6px 22px rgba(0, 0, 0, 0.26);
@@ -305,7 +306,8 @@
             transition: opacity 0.32s ease, transform 0.4s ease;
         }
 
-        .clickable-category-card:hover .card-explainer-inner {
+        .clickable-category-card:hover .card-explainer-inner,
+        .clickable-category-card.expanded .card-explainer-inner {
             opacity: 1;
             transform: translateY(0);
             transition-delay: 0.12s;
@@ -349,7 +351,8 @@
             height: 20px;
         }
 
-        .clickable-category-card:hover .category-card-icon {
+        .clickable-category-card:hover .category-card-icon,
+        .clickable-category-card.expanded .category-card-icon {
             background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.2);
         }
 
@@ -391,11 +394,13 @@
             transition: transform 0.18s ease, color 0.2s ease;
         }
 
-        .clickable-category-card:hover .nav-arrow-badge svg {
+        .clickable-category-card:hover .nav-arrow-badge svg,
+        .clickable-category-card.expanded .nav-arrow-badge svg {
             color: var(--theme-color);
         }
 
-        body[dir="rtl"] .clickable-category-card:hover .nav-arrow-badge svg {
+        body[dir="rtl"] .clickable-category-card:hover .nav-arrow-badge svg,
+        .clickable-category-card.expanded .nav-arrow-badge svg {
             transform: rotate(180deg);
         }
 
@@ -578,6 +583,105 @@
         }
         .popup-body .settings-item:last-child {
             border-bottom: none;
+            padding-bottom: 0;
+        }
+
+                /* ===== SECTION DIVIDER (single clean hairline) ===== */
+        .section-divider {
+            height: 1px;
+            border: none;
+            flex-shrink: 0;
+            margin: 14px 0;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        body.white-mode .section-divider {
+            background: rgba(0, 0, 0, 0.09);
+        }
+
+        .settings-item:has(+ .section-divider),
+        .popup-body .settings-item:has(+ .section-divider) {
+            border-bottom: none !important;
+            padding-bottom: 0 !important;
+        }
+
+        .popup-body .section-divider + .settings-item {
+            padding-top: 0;
+        }
+
+        /* ===== EMPTY TIME PROFILES CARD ===== */
+        .empty-profiles-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 22px 16px;
+            border: 1px dashed rgba(255, 255, 255, 0.16);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            text-align: center;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        body.white-mode .empty-profiles-card {
+            border-color: rgba(0, 0, 0, 0.14);
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .empty-profiles-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.12);
+            color: var(--theme-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2px;
+        }
+
+        .empty-profiles-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .empty-profiles-hint {
+            font-size: 11.5px;
+            color: var(--text-secondary);
+            max-width: 290px;
+            line-height: 1.45;
+        }
+
+        /* ===== COLLAPSIBLE GROUP ===== */
+        .collapsible {
+            display: grid;
+            grid-template-rows: 1fr;
+            transition: grid-template-rows 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                        opacity 0.2s ease;
+        }
+
+        .collapsible > .collapsible-inner {
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .collapsible.collapsed {
+            grid-template-rows: 0fr;
+            opacity: 0;
+        }
+
+        .popup-body .collapsible-inner > .settings-item:first-of-type {
+            padding-top: 10px;
+        }
+
+        .notif-master {
+            transition: border-color 0.3s ease, padding-bottom 0.3s ease;
+        }
+
+        .notif-off .notif-master {
+            border-bottom-color: transparent;
             padding-bottom: 0;
         }
 
@@ -1044,7 +1148,7 @@
 
         .bg-orange  { background: #f97316; }
         .bg-true-yellow { background: #FACC15; }
-        .bg-yellow  { background: #eab308; }
+        .bg-green   { background: #22c55e; }
         .bg-red     { background: #ef4444; }
         .bg-pink    { background: #ec4899; }
         .bg-violet  { background: #8b5cf6; }
@@ -1055,12 +1159,9 @@
 
         /* ===== TIME PROFILES ===== */
         .time-profiles-section {
-            margin-top: 14px;
-            border-top: 1px solid var(--surface-border);
-            padding-top: 14px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 0;
         }
 
         .icon-btn {
@@ -1162,6 +1263,26 @@
 
         .preview-classic {
             background: #0b0f1a;
+        }
+
+        /* Classic is the compact layout, so its thumbnail is shorter than the others */
+        .view-mode-tile[data-mode="classic"] {
+            justify-content: center;
+        }
+
+        .view-mode-tile[data-mode="classic"] .view-mode-preview {
+            height: 32px;
+        }
+
+        .view-mode-tile[data-mode="classic"] .vm-mock-window {
+            height: 20px;
+            flex-direction: row;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .view-mode-tile[data-mode="classic"] .vm-mock-bar {
+            width: 45%;
         }
 
         .preview-liquid {
@@ -1425,7 +1546,6 @@
             border-radius: 10px;
             padding: 3px;
             gap: 4px;
-            margin-bottom: 14px;
         }
 
         body.white-mode .schedule-action-segmented {
@@ -1747,20 +1867,20 @@
             align-items: center;
             gap: 10px;
             margin-top: 12px;
-            min-height: 34px;
+            min-height: 28px;
         }
 
         .app-icon-apply-btn {
-            height: 34px;
+            height: 28px;
             display: inline-flex;
             align-items: center;
-            gap: 7px;
-            padding: 0 12px;
+            gap: 6px;
+            padding: 0 10px;
             border: 1px solid rgba(var(--theme-color-rgb, 249, 115, 22), 0.35);
-            border-radius: 8px;
+            border-radius: 7px;
             background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.12);
             color: var(--text-primary);
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.18s ease;
@@ -1780,8 +1900,8 @@
         }
 
         .app-icon-apply-btn svg {
-            width: 15px;
-            height: 15px;
+            width: 13px;
+            height: 13px;
             flex: 0 0 auto;
         }
 
@@ -2041,7 +2161,7 @@
                 </div>
                 <div class="popup-body">
                     <!-- Card 1: Timings & Window Options -->
-                    <div style="background:var(--surface-card,rgba(255,255,255,0.04));border:1px solid var(--surface-border,rgba(255,255,255,0.08));border-radius:14px;padding:6px 16px 4px;margin-bottom:14px;">
+                    <div style="background:var(--surface-card,rgba(255,255,255,0.04));border:1px solid var(--surface-border,rgba(255,255,255,0.08));border-radius:14px;padding:6px 16px 16px;">
                         <div class="settings-item">
                             <div class="label-group"><span class="item-label" data-i18n="default_darken">Default Darken Time</span></div>
                             <div class="input-row">
@@ -2063,17 +2183,15 @@
                             </div>
                             <div class="toggle" id="focusToggle"><div class="toggle-knob"></div></div>
                         </div>
-                        <div class="settings-item" style="border-bottom:none;">
+                        <div class="settings-item" style="border-bottom:none !important;padding-bottom:0 !important;">
                             <div class="label-group">
                                 <span class="item-label" data-i18n="minimize_window">Minimize Window</span>
                                 <span class="item-sub" data-i18n="minimize_window_sub">10 seconds after start</span>
                             </div>
                             <div class="toggle" id="minimizeToggle"><div class="toggle-knob"></div></div>
                         </div>
-                    </div><!-- end Card 1 -->
-
-                    <!-- Card 2: Darken Method Selection -->
-                    <div style="background:var(--surface-card,rgba(255,255,255,0.04));border:1px solid var(--surface-border,rgba(255,255,255,0.08));border-radius:14px;padding:14px 16px 16px;">
+                    <div class="section-divider"></div>
+                    <!-- Darken Method Selection -->
                         <div class="label-group" style="margin-bottom:12px;">
                             <span class="item-label" data-i18n="darken_method_title">Darken Method</span>
                             <span class="item-sub" data-i18n="darken_method_sub">Choose how monitors are darkened or put to sleep</span>
@@ -2253,9 +2371,9 @@
                     </button>
                 </div>
                 <div class="popup-body">
-                    <!-- Language Card -->
-                    <div style="background:var(--surface-card,rgba(255,255,255,0.04));border:1px solid var(--surface-border,rgba(255,255,255,0.08));border-radius:14px;padding:6px 16px;margin-bottom:14px;">
-                        <div class="settings-item" style="border-bottom:none;">
+                    <!-- Language + View Mode Card -->
+                    <div style="background:var(--surface-card,rgba(255,255,255,0.04));border:1px solid var(--surface-border,rgba(255,255,255,0.08));border-radius:14px;padding:14px 16px;margin-bottom:16px;">
+                        <div class="settings-item" style="border-bottom:none !important;padding:0 !important;">
                             <div class="label-group">
                                 <span class="item-label" data-i18n="language">Language</span>
                             </div>
@@ -2265,15 +2383,12 @@
                                 <option value="ru" data-i18n="lang_ru">Русский</option>
                             </select>
                         </div>
-                    </div>
-
-                    <!-- View Mode Card -->
-                    <div style="background:var(--surface-card,rgba(255,255,255,0.04));border:1px solid var(--surface-border,rgba(255,255,255,0.08));border-radius:14px;padding:14px 16px;margin-bottom:16px;">
+                        <div class="section-divider" style="margin:14px 0;"></div>
                         <div class="label-group" style="margin-bottom: 10px;">
                             <span class="item-label" data-i18n="view_mode">View Mode</span>
                             <span class="item-sub" data-i18n="view_mode_sub">Classic / Liquid Glass / Coffee</span>
                         </div>
-                        <div class="view-mode-grid" id="viewModeGrid">
+                        <div class="view-mode-grid" id="viewModeGrid" style="margin-bottom:0;">
                             <div class="view-mode-tile" data-mode="classic" id="vmTileClassic">
                                 <div class="view-mode-preview preview-classic">
                                     <div class="vm-mock-window">
@@ -2316,7 +2431,7 @@
                     <div class="color-picker-container">
                         <div class="color-option bg-orange selected" data-color="#f97316"></div>
                         <div class="color-option bg-true-yellow" data-color="#FACC15" title="True Yellow"></div>
-                        <div class="color-option bg-yellow" data-color="#eab308"></div>
+                        <div class="color-option bg-green" data-color="#22c55e" title="Green"></div>
                         <div class="color-option bg-red" data-color="#ef4444"></div>
                         <div class="color-option bg-pink" data-color="#ec4899"></div>
                         <div class="color-option bg-violet" data-color="#8b5cf6"></div>
@@ -2403,6 +2518,7 @@
                             <span data-i18n="sched_action_pause">Pause Prevention</span>
                         </button>
                     </div>
+                    <div class="section-divider"></div>
                     <div class="time-profiles-section">
                         <div class="time-profiles-header-wrap" style="margin-bottom: 12px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
@@ -2418,6 +2534,7 @@
                             <!-- Profiles injected by JS -->
                         </div>
                     </div>
+                    <div class="section-divider"></div>
                     <div class="settings-item">
                         <div class="label-group">
                             <span class="item-label" data-i18n="pop_window">Pop up window when done</span>
@@ -2439,25 +2556,29 @@
                     </div>
                 </div>
                 <div class="popup-body">
-                    <div class="settings-item">
+                    <div class="settings-item notif-master">
                         <div class="label-group"><span class="item-label" data-i18n="enable_notifications">Enable notifications</span></div>
                         <div class="toggle" id="notificationsToggle"><div class="toggle-knob"></div></div>
                     </div>
-                    <div class="settings-item">
-                        <div class="label-group"><span class="item-label" data-i18n="system_sounds">Play system sounds</span></div>
-                        <div class="toggle" id="soundToggle"><div class="toggle-knob"></div></div>
-                    </div>
-                    <div class="settings-item">
-                        <div class="label-group"><span class="item-label" data-i18n="break_reminder">Break reminder</span></div>
-                        <div class="input-row">
-                            <div class="input-wrapper">
-                                <input id="breakHours" type="number" class="input-field" min="0">
-                                <span class="input-label" data-i18n="hours">hrs</span>
+                    <div class="collapsible" id="notificationOptions">
+                        <div class="collapsible-inner">
+                            <div class="settings-item">
+                                <div class="label-group"><span class="item-label" data-i18n="system_sounds">Play system sounds</span></div>
+                                <div class="toggle" id="soundToggle"><div class="toggle-knob"></div></div>
                             </div>
-                            <span class="input-sep">:</span>
-                            <div class="input-wrapper">
-                                <input id="breakMinutes" type="number" class="input-field" min="1" max="59">
-                                <span class="input-label" data-i18n="minutes">min</span>
+                            <div class="settings-item">
+                                <div class="label-group"><span class="item-label" data-i18n="break_reminder">Break reminder</span></div>
+                                <div class="input-row">
+                                    <div class="input-wrapper">
+                                        <input id="breakHours" type="number" class="input-field" min="0">
+                                        <span class="input-label" data-i18n="hours">hrs</span>
+                                    </div>
+                                    <span class="input-sep">:</span>
+                                    <div class="input-wrapper">
+                                        <input id="breakMinutes" type="number" class="input-field" min="1" max="59">
+                                        <span class="input-label" data-i18n="minutes">min</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2539,6 +2660,17 @@
                 updateBadges();
             };
             if (callback) callback(val);
+        }
+
+        // Collapse everything under "Enable notifications" while it is off
+        function setNotificationOptionsVisible(on) {
+            const group = document.getElementById('notificationOptions');
+            const popup = document.getElementById('notificationsPopup');
+            if (group) {
+                group.classList.toggle('collapsed', !on);
+                group.inert = !on; // keeps hidden inputs out of the tab order
+            }
+            if (popup) popup.classList.toggle('notif-off', !on);
         }
 
         function setupInput(id, key, defaultVal) {
@@ -2647,6 +2779,17 @@
 
         function setupPopupNavigation() {
             // Open nav buttons from main category cards
+            // Hover-expand card explainer, staying expanded until another card is hovered
+            const categoryCards = document.querySelectorAll('.clickable-category-card');
+            categoryCards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    categoryCards.forEach(c => {
+                        if (c !== card) c.classList.remove('expanded');
+                    });
+                    card.classList.add('expanded');
+                });
+            });
+
             document.getElementById('openSystemPopup')?.addEventListener('click', () => openPopup('systemPopup'));
             document.getElementById('openBlackScreenPopup')?.addEventListener('click', () => openPopup('blackScreenPopup'));
             document.getElementById('openDesignPopup')?.addEventListener('click', () => openPopup('designPopup'));
@@ -3011,7 +3154,7 @@
 
             setupToggle('focusToggle', 'focusOnCountdown', false);
             setupToggle('minimizeToggle', 'minimizeOnDarken', false);
-            setupToggle('notificationsToggle', 'notificationsEnabled', true);
+            setupToggle('notificationsToggle', 'notificationsEnabled', true, setNotificationOptionsVisible);
             setupToggle('soundToggle', 'soundEnabled', false);
             setupToggle('quitFocusToggle', 'quitFocusOnCountdown', true);
 
@@ -3344,11 +3487,23 @@
             function renderTimeProfiles() {
                 const container = document.getElementById('timeProfilesContainer');
                 if (!container) return;
+                const lang = document.getElementById('languageSelect')?.value || window.currentLang || 'en';
                 container.innerHTML = '';
                 if (window.timeProfiles.length === 0) {
-                    const lang = document.getElementById('languageSelect')?.value || 'en';
-                    const text = (translations[lang] && translations[lang].no_profiles) ? translations[lang].no_profiles : 'No profiles added';
-                    container.innerHTML = `<div style="text-align:center; opacity:0.5; font-size:13px; padding:10px 0;" data-i18n="no_profiles">${text}</div>`;
+                    const text = (translations[lang] && translations[lang].no_profiles) ? translations[lang].no_profiles : 'No profiles added yet';
+                    const hint = (translations[lang] && translations[lang].no_profiles_hint) ? translations[lang].no_profiles_hint : 'Click "+ Add Profile" above to create automated wake & sleep windows';
+                    container.innerHTML = `
+                        <div class="empty-profiles-card">
+                            <div class="empty-profiles-icon">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                            </div>
+                            <div class="empty-profiles-title" data-i18n="no_profiles">${text}</div>
+                            <div class="empty-profiles-hint" data-i18n="no_profiles_hint">${hint}</div>
+                        </div>
+                    `;
                     return;
                 }
 

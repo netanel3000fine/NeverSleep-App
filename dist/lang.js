@@ -96,7 +96,8 @@ const translations = {
     "time_profiles": "Time Profiles",
     "time_profiles_sub": "Keep PC awake only during these hours. Outside these hours, sleep prevention pauses.",
     "add_profile": "Add Profile",
-    "no_profiles": "No profiles added",
+    "no_profiles": "No profiles added yet",
+    "no_profiles_hint": "Click \"+ Add Profile\" above to create automated wake & sleep windows",
     "starts_in": "Starts in",
     "remove": "Remove",
     
@@ -233,7 +234,8 @@ const translations = {
     "time_profiles": "פרופילי שעות",
     "time_profiles_sub": "שומר על המחשב ער רק בשעות אלו. מחוץ לשעות אלו, מניעת השינה מושהית.",
     "add_profile": "הוסף פרופיל",
-    "no_profiles": "לא נוספו פרופילים",
+    "no_profiles": "טרם נוספו פרופילים",
+    "no_profiles_hint": "לחץ על \"+ הוסף פרופיל\" למעלה כדי לקבוע חלון זמנים",
     "starts_in": "יתחיל בעוד",
     "remove": "הסר",
     
@@ -367,7 +369,8 @@ const translations = {
     "time_profiles": "Временные профили",
     "time_profiles_sub": "Держит ПК активным только в эти часы. В остальное время предотвращение сна приостанавливается.",
     "add_profile": "Добавить профиль",
-    "no_profiles": "Нет добавленных профилей",
+    "no_profiles": "Профили пока не добавлены",
+    "no_profiles_hint": "Нажмите «+ Добавить профиль» выше для настройки расписания",
     "starts_in": "Начнется через",
     "remove": "Удалить",
 
