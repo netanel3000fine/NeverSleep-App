@@ -110,8 +110,7 @@
             background: linear-gradient(145deg, #0b0f1a 0%, #111827 50%, #0f172a 100%);
             height: 100%;
             width: 100%;
-            overflow-y: auto;
-            overflow-x: hidden;
+            overflow: hidden;
             position: relative;
             padding: 24px 20px 60px;
         }
@@ -1538,6 +1537,133 @@
             background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.18);
         }
 
+        /* ===== COUNTDOWN TIMER SECTION ===== */
+        .countdown-section {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px 0 4px;
+        }
+        .countdown-section.visible {
+            display: flex;
+        }
+        .countdown-presets {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+        .countdown-preset-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            padding: 8px 4px;
+            border-radius: 8px;
+            border: 1.5px solid var(--surface-border);
+            background: rgba(255,255,255,0.03);
+            cursor: pointer;
+            transition: all 0.18s cubic-bezier(0.16,1,0.3,1);
+            user-select: none;
+        }
+        .countdown-preset-card:hover {
+            border-color: rgba(var(--theme-color-rgb,249,115,22),0.4);
+            background: rgba(var(--theme-color-rgb,249,115,22),0.07);
+        }
+        .countdown-preset-card.selected {
+            border-color: rgba(var(--theme-color-rgb,249,115,22),0.65);
+            background: rgba(var(--theme-color-rgb,249,115,22),0.14);
+            box-shadow: 0 0 0 1px rgba(var(--theme-color-rgb,249,115,22),0.25);
+        }
+        .countdown-preset-card .preset-val {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+        }
+        .countdown-preset-card.selected .preset-val {
+            color: var(--theme-color);
+        }
+        .countdown-preset-card .preset-unit {
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .countdown-custom-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1.5px solid var(--surface-border);
+            background: rgba(255,255,255,0.02);
+            transition: border-color 0.18s;
+        }
+        .countdown-custom-row.active {
+            border-color: rgba(var(--theme-color-rgb,249,115,22),0.55);
+            background: rgba(var(--theme-color-rgb,249,115,22),0.08);
+        }
+        .countdown-custom-row svg {
+            flex-shrink: 0;
+            color: var(--text-secondary);
+        }
+        .countdown-custom-row.active svg {
+            color: var(--theme-color);
+        }
+        .countdown-custom-row label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        .countdown-custom-row.active label {
+            color: var(--theme-color);
+        }
+        .countdown-custom-inputs {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: auto;
+        }
+        .countdown-custom-input {
+            width: 42px;
+            padding: 4px 6px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--surface-border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            outline: none;
+        }
+        .countdown-custom-input:focus {
+            border-color: var(--theme-color);
+            background: rgba(var(--theme-color-rgb,249,115,22),0.1);
+        }
+        .countdown-custom-sep {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+        .countdown-hint {
+            font-size: 11px;
+            color: var(--text-secondary);
+            opacity: 0.75;
+            text-align: center;
+            padding: 0 4px;
+        }
+        body.white-mode .countdown-preset-card {
+            background: rgba(0,0,0,0.02);
+            border-color: rgba(0,0,0,0.09);
+        }
+        body.white-mode .countdown-custom-input {
+            background: rgba(0,0,0,0.04);
+            color: #111;
+        }
+
         /* ===== SCHEDULE ACTION MODE SLIDER ===== */
         .schedule-action-segmented {
             display: flex;
@@ -2517,9 +2643,62 @@
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                             <span data-i18n="sched_action_pause">Pause Prevention</span>
                         </button>
+                        <button type="button" class="schedule-action-btn" data-action="countdown" id="schedActionCountdownBtn">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <span data-i18n="sched_action_countdown">Countdown Timer</span>
+                        </button>
                     </div>
-                    <div class="section-divider"></div>
-                    <div class="time-profiles-section">
+                    <!-- Countdown Timer Section -->
+                    <div class="countdown-section" id="countdownTimerSection">
+                        <div class="countdown-presets" id="countdownPresets">
+                            <div class="countdown-preset-card" data-minutes="30">
+                                <span class="preset-val">30</span>
+                                <span class="preset-unit">min</span>
+                            </div>
+                            <div class="countdown-preset-card" data-minutes="60">
+                                <span class="preset-val">1</span>
+                                <span class="preset-unit">hour</span>
+                            </div>
+                            <div class="countdown-preset-card" data-minutes="90">
+                                <span class="preset-val">1.5</span>
+                                <span class="preset-unit">hours</span>
+                            </div>
+                            <div class="countdown-preset-card" data-minutes="120">
+                                <span class="preset-val">2</span>
+                                <span class="preset-unit">hours</span>
+                            </div>
+                            <div class="countdown-preset-card" data-minutes="180">
+                                <span class="preset-val">3</span>
+                                <span class="preset-unit">hours</span>
+                            </div>
+                            <div class="countdown-preset-card" data-minutes="240">
+                                <span class="preset-val">4</span>
+                                <span class="preset-unit">hours</span>
+                            </div>
+                            <div class="countdown-preset-card" data-minutes="720">
+                                <span class="preset-val">12</span>
+                                <span class="preset-unit">hours</span>
+                            </div>
+                            <div class="countdown-preset-card col-span-2" data-minutes="custom" id="countdownCustomCard" style="grid-column: span 2;">
+                                <span class="preset-val" style="font-size:11px;font-weight:600;">Custom</span>
+                                <span class="preset-unit" id="countdownCustomPreview">--:--</span>
+                            </div>
+                        </div>
+                        <!-- Custom time inputs (visible only when custom card selected) -->
+                        <div class="countdown-custom-row" id="countdownCustomRow" style="display:none;">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <label>Custom duration</label>
+                            <div class="countdown-custom-inputs">
+                                <input type="number" class="countdown-custom-input" id="countdownCustomHours" min="0" max="23" value="0" placeholder="0">
+                                <span class="countdown-custom-sep">h</span>
+                                <input type="number" class="countdown-custom-input" id="countdownCustomMins" min="0" max="59" value="30" placeholder="30" oninput="this.value=Math.min(59,Math.max(0,parseInt(this.value)||0))">
+                                <span class="countdown-custom-sep">m</span>
+                            </div>
+                        </div>
+                        <div class="countdown-hint" data-i18n="countdown_hint">Timer resets automatically when you unlock your PC</div>
+                    </div>
+                    <div class="section-divider" id="timeProfilesDivider"></div>
+                    <div class="time-profiles-section" id="timeProfilesSectionWrap">
                         <div class="time-profiles-header-wrap" style="margin-bottom: 12px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                                 <span class="item-label" data-i18n="time_profiles">Time Profiles</span>
@@ -2687,6 +2866,14 @@
                     const enabled = !!fresh.timeProfilesEnabled;
                     scheduleToggle.dataset.val = enabled ? 'true' : 'false';
                     scheduleToggle.classList.toggle('active', enabled);
+                }
+                if (fresh.darkenMethod) {
+                    activeDarkenMethod = fresh.darkenMethod;
+                    const darkenMethodCards = document.querySelectorAll('#darkenMethodCardsList .darken-method-card');
+                    darkenMethodCards.forEach(card => {
+                        card.classList.toggle('active', card.dataset.method === activeDarkenMethod);
+                    });
+                    updateDarkenMethodBadge(activeDarkenMethod);
                 }
                 updateBadges();
             } catch (e) { }
@@ -3206,17 +3393,31 @@
             });
 
             function setScheduleActionMode(mode, save = true) {
-                settings.scheduleActionMode = (mode === 'pause') ? 'pause' : 'keep_awake';
+                const validMode = (mode === 'pause') ? 'pause' : (mode === 'countdown') ? 'countdown' : 'keep_awake';
+                settings.scheduleActionMode = validMode;
                 const keepBtn = document.getElementById('schedActionKeepAwakeBtn');
                 const pauseBtn = document.getElementById('schedActionPauseBtn');
+                const countdownBtn = document.getElementById('schedActionCountdownBtn');
                 if (keepBtn && pauseBtn) {
-                    keepBtn.classList.toggle('active', settings.scheduleActionMode === 'keep_awake');
-                    pauseBtn.classList.toggle('active', settings.scheduleActionMode === 'pause');
+                    keepBtn.classList.toggle('active', validMode === 'keep_awake');
+                    pauseBtn.classList.toggle('active', validMode === 'pause');
+                    if (countdownBtn) countdownBtn.classList.toggle('active', validMode === 'countdown');
                 }
+                // Show/hide countdown section
+                const countdownSection = document.getElementById('countdownTimerSection');
+                if (countdownSection) countdownSection.classList.toggle('visible', validMode === 'countdown');
+
+                // Hide time-profiles section and its divider when in countdown mode
+                const tpSection = document.getElementById('timeProfilesSectionWrap');
+                const tpDivider = document.getElementById('timeProfilesDivider');
+                const isCountdown = validMode === 'countdown';
+                if (tpSection) tpSection.style.display = isCountdown ? 'none' : '';
+                if (tpDivider) tpDivider.style.display = isCountdown ? 'none' : '';
+
                 const subEl = document.querySelector('[data-i18n="time_profiles_sub"]');
                 if (subEl) {
                     const lang = window.currentLang || 'en';
-                    const key = settings.scheduleActionMode === 'pause' ? 'sched_action_pause_sub' : 'sched_action_keep_awake_sub';
+                    const key = validMode === 'pause' ? 'sched_action_pause_sub' : 'sched_action_keep_awake_sub';
                     if (typeof translations !== 'undefined' && translations[lang] && translations[lang][key]) {
                         subEl.textContent = translations[lang][key];
                     }
@@ -3228,7 +3429,107 @@
 
             document.getElementById('schedActionKeepAwakeBtn')?.addEventListener('click', () => setScheduleActionMode('keep_awake'));
             document.getElementById('schedActionPauseBtn')?.addEventListener('click', () => setScheduleActionMode('pause'));
+            document.getElementById('schedActionCountdownBtn')?.addEventListener('click', () => setScheduleActionMode('countdown'));
             setScheduleActionMode(settings.scheduleActionMode || 'keep_awake', false);
+
+            // ===== COUNTDOWN TIMER LOGIC =====
+            const COUNTDOWN_PRESETS = [30, 60, 90, 120, 180, 240, 720];
+            let selectedCountdownMins = settings.countdownDurationMins || 60;
+            let isCustomCountdown = !COUNTDOWN_PRESETS.includes(selectedCountdownMins);
+
+            function getCustomCountdownMins() {
+                const h = parseInt(document.getElementById('countdownCustomHours')?.value || '0', 10) || 0;
+                const m = parseInt(document.getElementById('countdownCustomMins')?.value || '0', 10) || 0;
+                return Math.max(1, h * 60 + m);
+            }
+
+            function updateCountdownPresetUI() {
+                const section = document.getElementById('countdownTimerSection');
+                const customRow = document.getElementById('countdownCustomRow');
+                const customCard = document.getElementById('countdownCustomCard');
+                const customPreview = document.getElementById('countdownCustomPreview');
+                if (!section) return;
+
+                document.querySelectorAll('.countdown-preset-card').forEach(card => {
+                    const mins = card.dataset.minutes;
+                    if (mins === 'custom') {
+                        card.classList.toggle('selected', isCustomCountdown);
+                    } else {
+                        card.classList.toggle('selected', !isCustomCountdown && parseInt(mins) === selectedCountdownMins);
+                    }
+                });
+
+                if (customRow) customRow.style.display = isCustomCountdown ? 'flex' : 'none';
+                if (customRow) customRow.classList.toggle('active', isCustomCountdown);
+
+                // Update custom preview label
+                if (isCustomCountdown && customPreview) {
+                    const h = Math.floor(selectedCountdownMins / 60);
+                    const m = selectedCountdownMins % 60;
+                    customPreview.textContent = h > 0 ? `${h}h ${m > 0 ? m + 'm' : ''}`.trim() : `${m}m`;
+                } else if (customPreview) {
+                    customPreview.textContent = '--:--';
+                }
+            }
+
+            function saveCountdownSettings(save = true) {
+                settings.countdownDurationMins = selectedCountdownMins;
+                // Signal main window to restart countdown with new duration
+                settings._countdownRestartAt = Date.now();
+                if (save) saveSettings();
+            }
+
+            // Preset card clicks
+            document.querySelectorAll('.countdown-preset-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const mins = card.dataset.minutes;
+                    if (mins === 'custom') {
+                        isCustomCountdown = true;
+                        // Set inputs from current selection
+                        const hEl = document.getElementById('countdownCustomHours');
+                        const mEl = document.getElementById('countdownCustomMins');
+                        if (hEl && mEl) {
+                            hEl.value = Math.floor(selectedCountdownMins / 60);
+                            mEl.value = selectedCountdownMins % 60;
+                        }
+                    } else {
+                        isCustomCountdown = false;
+                        selectedCountdownMins = parseInt(mins);
+                    }
+                    updateCountdownPresetUI();
+                    saveCountdownSettings();
+                });
+            });
+
+            // Custom input changes
+            ['countdownCustomHours', 'countdownCustomMins'].forEach(id => {
+                document.getElementById(id)?.addEventListener('input', (e) => {
+                    // Clamp minutes to 0-59
+                    if (id === 'countdownCustomMins') {
+                        const v = parseInt(e.target.value) || 0;
+                        e.target.value = Math.min(59, Math.max(0, v));
+                    }
+                    selectedCountdownMins = getCustomCountdownMins();
+                    const customPreview = document.getElementById('countdownCustomPreview');
+                    if (customPreview) {
+                        const h = Math.floor(selectedCountdownMins / 60);
+                        const m = selectedCountdownMins % 60;
+                        customPreview.textContent = h > 0 ? `${h}h ${m > 0 ? m + 'm' : ''}`.trim() : `${m}m`;
+                    }
+                    saveCountdownSettings();
+                });
+            });
+
+            // Init custom inputs from saved value
+            if (isCustomCountdown) {
+                const hEl = document.getElementById('countdownCustomHours');
+                const mEl = document.getElementById('countdownCustomMins');
+                if (hEl && mEl) {
+                    hEl.value = Math.floor(selectedCountdownMins / 60);
+                    mEl.value = selectedCountdownMins % 60;
+                }
+            }
+            updateCountdownPresetUI();
 
             function getHeaderDayLabels() {
                 const lang = window.currentLang || 'en';

@@ -11,6 +11,10 @@
   <title>Never Sleep</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Sora:wght@400;500;600;700&display=swap');
+    @font-face { font-family: 'Outfit'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/Outfit-Regular.ttf') format('truetype'); }
+    @font-face { font-family: 'Outfit'; font-style: normal; font-weight: 500; font-display: swap; src: url('fonts/Outfit-Medium.ttf') format('truetype'); }
+    @font-face { font-family: 'Outfit'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/Outfit-SemiBold.ttf') format('truetype'); }
+    @font-face { font-family: 'Outfit'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/Outfit-Bold.ttf') format('truetype'); }
 
     :root {
       --theme-color: #f97316;
@@ -35,6 +39,25 @@
       padding: 0;
       height: 100vh;
       width: 100vw;
+    }
+
+    /* Outfit font applied ONLY to the 4 user-pointed elements */
+    .logo-text,
+    #activateToggleLabel,
+    #panelLeft .toggle-label,
+    .status-text,
+    .status-text span,
+    #mainStatusText,
+    #mainStatusText span,
+    #shutdownToggleLabel,
+    #panelRight .toggle-label {
+      font-family: 'Outfit', 'Segoe UI', sans-serif !important;
+    }
+
+    /* Coffee theme only: make "Keep screen awake" text a little smaller */
+    body.coffee-mode #panelLeft .toggle-label,
+    body.coffee-mode #activateToggleLabel {
+      font-size: 14.5px !important;
     }
 
     ::-webkit-scrollbar {
@@ -5523,14 +5546,21 @@
     </div>
 
     <div class="sleep-overlay" id="sleepOverlay" data-tauri-drag-region>
-      <div class="sleep-bg-icon"></div>
+      <div class="sleep-bg-icon" id="sleepBgIcon"></div>
       <div class="sleep-content">
-        <div class="sleep-icon-small"></div>
-        <div class="sleep-title" data-i18n="sleep_active_title">Sleep Mode Active</div>
-        <div style="font-size:18px;opacity:0.9" data-i18n="sleep_active_sub">Your PC is not kept awake right now</div>
-        <div class="sleep-subtitle-short" data-i18n="sleep_active_sub_short">Not kept awake</div>
+        <!-- Mode icon: keep_awake = coffee bean, pause = moon SVG, countdown = timer SVG -->
+        <div class="sleep-icon-small" id="sleepIconSmall"></div>
+        <!-- Mode title -->
+        <div class="sleep-title" id="sleepTitle" data-i18n="sleep_active_title">Sleep Mode Active</div>
+        <!-- Mode subtitle (full) -->
+        <div class="sleep-subtitle-full" id="sleepSubFull" style="font-size:18px;opacity:0.9" data-i18n="sleep_active_sub">Your PC is not kept awake right now</div>
+        <!-- Mode subtitle (short, classic mode) -->
+        <div class="sleep-subtitle-short" id="sleepSubShort" data-i18n="sleep_active_sub_short">Not kept awake</div>
+        <!-- Countdown expired hint (only shown in countdown mode) -->
+        <div class="sleep-countdown-hint" id="sleepCountdownHint" style="display:none;font-size:13px;opacity:0.65;margin-top:-6px;" data-i18n="countdown_expired_hint">PC is now allowed to sleep</div>
+        <!-- Next schedule / resumes box -->
         <div class="sleep-next-profile" id="sleepNextProfile" data-tauri-drag-region>
-          <div class="sleep-next-label" data-i18n="next_schedule">Next schedule</div>
+          <div class="sleep-next-label" id="sleepNextLabel" data-i18n="next_schedule">Next schedule</div>
           <div class="sleep-next-times" data-tauri-drag-region>
             <div class="sleep-time-pill" data-tauri-drag-region>
               <span id="sleepNextStart">--:--</span>
@@ -5540,7 +5570,7 @@
                 <path d="M12 6v6l4 2"></path>
               </svg>
             </div>
-            <div class="sleep-next-arrow" aria-hidden="true">→</div>
+            <div class="sleep-next-arrow" id="sleepNextArrow" aria-hidden="true">→</div>
             <div class="sleep-time-pill" data-tauri-drag-region>
               <span id="sleepNextEnd">--:--</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -5778,6 +5808,11 @@
     let minimizeTriggered = false;
     let lastActivityIconAt = 0;
 
+    // ===== COUNTDOWN TIMER STATE =====
+    let countdownDurationMins = 60;
+    let countdownTargetTime = 0;
+    let lastLockState = false;
+
     // Helpers
     function hexToRgb(hex) {
       const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -5887,6 +5922,20 @@
       }
 
       const status = getProfileStatus();
+      // -- Countdown Timer display --
+      if (scheduleActionMode === 'countdown' && timeProfilesEnabled && countdownTargetTime > 0) {
+        const remMs = countdownTargetTime - Date.now();
+        const remSec = Math.max(0, Math.floor(remMs / 1000));
+        const hh = Math.floor(remSec / 3600);
+        const mm = Math.floor((remSec % 3600) / 60);
+        const ss = remSec % 60;
+        const timeStr = String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0') + ':' + String(ss).padStart(2,'0');
+        if (shutdownLabelEl) shutdownLabelEl.innerHTML = (translations[window.currentLang] && translations[window.currentLang].time_left) ? translations[window.currentLang].time_left : 'Time left';
+        if (shutdownTimerEl) shutdownTimerEl.textContent = timeStr;
+        updateSleepNextProfile();
+        syncTrayState();
+        return;
+      }
       if (status !== null) {
         if (status.isActive) {
           if (shutdownLabelEl) shutdownLabelEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].time_left : 'Time left';
@@ -6097,6 +6146,19 @@
         timeProfiles = (s.timeProfiles || []).map(normalizeTimeProfile);
         timeProfilesEnabled = s.timeProfilesEnabled === undefined ? (timeProfiles.length > 0) : !!s.timeProfilesEnabled;
         scheduleActionMode = s.scheduleActionMode || 'keep_awake';
+        // Load countdown timer settings
+        const prevCountdownDuration = countdownDurationMins;
+        countdownDurationMins = s.countdownDurationMins || 60;
+        const countdownRestartSignal = s._countdownRestartAt || 0;
+        if (scheduleActionMode === 'countdown' && timeProfilesEnabled) {
+            // Restart if: no timer running, duration changed, or explicit restart signal from settings
+            if (countdownTargetTime === 0 || countdownDurationMins !== prevCountdownDuration || countdownRestartSignal !== (window._lastCountdownRestartAt || 0)) {
+                countdownTargetTime = Date.now() + countdownDurationMins * 60 * 1000;
+                window._lastCountdownRestartAt = countdownRestartSignal;
+            }
+        } else if (scheduleActionMode !== 'countdown') {
+            countdownTargetTime = 0;
+        }
         applySchedulePanelVisibility();
         profileControlledAwake = hasEnabledTimeProfiles();
         autoShutdown = profileControlledAwake;
@@ -6114,7 +6176,7 @@
         focusOnCountdown = s.focusOnCountdown === undefined ? false : s.focusOnCountdown;
         minimizeOnDarken = s.minimizeOnDarken === undefined ? false : s.minimizeOnDarken;
         quitFocusOnCountdown = s.quitFocusOnCountdown === undefined ? true : s.quitFocusOnCountdown;
-        darkenMethod = s.darkenMethod === 'displaysleep' ? 'overlay' : (s.darkenMethod || 'overlay');
+        darkenMethod = s.darkenMethod || 'overlay';
         controlMyMonitorPath = s.controlMyMonitorPath || '';
 
         if (window.__TAURI__ && s.pinned !== undefined) {
@@ -6130,6 +6192,7 @@
             if (profileControlledAwake) resetShutdownTimer();
           }
         }
+        syncTrayState();
       } catch (e) { }
     }
 
@@ -6310,6 +6373,26 @@
       if (appDisabled) return;
 
       uptime++; // Approx
+
+      // -- Countdown Timer: unlock detection & expiry --
+      if (scheduleActionMode === 'countdown' && timeProfilesEnabled && countdownTargetTime > 0) {
+        try {
+          if (window.__TAURI__) {
+            const isLocked = await window.__TAURI__.invoke('is_workstation_locked');
+            if (isLocked && !lastLockState) {
+              lastLockState = true;
+            } else if (!isLocked && lastLockState) {
+              countdownTargetTime = Date.now() + countdownDurationMins * 60 * 1000;
+              lastLockState = false;
+            }
+          }
+        } catch(e) {}
+        if (Date.now() >= countdownTargetTime) {
+          countdownTargetTime = 0;
+          if (window.__TAURI__) window.__TAURI__.invoke('allow_sleep').catch(() => {});
+          notify('NeverSleep', (translations[window.currentLang] && translations[window.currentLang].countdown_expired) ? translations[window.currentLang].countdown_expired : 'Countdown ended \u2014 sleep prevention paused.');
+        }
+      }
       await checkAct();
 
       if (!isScreenOn && !screenDarkened && !isSleeping) {
@@ -6468,7 +6551,8 @@
           mediaEnabled: !!disableOnVideo,
           notificationsEnabled: !!notificationsEnabled,
           pinned: !!s.pinned,
-          autostart: !!autostart
+          autostart: !!autostart,
+          darkenMethod: s.darkenMethod || darkenMethod || 'overlay'
         }).catch(() => {});
       }).catch(() => {});
     }
@@ -6533,6 +6617,31 @@
             window.__TAURI__.invoke('set_pinned', { pinned: s.pinned }).catch(() => {});
           }
           syncTrayState();
+        } else if (action.startsWith('darken_')) {
+          const methodMap = {
+            darken_overlay: 'overlay',
+            darken_displaysleep: 'displaysleep',
+            darken_win32: 'win32',
+            darken_gamma: 'gamma',
+            darken_ddcci: 'ddcci',
+            darken_cmm: 'controlmymonitor',
+            darken_brightness: 'brightness'
+          };
+          const selectedMethod = methodMap[action];
+          if (selectedMethod) {
+            darkenMethod = selectedMethod;
+            let s = {};
+            try {
+              s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+            } catch(e){}
+            s.darkenMethod = selectedMethod;
+            const serialized = JSON.stringify(s);
+            localStorage.setItem('neverSleepSettings', serialized);
+            if (window.__TAURI__) {
+              window.__TAURI__.invoke('save_settings', { settings: serialized }).catch(() => {});
+            }
+            syncTrayState();
+          }
         }
       });
     }
@@ -6928,7 +7037,10 @@
 
       const isCoffeeMode = document.body.classList.contains("coffee-mode");
 
-      if (!isCoffeeMode || !autoShutdown || isSleeping) {
+      // In pause mode, show the animation if a schedule is active (even though autoShutdown is false)
+      const pauseWithActiveProfile = scheduleActionMode === 'pause' && timeProfilesEnabled && getActiveProfileTimes() !== null;
+
+      if (!isCoffeeMode || isSleeping || (!autoShutdown && !pauseWithActiveProfile)) {
         overlay.classList.remove("active");
         fill.style.height = "0%";
         if (crema) crema.style.bottom = "-30px";

@@ -1937,12 +1937,27 @@ fn update_tray_menu_state(
     notifications_enabled: bool,
     pinned: bool,
     autostart: bool,
+    darken_method: Option<String>,
 ) -> Result<(), String> {
     let handle = app.tray_handle();
 
     let _ = handle.get_item("status_header").set_title(&status_text);
     let _ = handle.get_item("disable_app").set_selected(disabled);
     let _ = handle.get_item("keep_awake").set_selected(keep_awake && !disabled);
+
+    let darken_method_ids = [
+        ("darken_overlay", "overlay"),
+        ("darken_displaysleep", "displaysleep"),
+        ("darken_win32", "win32"),
+        ("darken_gamma", "gamma"),
+        ("darken_ddcci", "ddcci"),
+        ("darken_cmm", "controlmymonitor"),
+        ("darken_brightness", "brightness"),
+    ];
+    let cur_method = darken_method.as_deref().unwrap_or("overlay");
+    for (id, method) in darken_method_ids {
+        let _ = handle.get_item(id).set_selected(cur_method == method);
+    }
 
     let duration_enabled = !schedule_mode_active && !disabled;
     let timer_ids = [
@@ -2065,6 +2080,25 @@ fn main() {
     let disable_app = CustomMenuItem::new("disable_app".to_string(), "Disable App");
     let keep_awake = CustomMenuItem::new("keep_awake".to_string(), "Keep Screen Awake Mode").selected();
 
+    let darken_overlay = CustomMenuItem::new("darken_overlay".to_string(), "🪟 Overlay Window").selected();
+    let darken_displaysleep = CustomMenuItem::new("darken_displaysleep".to_string(), "🔌 Display Sleep (Standby)");
+    let darken_win32 = CustomMenuItem::new("darken_win32".to_string(), "🔲 Win32 Black Window");
+    let darken_gamma = CustomMenuItem::new("darken_gamma".to_string(), "💡 Gamma Ramp Blackout");
+    let darken_ddcci = CustomMenuItem::new("darken_ddcci".to_string(), "🖥️ Hardware DDC/CI (Native)");
+    let darken_cmm = CustomMenuItem::new("darken_cmm".to_string(), "🛠️ ControlMyMonitor (NirSoft)");
+    let darken_brightness = CustomMenuItem::new("darken_brightness".to_string(), "🔅 Screen Brightness");
+
+    let darken_menu = SystemTrayMenu::new()
+        .add_item(darken_overlay)
+        .add_item(darken_displaysleep)
+        .add_item(darken_win32)
+        .add_item(darken_gamma)
+        .add_item(darken_ddcci)
+        .add_item(darken_cmm)
+        .add_item(darken_brightness);
+
+    let darken_submenu = SystemTraySubmenu::new("🌙 Darken Method", darken_menu);
+
     let timer_15m = CustomMenuItem::new("timer_15m".to_string(), "⏱️ 15 Minutes");
     let timer_30m = CustomMenuItem::new("timer_30m".to_string(), "⏱️ 30 Minutes");
     let timer_1h = CustomMenuItem::new("timer_1h".to_string(), "⏱️ 1 Hour");
@@ -2107,6 +2141,7 @@ fn main() {
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(disable_app)
         .add_item(keep_awake)
+        .add_submenu(darken_submenu)
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_submenu(duration_submenu)
         .add_submenu(features_submenu)

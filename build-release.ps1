@@ -1,8 +1,13 @@
-﻿# build-release.ps1 — Use this instead of "npm run tauri build"
+# build-release.ps1 — Use this instead of "npm run tauri build"
 # Clears stale Tauri codegen cache, rebuilds, then deploys directly (no installer needed).
 
 Write-Host "Clearing stale Tauri codegen cache..." -ForegroundColor Cyan
 Get-ChildItem "src-tauri\target\release\build\" -Directory -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -like "app-*" } |
+    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+
+# Also clear fingerprints to avoid stale resource.lib linker errors
+Get-ChildItem "src-tauri\target\release\.fingerprint\" -Directory -ErrorAction SilentlyContinue |
     Where-Object { $_.Name -like "app-*" } |
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
