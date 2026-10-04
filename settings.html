@@ -17,8 +17,10 @@
             --theme-glow: rgba(249, 115, 22, 0.35);
             --bg-color: #0b0f1a;
             --surface: rgba(255, 255, 255, 0.04);
+            --surface-card: rgba(255, 255, 255, 0.06);
             --surface-hover: rgba(255, 255, 255, 0.07);
             --surface-border: rgba(255, 255, 255, 0.08);
+            --surface-card-border: rgba(255, 255, 255, 0.13);
             --text-primary: #f1f5f9;
             --text-secondary: rgba(241, 245, 249, 0.5);
             --text-muted: rgba(241, 245, 249, 0.3);
@@ -47,8 +49,10 @@
         body.white-mode {
             --bg-color: #f0f2f7;
             --surface: rgba(255, 255, 255, 0.8);
+            --surface-card: rgba(0, 0, 0, 0.04);
             --surface-hover: rgba(255, 255, 255, 0.95);
             --surface-border: rgba(0, 0, 0, 0.07);
+            --surface-card-border: rgba(0, 0, 0, 0.12);
             --text-primary: #0f172a;
             --text-secondary: rgba(15, 23, 42, 0.5);
             --text-muted: rgba(15, 23, 42, 0.3);
@@ -112,7 +116,7 @@
             width: 100%;
             overflow: hidden;
             position: relative;
-            padding: 24px 20px 60px;
+            padding: 22px 16px 50px;
         }
 
         /* Ambient glow orb */
@@ -262,8 +266,9 @@
         .clickable-category-card {
             cursor: pointer;
             user-select: none;
-            padding: 15px 18px;
+            padding: 13px 16px;
             display: grid;
+            grid-template-columns: minmax(0, 1fr);
             grid-template-rows: auto 0fr;
             overflow: hidden;
             transition: background 0.22s ease, border-color 0.22s ease,
@@ -321,20 +326,22 @@
             align-items: center;
             justify-content: space-between;
             width: 100%;
-            gap: 12px;
+            min-width: 0;
+            gap: 10px;
         }
 
         .category-icon-title-group {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
             min-width: 0;
-            flex: 1;
+            flex: 1 1 auto;
+            overflow: hidden;
         }
 
         .category-card-icon {
-            width: 38px;
-            height: 38px;
+            width: 36px;
+            height: 36px;
             border-radius: 11px;
             background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.1);
             color: var(--theme-color);
@@ -346,8 +353,8 @@
         }
 
         .category-card-icon svg {
-            width: 20px;
-            height: 20px;
+            width: 19px;
+            height: 19px;
         }
 
         .clickable-category-card:hover .category-card-icon,
@@ -360,17 +367,22 @@
             flex-direction: column;
             gap: 2px;
             min-width: 0;
+            flex: 1 1 auto;
+            overflow: hidden;
         }
 
         .category-card-main-title {
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: 700;
             color: var(--text-primary);
             letter-spacing: -0.1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .category-card-sub-title {
-            font-size: 11.5px;
+            font-size: 11px;
             color: var(--text-secondary);
             line-height: 1.35;
             white-space: nowrap;
@@ -384,13 +396,20 @@
             gap: 8px;
             color: var(--text-secondary);
             flex-shrink: 0;
+            margin-left: auto;
+        }
+
+        body[dir="rtl"] .nav-arrow-badge {
+            margin-left: 0;
+            margin-right: auto;
         }
 
         .nav-arrow-badge svg {
-            width: 16px;
-            height: 16px;
+            width: 15px;
+            height: 15px;
             color: var(--text-secondary);
             transition: transform 0.18s ease, color 0.2s ease;
+            flex-shrink: 0;
         }
 
         .clickable-category-card:hover .nav-arrow-badge svg,
@@ -411,16 +430,17 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 60px;
-            padding: 4px 9px;
+            padding: 3px 8px;
             border-radius: 999px;
             background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.12);
             border: 1px solid rgba(var(--theme-color-rgb, 249, 115, 22), 0.22);
             color: var(--theme-color);
-            font-size: 10px;
+            font-size: 9.5px;
             font-weight: 700;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.02em;
             text-transform: uppercase;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         body.white-mode .active-method-tag {
@@ -2051,9 +2071,9 @@
             justify-content: center;
             gap: 10px;
             position: fixed;
-            left: 20px;
-            right: 20px;
-            bottom: 20px;
+            left: 16px;
+            right: 16px;
+            bottom: 14px;
             margin: 0;
             font-size: 11px;
             color: var(--text-muted);
@@ -2287,7 +2307,7 @@
                 </div>
                 <div class="popup-body">
                     <!-- Card 1: Timings & Window Options -->
-                    <div style="background:var(--surface-card,rgba(255,255,255,0.04));border:1px solid var(--surface-border,rgba(255,255,255,0.08));border-radius:14px;padding:6px 16px 16px;">
+                    <div style="background:var(--surface-card,rgba(255,255,255,0.06));border:1px solid var(--surface-card-border,rgba(255,255,255,0.13));border-radius:14px;padding:6px 16px 16px;">
                         <div class="settings-item">
                             <div class="label-group"><span class="item-label" data-i18n="default_darken">Default Darken Time</span></div>
                             <div class="input-row">
@@ -2498,7 +2518,7 @@
                 </div>
                 <div class="popup-body">
                     <!-- Language + View Mode Card -->
-                    <div style="background:var(--surface-card,rgba(255,255,255,0.04));border:1px solid var(--surface-border,rgba(255,255,255,0.08));border-radius:14px;padding:14px 16px;margin-bottom:16px;">
+                    <div style="background:var(--surface-card,rgba(255,255,255,0.06));border:1px solid var(--surface-card-border,rgba(255,255,255,0.13));border-radius:14px;padding:14px 16px;margin-bottom:16px;">
                         <div class="settings-item" style="border-bottom:none !important;padding:0 !important;">
                             <div class="label-group">
                                 <span class="item-label" data-i18n="language">Language</span>
@@ -2828,15 +2848,18 @@
         function setupToggle(id, key, defaultVal, callback) {
             const el = document.getElementById(id);
             if (!el) return;
-            const val = settings[key] !== undefined ? settings[key] : defaultVal;
+            const val = settings[key] !== undefined ? !!settings[key] : !!defaultVal;
             el.classList.toggle('active', val);
-            el.dataset.val = val;
-            el.onclick = () => {
-                const n = el.dataset.val === 'true' ? 'false' : 'true';
-                el.dataset.val = n;
-                el.classList.toggle('active', n === 'true');
-                if (callback) callback(n === 'true');
+            el.dataset.val = val ? 'true' : 'false';
+            el.onclick = (e) => {
+                if (e) e.stopPropagation();
+                const n = el.dataset.val !== 'true';
+                el.dataset.val = n ? 'true' : 'false';
+                el.classList.toggle('active', n);
+                settings[key] = n;
+                if (callback) callback(n);
                 updateBadges();
+                if (typeof saveSettings === 'function') saveSettings();
             };
             if (callback) callback(val);
         }
@@ -3371,30 +3394,41 @@
                 return p;
             });
 
-            function updateParentToggleState(active) {
+            function setParentToggleState(active) {
                 const parentToggle = document.getElementById('timeProfilesEnabledToggle');
                 if (parentToggle) {
                     parentToggle.dataset.val = active ? 'true' : 'false';
                     parentToggle.classList.toggle('active', active);
+                    settings.timeProfilesEnabled = active;
                     updateBadges();
                 }
             }
 
             const defaultEnabled = settings.timeProfilesEnabled !== undefined ? !!settings.timeProfilesEnabled : (window.timeProfiles.length > 0 && window.timeProfiles.some(p => p.enabled !== false));
             setupToggle('timeProfilesEnabledToggle', 'timeProfilesEnabled', defaultEnabled, (val) => {
-                if (val) {
-                    const anyEnabled = window.timeProfiles.some(p => p.enabled !== false);
-                    if (!anyEnabled && window.timeProfiles.length > 0) {
-                        window.timeProfiles.forEach(p => p.enabled = true);
-                        renderTimeProfiles();
-                    }
+                settings.timeProfilesEnabled = val;
+                if (val && settings.scheduleActionMode === 'countdown') {
+                    settings._countdownRestartAt = Date.now();
                 }
                 updateBadges();
             });
 
+            // Make the entire "Enable Schedule Mode" row clickable
+            const schedItemRow = document.getElementById('timeProfilesEnabledToggle')?.closest('.settings-item');
+            if (schedItemRow) {
+                schedItemRow.style.cursor = 'pointer';
+                schedItemRow.addEventListener('click', (e) => {
+                    if (e.target.closest('.toggle')) return;
+                    document.getElementById('timeProfilesEnabledToggle')?.click();
+                });
+            }
+
             function setScheduleActionMode(mode, save = true) {
                 const validMode = (mode === 'pause') ? 'pause' : (mode === 'countdown') ? 'countdown' : 'keep_awake';
                 settings.scheduleActionMode = validMode;
+                if (validMode === 'countdown') {
+                    settings._countdownRestartAt = Date.now();
+                }
                 const keepBtn = document.getElementById('schedActionKeepAwakeBtn');
                 const pauseBtn = document.getElementById('schedActionPauseBtn');
                 const countdownBtn = document.getElementById('schedActionCountdownBtn');
@@ -3414,14 +3448,23 @@
                 if (tpSection) tpSection.style.display = isCountdown ? 'none' : '';
                 if (tpDivider) tpDivider.style.display = isCountdown ? 'none' : '';
 
+                // Dynamic subtitles based on mode
+                const lang = window.currentLang || 'en';
                 const subEl = document.querySelector('[data-i18n="time_profiles_sub"]');
                 if (subEl) {
-                    const lang = window.currentLang || 'en';
                     const key = validMode === 'pause' ? 'sched_action_pause_sub' : 'sched_action_keep_awake_sub';
                     if (typeof translations !== 'undefined' && translations[lang] && translations[lang][key]) {
                         subEl.textContent = translations[lang][key];
                     }
                 }
+                const toggleSubEl = document.querySelector('[data-i18n="enable_schedule_sub"]');
+                if (toggleSubEl) {
+                    const subKey = validMode === 'countdown' ? 'enable_schedule_sub_countdown' : (validMode === 'pause' ? 'enable_schedule_sub_pause' : 'enable_schedule_sub_keep_awake');
+                    if (typeof translations !== 'undefined' && translations[lang] && translations[lang][subKey]) {
+                        toggleSubEl.textContent = translations[lang][subKey];
+                    }
+                }
+
                 refreshProfileDurationLabels();
                 refreshProfileGlow();
                 if (save) saveSettings();
@@ -3501,21 +3544,49 @@
                 });
             });
 
-            // Custom input changes
+            // Custom input changes — stop propagation to prevent double-save from attachListeners
+            let _countdownSaveTimer = null;
             ['countdownCustomHours', 'countdownCustomMins'].forEach(id => {
-                document.getElementById(id)?.addEventListener('input', (e) => {
-                    // Clamp minutes to 0-59
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('input', (e) => {
+                    e.stopImmediatePropagation(); // keep the generic input save from bypassing the debounce
+                    isCustomCountdown = true; // ensure custom mode stays active while editing
+                    // Clamp values
                     if (id === 'countdownCustomMins') {
                         const v = parseInt(e.target.value) || 0;
-                        e.target.value = Math.min(59, Math.max(0, v));
+                        if (v > 59) e.target.value = 59;
+                        if (v < 0) e.target.value = 0;
+                    } else {
+                        const v = parseInt(e.target.value) || 0;
+                        if (v < 0) e.target.value = 0;
                     }
-                    selectedCountdownMins = getCustomCountdownMins();
+                    const mins = getCustomCountdownMins();
+                    if (mins < 1) return; // user is mid-edit (e.g. cleared field), don't save yet
+                    selectedCountdownMins = mins;
                     const customPreview = document.getElementById('countdownCustomPreview');
                     if (customPreview) {
                         const h = Math.floor(selectedCountdownMins / 60);
                         const m = selectedCountdownMins % 60;
                         customPreview.textContent = h > 0 ? `${h}h ${m > 0 ? m + 'm' : ''}`.trim() : `${m}m`;
                     }
+                    // Debounce: wait 600ms after last keystroke before saving
+                    clearTimeout(_countdownSaveTimer);
+                    _countdownSaveTimer = setTimeout(() => saveCountdownSettings(), 600);
+                });
+                el.addEventListener('change', (e) => {
+                    e.stopImmediatePropagation();
+                    // On blur/change, ensure final value is clamped and saved immediately
+                    if (id === 'countdownCustomMins') {
+                        const v = parseInt(e.target.value) || 0;
+                        e.target.value = Math.min(59, Math.max(0, v));
+                    } else {
+                        const v = parseInt(e.target.value) || 0;
+                        e.target.value = Math.max(0, v);
+                    }
+                    const mins = getCustomCountdownMins();
+                    selectedCountdownMins = Math.max(1, mins);
+                    clearTimeout(_countdownSaveTimer);
                     saveCountdownSettings();
                 });
             });
@@ -3878,8 +3949,6 @@
                         e.stopPropagation();
                         window.timeProfiles[index].enabled = !window.timeProfiles[index].enabled;
                         toggle.classList.toggle('active', window.timeProfiles[index].enabled);
-                        const anyEnabled = window.timeProfiles.some(p => p.enabled !== false);
-                        updateParentToggleState(anyEnabled);
                         saveSettings();
                         refreshProfileGlow();
                     });
@@ -3890,8 +3959,6 @@
                         e.stopPropagation();
                         window.timeProfiles.splice(index, 1);
                         expandedProfileIndices.delete(index);
-                        const anyEnabled = window.timeProfiles.some(p => p.enabled !== false);
-                        updateParentToggleState(anyEnabled);
                         renderTimeProfiles();
                         saveSettings();
                         refreshProfileGlow();
@@ -4021,7 +4088,7 @@
                 }
                 const newIndex = window.timeProfiles.push(newProfile) - 1;
                 expandedProfileIndices.add(newIndex);
-                updateParentToggleState(true);
+                setParentToggleState(true);
                 renderTimeProfiles();
                 saveSettings();
                 refreshProfileGlow();
@@ -4031,6 +4098,7 @@
 
             // Active-profile glow ticker
             function isProfileRunningNow(profile) {
+                if (settings.scheduleActionMode === 'countdown') return false;
                 if (!profile.enabled) return false;
                 const schedEnabled = document.getElementById('timeProfilesEnabledToggle')?.dataset.val === 'true';
                 if (!schedEnabled) return false;
@@ -4065,7 +4133,9 @@
                 window.showOnlySection(sectionParam);
             }
 
-            setTimeout(() => { isInitializing = false; }, 500);
+            // Do not let programmatic setup (notably the initial theme apply)
+            // autosave default/empty controls over the values just loaded.
+            isInitializing = false;
         }
 
         window.showOnlySection = function(section) {
@@ -4141,6 +4211,9 @@
                         // Auto-restart after 1 second so the new icon is fully applied
                         setTimeout(async () => {
                             try {
+                                // Flush any preference edits made while choosing/applying
+                                // the icon before restarting the process.
+                                await saveSettings();
                                 await window.__TAURI__.invoke('restart_app');
                             } catch (e) {
                                 localStorage.removeItem('reopen_settings_popup');
@@ -4194,8 +4267,9 @@
         }
 
         // Auto-Save Logic
-        const saveSettings = async () => {
-            if (isInitializing) return;
+        let settingsSaveQueue = Promise.resolve();
+        const saveSettings = () => {
+            if (isInitializing) return Promise.resolve();
             const getVal = (id) => parseInt(document.getElementById(id)?.value) || 0;
             const getToggle = (id) => document.getElementById(id)?.dataset.val === 'true';
 
@@ -4212,6 +4286,8 @@
                 themeColor: themeColor,
                 appIcon: settings.appIcon || null,
                 scheduleActionMode: settings.scheduleActionMode || 'keep_awake',
+                countdownDurationMins: typeof selectedCountdownMins === 'number' ? selectedCountdownMins : (settings.countdownDurationMins || 60),
+                _countdownRestartAt: settings._countdownRestartAt || 0,
                 timeProfiles: window.timeProfiles,
                 timeProfilesEnabled: getToggle('timeProfilesEnabledToggle'),
                 darkenMethod: activeDarkenMethod,
@@ -4232,20 +4308,27 @@
                 quitFocusOnCountdown: getToggle('quitFocusToggle'),
                 autostartMinimized: getToggle('autostartMinimizedToggle')
             };
-
+            settings = newSettings;
+            const serializedSettings = JSON.stringify(newSettings);
             const autostart = getToggle('autostartToggle');
             const autostartMinimized = getToggle('autostartMinimizedToggle');
+            localStorage.setItem('neverSleepSettings', serializedSettings);
 
             if (window.__TAURI__) {
-                await window.__TAURI__.invoke('set_autostart', { enable: autostart, minimized: autostartMinimized }).catch(err => {
+                // Persist the preference snapshot first. Autostart updates touch the OS
+                // and must not delay a settings write if the app is closing or restarting.
+                settingsSaveQueue = settingsSaveQueue.catch(() => {}).then(() =>
+                    window.__TAURI__.invoke('save_settings', { settings: serializedSettings })
+                );
+                window.__TAURI__.invoke('set_autostart', { enable: autostart, minimized: autostartMinimized }).catch(err => {
                     console.error('set_autostart error:', err);
                 });
-                await window.__TAURI__.invoke('save_settings', { settings: JSON.stringify(newSettings) });
+                return settingsSaveQueue;
             }
-            localStorage.setItem('neverSleepSettings', JSON.stringify(newSettings));
-            
+
             // Trigger recalculate in the main window
             localStorage.setItem('neverSleepCommand', JSON.stringify({ type: 'recalculateProfiles', timestamp: Date.now() }));
+            return Promise.resolve();
         };
 
         // Attach Listeners
@@ -4255,14 +4338,6 @@
                 input.addEventListener('change', saveSettings);
             });
         }
-
-        const originalSetupToggle = setupToggle;
-        setupToggle = (id, key, defaultVal, callback) => {
-            originalSetupToggle(id, key, defaultVal, (val) => {
-                if (callback) callback(val);
-                saveSettings();
-            });
-        };
 
         const originalApplyTheme = applyTheme;
         applyTheme = (c) => {

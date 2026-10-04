@@ -1,5 +1,36 @@
 # build-release.ps1 — Use this instead of "npm run tauri build"
-# Clears stale Tauri codegen cache, rebuilds, then deploys directly (no installer needed).
+# Syncs source files from root → dist/, then builds and deploys.
+# Edit root files only — never touch dist/ manually.
+
+Write-Host "Syncing source files to dist/..." -ForegroundColor Cyan
+
+# Files to copy from root → dist/
+$filesToSync = @(
+    "index.html",
+    "settings.html",
+    "lang.js",
+    "overlay.html",
+    "sleep.html"
+)
+
+foreach ($file in $filesToSync) {
+    if (Test-Path $file) {
+        Copy-Item $file "dist\$file" -Force
+        Write-Host "  Copied $file -> dist\$file" -ForegroundColor DarkGray
+    } else {
+        Write-Host "  WARNING: $file not found at root, skipping." -ForegroundColor Yellow
+    }
+}
+
+# Sync fonts/ folder
+if (Test-Path "fonts") {
+    if (-not (Test-Path "dist\fonts")) { New-Item -ItemType Directory -Path "dist\fonts" -Force | Out-Null }
+    Copy-Item "fonts\*" "dist\fonts\" -Recurse -Force
+    Remove-Item "dist\fonts\fonts" -Recurse -Force -ErrorAction SilentlyContinue
+    Write-Host "  Copied fonts/* -> dist/fonts/" -ForegroundColor DarkGray
+}
+
+Write-Host "Sync complete." -ForegroundColor Green
 
 Write-Host "Clearing stale Tauri codegen cache..." -ForegroundColor Cyan
 Get-ChildItem "src-tauri\target\release\build\" -Directory -ErrorAction SilentlyContinue |
@@ -30,7 +61,9 @@ if ($LASTEXITCODE -eq 0) {
 
     # Copy fresh exe directly (no installer)
     Copy-Item "src-tauri\target\release\Never Sleep.exe" "$env:LOCALAPPDATA\Never Sleep\Never Sleep.exe" -Force
-    Copy-Item "src-tauri\target\release\bundle\nsis\Never Sleep_17.0.0_x64-setup.exe" "$env:USERPROFILE\Desktop\Never Sleep_17.0.0_x64-setup.exe" -Force
+    Get-ChildItem "src-tauri\target\release\bundle\nsis\*.exe" | Select-Object -First 1 | ForEach-Object {
+        Copy-Item $_.FullName "$env:USERPROFILE\Desktop\$($_.Name)" -Force
+    }
 
     # Launch
     Start-Process "$env:LOCALAPPDATA\Never Sleep\Never Sleep.exe"

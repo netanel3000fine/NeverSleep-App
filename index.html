@@ -1067,6 +1067,25 @@
       box-shadow: 0 6px 20px var(--theme-color);
     }
 
+    .sleep-btn.sleep-btn-secondary {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: none;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .sleep-btn.sleep-btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.22);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+      color: #fff;
+    }
+
+    body.classic-mode .sleep-btn.sleep-btn-secondary {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      box-shadow: none;
+    }
+
     .sleep-buttons-row {
       display: flex;
       gap: 10px;
@@ -1131,6 +1150,7 @@
       font-size: 11px;
     }
 
+    body.classic-mode .sleep-subtitle-full,
     body.classic-mode .sleep-content > div[data-i18n="sleep_active_sub"] {
       display: none;
     }
@@ -1482,7 +1502,7 @@
 
     body.classic-mode .panel {
       position: relative;
-      padding: 0 10px;
+      padding: 0 12px;
       border-radius: 8px;
       flex-direction: row-reverse;
       align-items: center;
@@ -1521,22 +1541,23 @@
       flex-direction: row-reverse;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 8px;
       width: 100%;
       flex: 0 0 auto;
     }
 
     body.classic-mode .toggle-row {
       margin-bottom: 0;
-      gap: 8px;
+      gap: 7px;
       align-items: center;
       display: flex;
       flex: 0 0 auto;
     }
 
     body.classic-mode .toggle-label {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700 !important;
+      letter-spacing: -0.2px;
       white-space: nowrap;
       margin: 0;
       padding: 0;
@@ -1549,21 +1570,21 @@
 
       flex-direction: row-reverse;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       display: flex;
       justify-content: flex-end;
       flex: 0 0 auto;
     }
 
     body.classic-mode .timer-value {
-      font-size: 13px;
+      font-size: 12.5px;
       margin-top: 0;
       margin-bottom: 0;
       font-weight: 700;
       letter-spacing: 0;
       line-height: 1;
       color: white !important;
-      min-width: 52px;
+      min-width: 48px;
       text-align: center;
       font-variant-numeric: tabular-nums;
       text-shadow: none;
@@ -5583,7 +5604,8 @@
           <div class="sleep-next-countdown" id="sleepNextCountdown">Starts in 00:00:00</div>
         </div>
         <div class="sleep-buttons-row">
-          <button class="sleep-btn" id="sleepSettingsBtn" data-i18n="disable_schedule_btn">Disable Schedule</button>
+          <button class="sleep-btn" id="sleepRestartBtn" style="display:none;" data-i18n="restart_timer_btn">Restart Timer</button>
+          <button class="sleep-btn sleep-btn-secondary" id="sleepSettingsBtn" data-i18n="disable_schedule_btn">Disable</button>
         </div>
       </div>
     </div>
@@ -5598,13 +5620,12 @@
     let themeColor = '#f97316';
     let appDisabled = false;
     function hasEnabledTimeProfiles() {
+      if (scheduleActionMode === 'countdown') return false;
       return !!timeProfilesEnabled && Array.isArray(timeProfiles) && timeProfiles.some(p => p.enabled !== false);
     }
 
     function getProfileDays(profile) {
-      return Array.isArray(profile.days) && profile.days.length
-        ? profile.days
-        : [0, 1, 2, 3, 4, 5, 6];
+      return Array.isArray(profile.days) ? profile.days : [0, 1, 2, 3, 4, 5, 6];
     }
 
     function normalizeTimeProfile(profile) {
@@ -5644,9 +5665,13 @@
         const endMin = !p.allDay && startMin > 0 && eh === 0 && em === 0 ? 1440 : eh * 60 + em;
         const days = getProfileDays(p);
         const startsToday = days.includes(currentDay);
+        const crossesMidnight = !p.allDay && endMin < startMin;
+        const startedYesterday = days.includes((currentDay + 6) % 7);
         const active = p.allDay
           ? startsToday
-          : startsToday && currentMin >= startMin && currentMin < endMin;
+          : crossesMidnight
+            ? (startsToday && currentMin >= startMin) || (startedYesterday && currentMin < endMin)
+            : startsToday && currentMin >= startMin && currentMin < endMin;
         if (!active) continue;
 
         const start = new Date(now);
@@ -5656,9 +5681,11 @@
           end.setHours(0, 0, 0, 0);
           end.setDate(end.getDate() + 1);
         } else {
+          if (currentMin < endMin && endMin < startMin) {
+            start.setDate(start.getDate() - 1);
+          }
           start.setHours(sh, sm, 0, 0);
-          end.setHours(eh, em, 0, 0);
-          if (endMin === 1440) end.setDate(end.getDate() + 1);
+          end.setTime(start.getTime() + getProfileDurationMinutes(p.startTime, p.endTime) * 60000);
         }
         return { start, end };
       }
@@ -5682,6 +5709,7 @@
     }
 
     function getNextProfileWindow() {
+      if (scheduleActionMode === 'countdown') return null;
       if (!hasEnabledTimeProfiles()) return null;
       const now = new Date();
       let next = null;
@@ -5712,6 +5740,7 @@
     }
 
     function getProfileStatus() {
+      if (scheduleActionMode === 'countdown') return null;
       if (!timeProfiles || timeProfiles.length === 0) return null;
       const enabledProfiles = timeProfiles.filter(p => p.enabled !== false);
       if (enabledProfiles.length === 0) return null;
@@ -5730,6 +5759,9 @@
           const endMin = !p.allDay && startMin > 0 && rawEndMin === 0 ? 1440 : rawEndMin;
           const days = getProfileDays(p);
           if (p.allDay) return days.includes(day);
+          if (endMin < startMin) {
+            return (days.includes(day) && m >= startMin) || (days.includes((day + 6) % 7) && m < endMin);
+          }
           return days.includes(day) && m >= startMin && m < endMin;
         });
       }
@@ -5763,6 +5795,7 @@
 
     let disableOnVideo = false;
     let disabledByMedia = false;
+    let mediaPlayingLastSeenAt = 0;
 
     // Config
     let timeProfiles = [];
@@ -5798,6 +5831,9 @@
     let lastAct = 0;
     let lastBreak = 0;
     let uptime = 0;
+    // Snapshot of isScreenOn captured the moment schedule-driven sleep begins,
+    // so we can restore it exactly when the schedule ends/resets.
+    let preScheduleScreenOn = null;
 
     // Target Timestamps for robust timing
     let shutdownTargetTime = 0;
@@ -5863,7 +5899,7 @@
       }
       if (sleepSettingsBtn) {
         const key = mode === 'classic' ? 'disable_schedule_btn_short' : 'disable_schedule_btn';
-        sleepSettingsBtn.textContent = translations[window.currentLang] && translations[window.currentLang][key] ? translations[window.currentLang][key] : (mode === 'classic' ? 'Disable' : 'Disable Schedule');
+        sleepSettingsBtn.textContent = translations[window.currentLang] && translations[window.currentLang][key] ? translations[window.currentLang][key] : 'Disable';
       }
 
       if (window.__TAURI__) {
@@ -5923,15 +5959,20 @@
 
       const status = getProfileStatus();
       // -- Countdown Timer display --
-      if (scheduleActionMode === 'countdown' && timeProfilesEnabled && countdownTargetTime > 0) {
-        const remMs = countdownTargetTime - Date.now();
-        const remSec = Math.max(0, Math.floor(remMs / 1000));
-        const hh = Math.floor(remSec / 3600);
-        const mm = Math.floor((remSec % 3600) / 60);
-        const ss = remSec % 60;
-        const timeStr = String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0') + ':' + String(ss).padStart(2,'0');
-        if (shutdownLabelEl) shutdownLabelEl.innerHTML = (translations[window.currentLang] && translations[window.currentLang].time_left) ? translations[window.currentLang].time_left : 'Time left';
-        if (shutdownTimerEl) shutdownTimerEl.textContent = timeStr;
+      if (scheduleActionMode === 'countdown' && timeProfilesEnabled) {
+        if (countdownTargetTime > 0) {
+          const remMs = countdownTargetTime - Date.now();
+          const remSec = Math.max(0, Math.floor(remMs / 1000));
+          const hh = Math.floor(remSec / 3600);
+          const mm = Math.floor((remSec % 3600) / 60);
+          const ss = remSec % 60;
+          const timeStr = String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0') + ':' + String(ss).padStart(2,'0');
+          if (shutdownLabelEl) shutdownLabelEl.innerHTML = (translations[window.currentLang] && translations[window.currentLang].time_left) ? translations[window.currentLang].time_left : 'Time left';
+          if (shutdownTimerEl) shutdownTimerEl.textContent = timeStr;
+        } else {
+          if (shutdownLabelEl) shutdownLabelEl.innerHTML = (translations[window.currentLang] && translations[window.currentLang].sleep_countdown_label) ? translations[window.currentLang].sleep_countdown_label : 'Expired';
+          if (shutdownTimerEl) shutdownTimerEl.textContent = "00:00:00";
+        }
         updateSleepNextProfile();
         syncTrayState();
         return;
@@ -6069,6 +6110,14 @@
       const countdownEl = document.getElementById('sleepNextCountdown');
       if (!box || !startEl || !endEl || !countdownEl) return;
 
+      if (scheduleActionMode === 'countdown') {
+        box.classList.remove('show');
+        box.style.display = 'none';
+        if (overlay) overlay.classList.remove('has-next-profile');
+        return;
+      }
+      box.style.display = '';
+
       const status = getProfileStatus();
       const next = getNextProfileWindow();
       const shouldShow = isSleeping && profileControlledAwake && status && !status.isActive && (scheduleActionMode === 'pause' ? true : !!next);
@@ -6093,6 +6142,121 @@
           : 'Starts in';
         countdownEl.textContent = `${startsIn} ${formatTime(next.secondsUntilStart)}`;
       }
+    }
+
+    function updateSleepOverlayUI() {
+      const overlay = document.getElementById('sleepOverlay');
+      if (!overlay) return;
+
+      const lang = window.currentLang || 'en';
+      const t = (typeof translations !== 'undefined' && translations[lang]) ? translations[lang] : {};
+
+      const iconEl = document.getElementById('sleepIconSmall');
+      const titleEl = document.getElementById('sleepTitle');
+      const subFullEl = document.getElementById('sleepSubFull');
+      const subShortEl = document.getElementById('sleepSubShort');
+      const hintEl = document.getElementById('sleepCountdownHint');
+      const restartBtn = document.getElementById('sleepRestartBtn');
+      const disableBtn = document.getElementById('sleepSettingsBtn');
+
+      if (scheduleActionMode === 'countdown') {
+        if (iconEl) {
+          iconEl.style.backgroundImage = 'none';
+          iconEl.innerHTML = `<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--theme-color);filter:drop-shadow(0 0 10px var(--theme-color));"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+        }
+        if (titleEl) {
+          titleEl.textContent = t.sleep_countdown_title || 'Countdown Finished';
+          titleEl.setAttribute('data-i18n', 'sleep_countdown_title');
+        }
+        if (subFullEl) {
+          subFullEl.textContent = t.sleep_countdown_sub || 'Sleep prevention timer has ended';
+          subFullEl.setAttribute('data-i18n', 'sleep_countdown_sub');
+        }
+        if (subShortEl) {
+          subShortEl.textContent = t.sleep_countdown_sub_short || 'Timer ended';
+          subShortEl.setAttribute('data-i18n', 'sleep_countdown_sub_short');
+        }
+        if (hintEl) {
+          hintEl.style.display = 'block';
+          hintEl.textContent = t.countdown_expired_hint || 'PC is now allowed to sleep';
+          hintEl.setAttribute('data-i18n', 'countdown_expired_hint');
+        }
+        if (restartBtn) {
+          restartBtn.style.display = 'inline-flex';
+          restartBtn.textContent = t.restart_timer_btn || 'Restart Timer';
+          restartBtn.setAttribute('data-i18n', 'restart_timer_btn');
+        }
+        if (disableBtn) {
+          disableBtn.textContent = t.disable_schedule_btn || 'Disable';
+          disableBtn.setAttribute('data-i18n', 'disable_schedule_btn');
+        }
+      } else if (scheduleActionMode === 'pause') {
+        if (iconEl) {
+          iconEl.style.backgroundImage = 'none';
+          iconEl.innerHTML = `<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--theme-color);filter:drop-shadow(0 0 10px var(--theme-color));"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+        }
+        if (titleEl) {
+          titleEl.textContent = t.sleep_pause_title || 'Prevention Paused';
+          titleEl.setAttribute('data-i18n', 'sleep_pause_title');
+        }
+        if (subFullEl) {
+          subFullEl.textContent = t.sleep_pause_sub || 'Sleep prevention is paused during your scheduled pause';
+          subFullEl.setAttribute('data-i18n', 'sleep_pause_sub');
+        }
+        if (subShortEl) {
+          subShortEl.textContent = t.sleep_pause_sub_short || 'Paused';
+          subShortEl.setAttribute('data-i18n', 'sleep_pause_sub_short');
+        }
+        if (hintEl) hintEl.style.display = 'none';
+        if (restartBtn) restartBtn.style.display = 'none';
+        if (disableBtn) {
+          disableBtn.textContent = t.disable_schedule_btn || 'Disable';
+          disableBtn.setAttribute('data-i18n', 'disable_schedule_btn');
+        }
+      } else {
+        if (iconEl) {
+          iconEl.innerHTML = '';
+          iconEl.style.backgroundImage = "url('coffe2.png')";
+        }
+        if (titleEl) {
+          titleEl.textContent = t.sleep_active_title || 'Sleep Mode Active';
+          titleEl.setAttribute('data-i18n', 'sleep_active_title');
+        }
+        if (subFullEl) {
+          subFullEl.textContent = t.sleep_active_sub || 'Your PC is not kept awake right now';
+          subFullEl.setAttribute('data-i18n', 'sleep_active_sub');
+        }
+        if (subShortEl) {
+          subShortEl.textContent = t.sleep_active_sub_short || 'Not kept awake';
+          subShortEl.setAttribute('data-i18n', 'sleep_active_sub_short');
+        }
+        if (hintEl) hintEl.style.display = 'none';
+        if (restartBtn) restartBtn.style.display = 'none';
+        if (disableBtn) {
+          disableBtn.textContent = t.disable_schedule_btn || 'Disable';
+          disableBtn.setAttribute('data-i18n', 'disable_schedule_btn');
+        }
+      }
+
+      updateSleepNextProfile();
+    }
+
+    function saveScheduleSettings(updates = {}) {
+      try {
+        let s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+        s.timeProfilesEnabled = timeProfilesEnabled;
+        s.scheduleActionMode = scheduleActionMode;
+        s.countdownDurationMins = countdownDurationMins;
+        Object.assign(s, updates);
+        const serialized = JSON.stringify(s);
+        localStorage.setItem('neverSleepSettings', serialized);
+        if (window.__TAURI__) {
+          window.__TAURI__.invoke('save_settings', { settings: serialized }).catch(() => {});
+          if (window.__TAURI__.event) {
+            window.__TAURI__.event.emit('settings-updated', s).catch(() => {});
+          }
+        }
+      } catch(e) {}
     }
 
     // Load Settings
@@ -6144,8 +6308,12 @@
         applyWhiteMode(!!s.whiteMode);
 
         timeProfiles = (s.timeProfiles || []).map(normalizeTimeProfile);
-        timeProfilesEnabled = s.timeProfilesEnabled === undefined ? (timeProfiles.length > 0) : !!s.timeProfilesEnabled;
-        scheduleActionMode = s.scheduleActionMode || 'keep_awake';
+        timeProfilesEnabled = s.timeProfilesEnabled === undefined
+          ? timeProfiles.some(p => p.enabled !== false)
+          : !!s.timeProfilesEnabled;
+        scheduleActionMode = ['keep_awake', 'pause', 'countdown'].includes(s.scheduleActionMode)
+          ? s.scheduleActionMode
+          : 'keep_awake';
         // Load countdown timer settings
         const prevCountdownDuration = countdownDurationMins;
         countdownDurationMins = s.countdownDurationMins || 60;
@@ -6156,7 +6324,7 @@
                 countdownTargetTime = Date.now() + countdownDurationMins * 60 * 1000;
                 window._lastCountdownRestartAt = countdownRestartSignal;
             }
-        } else if (scheduleActionMode !== 'countdown') {
+        } else {
             countdownTargetTime = 0;
         }
         applySchedulePanelVisibility();
@@ -6298,6 +6466,11 @@
     }
 
     function enterSleepMode(options = {}) {
+      // Snapshot the user's darken preference the first time we enter sleep mode
+      // (don't overwrite if already sleeping — e.g. mode switch while overlay is open)
+      if (!isSleeping && preScheduleScreenOn === null) {
+        preScheduleScreenOn = isScreenOn;
+      }
       isSleeping = true;
       document.getElementById('sleepOverlay').classList.add('show');
       isScreenOn = false;
@@ -6307,39 +6480,111 @@
       }
 
       if (window.__TAURI__) window.__TAURI__.invoke('allow_sleep').catch(() => { });
+      updateSleepOverlayUI();
       updateUI();
     }
 
     function exitSleepModeAndPreventSleep() {
+      const wasSleeping = isSleeping;
       isSleeping = false;
       document.getElementById('sleepOverlay').classList.remove('show');
-      isScreenOn = true;
+      // Restore the exact darken state from before the schedule took over.
+      // If we have a snapshot use it; otherwise default to true (keep awake).
+      const restoreScreenOn = wasSleeping
+        ? (preScheduleScreenOn !== null ? preScheduleScreenOn : true)
+        : isScreenOn;
+      preScheduleScreenOn = null; // clear snapshot for next cycle
+      isScreenOn = restoreScreenOn;
       screenDarkened = false;
       if (window.__TAURI__) {
         window.__TAURI__.invoke('close_screen_overlay', { method: darkenMethod, customPath: controlMyMonitorPath || null }).catch(() => { });
         window.__TAURI__.invoke('prevent_sleep').catch(() => { });
       }
       resetDarkenTimer();
+      // Silently persist isScreenOn without triggering settings-updated broadcast
+      // (saveTogglesState would call save_settings → emit_all → re-entry loop)
+      try {
+        localStorage.setItem('neverSleepToggles', JSON.stringify({ isScreenOn: isScreenOn }));
+        let _s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+        _s.isScreenOn = isScreenOn;
+        localStorage.setItem('neverSleepSettings', JSON.stringify(_s));
+      } catch(e) {}
+      updateSleepOverlayUI();
       updateUI();
     }
 
+    function applyScheduleState(options = {}) {
+      if (appDisabled) {
+        profileControlledAwake = hasEnabledTimeProfiles();
+        autoShutdown = profileControlledAwake;
+        return;
+      }
+      if (!timeProfilesEnabled) {
+        profileControlledAwake = false;
+        autoShutdown = false;
+        countdownTargetTime = 0;
+        if (isSleeping) {
+          exitSleepModeAndPreventSleep(); // handles snapshot restore & saveTogglesState
+        } else {
+          // Not sleeping but schedule turned off — also clear snapshot
+          preScheduleScreenOn = null;
+          if (!isScreenOn) resetDarkenTimer();
+          else if (window.__TAURI__) window.__TAURI__.invoke('prevent_sleep').catch(() => { });
+        }
+        shutdownTargetTime = 0;
+        updateSleepOverlayUI();
+        updateUI();
+        return;
+      }
+
+      if (scheduleActionMode === 'countdown') {
+        profileControlledAwake = false;
+        autoShutdown = false;
+        if (countdownTargetTime > Date.now()) {
+          exitSleepModeAndPreventSleep();
+        } else {
+          countdownTargetTime = 0;
+          enterSleepMode({ mode: 'countdown', focus: options.focus === true });
+        }
+        updateSleepOverlayUI();
+        updateUI();
+        return;
+      }
+
+      // keep_awake or pause
+      applyProfileControlledPowerState(options);
+    }
+
     function applyProfileControlledPowerState(options = {}) {
+      if (scheduleActionMode === 'countdown') return;
       profileControlledAwake = hasEnabledTimeProfiles();
       autoShutdown = profileControlledAwake;
 
       if (!profileControlledAwake) {
+        // Schedule fully disabled — restore the darken state from before schedule took over
+        const restoreScreenOn = preScheduleScreenOn !== null ? preScheduleScreenOn : isScreenOn;
+        preScheduleScreenOn = null; // clear snapshot
         isSleeping = false;
         const sleepOverlay = document.getElementById('sleepOverlay');
         if (sleepOverlay) sleepOverlay.classList.remove('show');
+        isScreenOn = restoreScreenOn;
         screenDarkened = false;
         if (window.__TAURI__) {
           window.__TAURI__.invoke('close_screen_overlay', { method: darkenMethod, customPath: controlMyMonitorPath || null }).catch(() => { });
-          window.__TAURI__.invoke('prevent_sleep').catch(() => { });
+          if (isScreenOn) window.__TAURI__.invoke('prevent_sleep').catch(() => { });
         }
         shutdownTargetTime = 0;
-        if (!isScreenOn) {
+        if (isScreenOn) {
           resetDarkenTimer();
         }
+        // Silently persist without broadcast loop
+        try {
+          localStorage.setItem('neverSleepToggles', JSON.stringify({ isScreenOn: isScreenOn }));
+          let _s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+          _s.isScreenOn = isScreenOn;
+          localStorage.setItem('neverSleepSettings', JSON.stringify(_s));
+        } catch(e) {}
+        updateSleepOverlayUI();
         updateUI();
         return;
       }
@@ -6347,10 +6592,11 @@
       const status = getProfileStatus();
       resetShutdownTimer();
       if (status && status.isActive) {
-        exitSleepModeAndPreventSleep();
+        if (isSleeping) exitSleepModeAndPreventSleep();
       } else {
-        enterSleepMode({ focus: options.focus === true });
+        enterSleepMode({ mode: scheduleActionMode, focus: options.focus === true });
       }
+      updateSleepOverlayUI();
     }
 
     // Main Loop
@@ -6360,13 +6606,20 @@
         try {
           const isPlaying = await window.__TAURI__.invoke('is_media_playing');
           if (isPlaying && !appDisabled) {
+             mediaPlayingLastSeenAt = Date.now();
              disabledByMedia = true;
              setAppDisabled(true);
-          } else if (!isPlaying && disabledByMedia && appDisabled) {
+          } else if (isPlaying && disabledByMedia) {
+             mediaPlayingLastSeenAt = Date.now();
+          } else if (!isPlaying && disabledByMedia && appDisabled && Date.now() - mediaPlayingLastSeenAt >= 5000) {
              disabledByMedia = false;
              setAppDisabled(false);
           }
         } catch (e) { }
+      } else if (disabledByMedia && appDisabled) {
+        // Turning the media-pause feature off must also release its pause state.
+        disabledByMedia = false;
+        setAppDisabled(false);
       }
 
       // If app is disabled, skip all behaviour
@@ -6375,7 +6628,7 @@
       uptime++; // Approx
 
       // -- Countdown Timer: unlock detection & expiry --
-      if (scheduleActionMode === 'countdown' && timeProfilesEnabled && countdownTargetTime > 0) {
+      if (scheduleActionMode === 'countdown' && timeProfilesEnabled) {
         try {
           if (window.__TAURI__) {
             const isLocked = await window.__TAURI__.invoke('is_workstation_locked');
@@ -6384,12 +6637,16 @@
             } else if (!isLocked && lastLockState) {
               countdownTargetTime = Date.now() + countdownDurationMins * 60 * 1000;
               lastLockState = false;
+              if (isSleeping) {
+                exitSleepModeAndPreventSleep();
+              }
             }
           }
         } catch(e) {}
-        if (Date.now() >= countdownTargetTime) {
+        if (countdownTargetTime > 0 && Date.now() >= countdownTargetTime) {
           countdownTargetTime = 0;
           if (window.__TAURI__) window.__TAURI__.invoke('allow_sleep').catch(() => {});
+          enterSleepMode({ mode: 'countdown' });
           notify('NeverSleep', (translations[window.currentLang] && translations[window.currentLang].countdown_expired) ? translations[window.currentLang].countdown_expired : 'Countdown ended \u2014 sleep prevention paused.');
         }
       }
@@ -6428,14 +6685,14 @@
       }
 
       // 4. Time Profile Logic
-      if (profileControlledAwake) {
+      if (scheduleActionMode !== 'countdown' && profileControlledAwake) {
         const status = getProfileStatus();
         if (status && status.isActive) {
           if (isSleeping) {
             exitSleepModeAndPreventSleep();
           }
         } else if (!isSleeping) {
-          enterSleepMode();
+          enterSleepMode({ mode: scheduleActionMode });
         }
       }
 
@@ -6487,13 +6744,10 @@
         // Freeze timer targets so they don't drift
         darkenTargetTime = Date.now() + 99999 * 1000;
         shutdownTargetTime = Date.now() + 99999 * 1000;
+        const sleepOverlay = document.getElementById('sleepOverlay');
+        if (sleepOverlay) sleepOverlay.classList.remove('show');
       } else {
-        if (profileControlledAwake) {
-          applyProfileControlledPowerState({ focus: false });
-        } else {
-          if (window.__TAURI__) window.__TAURI__.invoke('prevent_sleep').catch(() => { });
-          resetDarkenTimer();
-        }
+        applyScheduleState({ focus: false });
         updateUI();
         updateCoffeePour();
       }
@@ -6676,37 +6930,45 @@
     document.getElementById('settingsBtn').onclick = async () => {
       if (window.__TAURI__) await window.__TAURI__.invoke('open_settings', { section: null });
     };
-    document.getElementById('sleepSettingsBtn').onclick = async () => {
-      if (window.__TAURI__) {
-        await window.__TAURI__.invoke('open_settings', { section: 'schedule' });
-      }
-
-      setTimeout(async () => {
-        let s = {};
-        try {
-          if (window.__TAURI__) {
-            const saved = await window.__TAURI__.invoke('load_settings');
-            s = JSON.parse(saved || '{}');
-          } else {
-            s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
-          }
-        } catch (e) { s = {}; }
-
-        s.timeProfilesEnabled = false;
-        timeProfilesEnabled = false;
-        profileControlledAwake = false;
-        autoShutdown = false;
-        applySchedulePanelVisibility();
-        exitSleepModeAndPreventSleep();
-
-        const serialized = JSON.stringify(s);
-        localStorage.setItem('neverSleepSettings', serialized);
-        localStorage.setItem('neverSleepCommand', JSON.stringify({ type: 'recalculateProfiles', timestamp: Date.now() }));
-        if (window.__TAURI__) {
-          await window.__TAURI__.invoke('save_settings', { settings: serialized }).catch(() => { });
-          await window.__TAURI__.invoke('open_settings', { section: 'schedule' }).catch(() => { });
+    // Sleep Overlay Buttons
+    const sleepRestartBtnEl = document.getElementById('sleepRestartBtn');
+    if (sleepRestartBtnEl) {
+      sleepRestartBtnEl.onclick = async () => {
+        if (scheduleActionMode === 'countdown') {
+          countdownTargetTime = Date.now() + countdownDurationMins * 60 * 1000;
         }
-      }, 1500);
+        exitSleepModeAndPreventSleep();
+        updateSleepOverlayUI();
+        updateUI();
+      };
+    }
+
+    document.getElementById('sleepSettingsBtn').onclick = async () => {
+      let s = {};
+      try {
+        if (window.__TAURI__) {
+          const saved = await window.__TAURI__.invoke('load_settings');
+          s = JSON.parse(saved || '{}');
+        } else {
+          s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+        }
+      } catch (e) { s = {}; }
+
+      s.timeProfilesEnabled = false;
+      timeProfilesEnabled = false;
+      profileControlledAwake = false;
+      autoShutdown = false;
+      countdownTargetTime = 0;
+      applySchedulePanelVisibility();
+      exitSleepModeAndPreventSleep();
+
+      const serialized = JSON.stringify(s);
+      localStorage.setItem('neverSleepSettings', serialized);
+      localStorage.setItem('neverSleepCommand', JSON.stringify({ type: 'recalculateProfiles', timestamp: Date.now() }));
+      if (window.__TAURI__) {
+        await window.__TAURI__.invoke('save_settings', { settings: serialized }).catch(() => { });
+        await window.__TAURI__.invoke('open_settings', { section: 'schedule' }).catch(() => { });
+      }
     };
     document.getElementById('trayBtn').onclick = async () => {
       if (window.__TAURI__) {
@@ -7128,7 +7390,7 @@
 
     // Setup
     loadSet(); resetDarkenTimer();
-    applyProfileControlledPowerState({ focus: false });
+    applyScheduleState({ focus: false });
     updateCoffeePour(); // sync pour state on load
     setTimeout(checkForUpdatesInBackground, 5000);
 
@@ -7138,23 +7400,33 @@
           try {
             const s = JSON.parse(saved);
             loadSet(s);
-            if (!appDisabled) {
-              applyProfileControlledPowerState({ focus: false });
-            }
+            applyScheduleState({ focus: false });
+            updateSleepOverlayUI();
             updateUI();
             updateCoffeePour();
           } catch (e) { }
         }
       }).catch(() => { });
+
+      if (window.__TAURI__.event) {
+        window.__TAURI__.event.listen('settings-updated', (event) => {
+          try {
+            const s = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
+            loadSet(s);
+            applyScheduleState({ focus: false });
+            updateSleepOverlayUI();
+            updateUI();
+            updateCoffeePour();
+          } catch(e) {}
+        });
+      }
     }
 
     window.addEventListener('storage', (e) => {
       if (e.key === 'neverSleepSettings' || e.key === 'neverSleepCommand') {
-        const hadRegisteredProfiles = profileControlledAwake;
         loadSet();
-        if (!appDisabled && (profileControlledAwake || hadRegisteredProfiles)) {
-          applyProfileControlledPowerState({ focus: false });
-        }
+        applyScheduleState({ focus: false });
+        updateSleepOverlayUI();
         updateUI();
         updateCoffeePour();
       }

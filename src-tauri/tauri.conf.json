@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "Never Sleep",
-    "version": "17.5.0"
+    "version": "18.0.0"
   },
   "tauri": {
     "allowlist": {
@@ -110,7 +110,7 @@
       },
       {
         "fullscreen": false,
-        "height": 600,
+        "height": 560,
         "width": 500,
         "resizable": false,
         "title": "Settings - Never Sleep",
