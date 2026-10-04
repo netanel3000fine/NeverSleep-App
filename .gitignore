@@ -12,3 +12,6 @@ Public Key.txt
 SyncConfig.json
 stdout.txt
 stderr.txt
+
+# Binary releases (exceeds GitHub 100MB limit)
+releases/

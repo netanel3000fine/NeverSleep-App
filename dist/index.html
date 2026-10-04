@@ -54,7 +54,7 @@
       font-family: 'Outfit', 'Segoe UI', sans-serif !important;
     }
 
-    /* Coffee theme only: make "Keep screen awake" text a little smaller */
+    /* Coffee theme only: make "Keep screen" text a little smaller */
     body.coffee-mode #panelLeft .toggle-label,
     body.coffee-mode #activateToggleLabel {
       font-size: 14.5px !important;
@@ -5407,7 +5407,7 @@
         <img src="coffe1.png" class="panel-bg heartbeat-icon" alt="">
         <div class="panel-content" data-tauri-drag-region>
           <div class="toggle-row" data-tauri-drag-region><span class="toggle-label" id="activateToggleLabel"
-              style="font-size:16px;font-weight:600" data-tauri-drag-region data-i18n="keep_screen_awake">Keep screen awake</span>
+              style="font-size:16px;font-weight:600" data-tauri-drag-region data-i18n="keep_screen_awake">Keep screen</span>
             <div class="toggle active" id="activateToggle">
               <div class="toggle-knob"></div>
             </div>
@@ -5892,7 +5892,7 @@
       const shutdownToggleLabel = document.getElementById('shutdownToggleLabel');
       const sleepSettingsBtn = document.getElementById('sleepSettingsBtn');
       if (activateToggleLabel) {
-        activateToggleLabel.textContent = mode === 'classic' ? (translations[window.currentLang] ? translations[window.currentLang].screen_awake_short : 'Screen Awake') : (translations[window.currentLang] ? translations[window.currentLang].keep_screen_awake : 'Keep screen awake');
+        activateToggleLabel.textContent = mode === 'classic' ? (translations[window.currentLang] ? translations[window.currentLang].screen_awake_short : 'Screen Awake') : (translations[window.currentLang] ? translations[window.currentLang].keep_screen_awake : 'Keep screen');
       }
       if (shutdownToggleLabel) {
         shutdownToggleLabel.textContent = translations[window.currentLang] ? translations[window.currentLang].category_auto_quit : 'Awake until...';
