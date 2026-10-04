@@ -29,16 +29,10 @@
     // Close overlay on any mouse movement or keyboard input
     let hasInput = false;
 
-    async function closeOverlay(event) {
+    function closeOverlay() {
       if (!hasInput && window.__TAURI__) {
         hasInput = true;
-        const eventType = event && event.type ? event.type : '';
-        const inputType = eventType.startsWith('mouse') || eventType === 'touchstart'
-          ? 'mouse'
-          : 'keyboard';
-
-        await window.__TAURI__.invoke('record_input_activity', { inputType }).catch(() => { });
-        await window.__TAURI__.invoke('close_screen_overlay').catch(() => { });
+        window.__TAURI__.invoke('close_screen_overlay');
       }
     }
 

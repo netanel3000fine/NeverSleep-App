@@ -310,8 +310,9 @@ fn get_settings_path(app: tauri::AppHandle) -> Result<std::path::PathBuf, String
 
 #[tauri::command]
 fn save_settings(app: tauri::AppHandle, settings: String) -> Result<(), String> {
-    let path = get_settings_path(app)?;
-    std::fs::write(path, settings).map_err(|e| e.to_string())?;
+    let path = get_settings_path(app.clone())?;
+    std::fs::write(path, &settings).map_err(|e| e.to_string())?;
+    let _ = app.emit_all("settings-updated", settings);
     Ok(())
 }
 
@@ -922,24 +923,29 @@ async fn is_media_playing() -> bool {
 
         let mut playing = false;
         if let Some(manager) = get_media_manager() {
-            if let Ok(session) = manager.GetCurrentSession() {
-                if let Ok(info) = session.GetPlaybackInfo() {
-                    if let Ok(status) = info.PlaybackStatus() {
-                        if status == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing {
-                            if let Ok(app_id) = session.SourceAppUserModelId() {
-                                let app_id_lower = app_id.to_string().to_lowercase();
-                                // Browsers (Chrome, Edge etc) report YouTube as Music, 
-                                // so we can't use PlaybackType. Instead we specifically ignore Spotify/iTunes.
-                                if !app_id_lower.contains("spotify") 
-                                && !app_id_lower.contains("itunes") 
-                                && !app_id_lower.contains("apple music") {
-                                    playing = true;
-                                }
-                            } else {
-                                // Fallback if no ID is provided
-                                playing = true;
+            if let Ok(sessions) = manager.GetSessions() {
+                if let Ok(count) = sessions.Size() {
+                    for index in 0..count {
+                        let session = match sessions.GetAt(index) { Ok(value) => value, Err(_) => continue };
+                        let info = match session.GetPlaybackInfo() { Ok(value) => value, Err(_) => continue };
+                        let status = match info.PlaybackStatus() { Ok(value) => value, Err(_) => continue };
+                        if status != GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing {
+                            continue;
+                        }
+
+                        if let Ok(app_id) = session.SourceAppUserModelId() {
+                            let app_id_lower = app_id.to_string().to_lowercase();
+                            // Browsers can report web video sessions as Music, so
+                            // identify actual playback by status rather than type.
+                            if app_id_lower.contains("spotify")
+                                || app_id_lower.contains("itunes")
+                                || app_id_lower.contains("apple music")
+                            {
+                                continue;
                             }
                         }
+                        playing = true;
+                        break;
                     }
                 }
             }
