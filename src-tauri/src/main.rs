@@ -156,6 +156,13 @@ fn is_workstation_locked() -> Result<bool, String> {
     Ok(is_windows_workstation_locked())
 }
 
+static LAST_UNLOCK_TIME: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+#[tauri::command]
+fn get_last_unlock_time() -> u64 {
+    LAST_UNLOCK_TIME.load(std::sync::atomic::Ordering::Relaxed)
+}
+
 #[tauri::command]
 async fn show_notification(
     app: tauri::AppHandle,
@@ -2012,6 +2019,11 @@ fn main() {
     // Single Instance Check using WinAPI Mutex
     #[cfg(target_os = "windows")]
     {
+        std::env::set_var(
+            "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
+            "--disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding",
+        );
+
         use std::ffi::OsStr;
         use std::os::windows::ffi::OsStrExt;
         use winapi::shared::winerror::ERROR_ALREADY_EXISTS;
@@ -2173,6 +2185,7 @@ fn main() {
             get_last_activity,
             record_input_activity,
             is_workstation_locked,
+            get_last_unlock_time,
             show_notification,
             log_to_file,
             set_autostart,
@@ -2289,6 +2302,31 @@ fn main() {
                                     let _ = set_app_icon(app_handle, icon_file.to_string());
                                 }
                             }
+                        }
+                    }
+                });
+            }
+
+            // Background thread to continuously detect workstation lock and unlock
+            // and notify frontend, immune to webview background timer throttling
+            {
+                let app_handle = app.handle();
+                std::thread::spawn(move || {
+                    let mut was_locked = is_windows_workstation_locked();
+                    loop {
+                        std::thread::sleep(std::time::Duration::from_millis(300));
+                        let is_locked = is_windows_workstation_locked();
+                        if is_locked && !was_locked {
+                            was_locked = true;
+                            let _ = app_handle.emit_all("workstation-locked", ());
+                        } else if !is_locked && was_locked {
+                            was_locked = false;
+                            let now = std::time::SystemTime::now()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .map(|d| d.as_millis() as u64)
+                                .unwrap_or(0);
+                            LAST_UNLOCK_TIME.store(now, std::sync::atomic::Ordering::Relaxed);
+                            let _ = app_handle.emit_all("workstation-unlocked", now);
                         }
                     }
                 });

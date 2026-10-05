@@ -54,6 +54,15 @@
       font-family: 'Outfit', 'Segoe UI', sans-serif !important;
     }
 
+    /* Schedule label is clickable — show subtle hover affordance */
+    #shutdownToggleLabel {
+      transition: opacity 0.15s ease;
+    }
+    #shutdownToggleLabel:hover {
+      opacity: 0.75;
+      text-decoration: underline dotted;
+    }
+
     /* Coffee theme only: make "Keep screen" text a little smaller */
     body.coffee-mode #panelLeft .toggle-label,
     body.coffee-mode #activateToggleLabel {
@@ -923,23 +932,46 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 15px;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      max-height: 100%;
+      box-sizing: border-box;
     }
 
     .sleep-icon-small {
-      width: 64px;
-      height: 64px;
+      width: 44px;
+      height: 44px;
       background-image: url('coffe2.png');
       background-size: contain;
       background-repeat: no-repeat;
-      margin-bottom: 10px;
-      filter: drop-shadow(0 0 15px var(--theme-color));
+      margin-bottom: 2px;
+      filter: drop-shadow(0 0 12px var(--theme-color));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
 
     .sleep-title {
-      font-size: 28px;
+      font-size: 22px;
       font-weight: 700;
-      text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+      line-height: 1.2;
+    }
+
+    .sleep-subtitle-full {
+      font-size: 14px;
+      opacity: 0.88;
+      line-height: 1.3;
+      max-width: 440px;
+    }
+
+    .sleep-countdown-hint {
+      font-size: 12px;
+      opacity: 0.68;
+      margin-top: -2px;
+      line-height: 1.2;
     }
 
     .sleep-subtitle-short {
@@ -1052,14 +1084,15 @@
       background: var(--theme-color);
       color: white;
       font-family: 'Fredoka', sans-serif;
-      font-size: 18px;
-      padding: 10px 25px;
+      font-size: 15px;
+      padding: 7px 22px;
       border: none;
       border-radius: 50px;
       cursor: pointer;
-      box-shadow: 0 4px 15px var(--theme-color);
+      box-shadow: 0 4px 14px var(--theme-color);
       transition: all 0.3s;
       font-weight: 600;
+      line-height: 1.2;
     }
 
     .sleep-btn:hover {
@@ -1119,12 +1152,10 @@
       -webkit-app-region: drag;
     }
 
-    body.classic-mode .sleep-bg-icon {
-      display: none;
-    }
-
-    body.classic-mode .sleep-icon-small {
-      display: none;
+    body.classic-mode .sleep-bg-icon,
+    body.classic-mode .sleep-icon-small,
+    body.classic-mode .sleep-countdown-hint {
+      display: none !important;
     }
 
     body.classic-mode .sleep-content {
@@ -5545,7 +5576,9 @@
 
         <div class="panel-content" data-tauri-drag-region>
           <div class="toggle-row" data-tauri-drag-region><span class="toggle-label" id="shutdownToggleLabel"
-              style="font-size:20px;font-weight:600" data-tauri-drag-region data-i18n="category_auto_quit">Schedule</span>
+              style="font-size:20px;font-weight:600;cursor:pointer;" title="Open Schedule Settings"
+              data-tauri-drag-region data-i18n="category_auto_quit"
+              onclick="if(window.__TAURI__)window.__TAURI__.invoke('open_settings',{section:'schedule'}).catch(()=>{})">Schedule</span>
           </div>
           <div class="timer-section tooltip-target" id="shutdownSection" data-tauri-drag-region>
             <div class="timer-label" id="shutdownLabel" data-i18n="time_left">Time left</div>
@@ -5574,11 +5607,11 @@
         <!-- Mode title -->
         <div class="sleep-title" id="sleepTitle" data-i18n="sleep_active_title">Sleep Mode Active</div>
         <!-- Mode subtitle (full) -->
-        <div class="sleep-subtitle-full" id="sleepSubFull" style="font-size:18px;opacity:0.9" data-i18n="sleep_active_sub">Your PC is not kept awake right now</div>
+        <div class="sleep-subtitle-full" id="sleepSubFull" data-i18n="sleep_active_sub">Your PC is not kept awake right now</div>
         <!-- Mode subtitle (short, classic mode) -->
         <div class="sleep-subtitle-short" id="sleepSubShort" data-i18n="sleep_active_sub_short">Not kept awake</div>
         <!-- Countdown expired hint (only shown in countdown mode) -->
-        <div class="sleep-countdown-hint" id="sleepCountdownHint" style="display:none;font-size:13px;opacity:0.65;margin-top:-6px;" data-i18n="countdown_expired_hint">PC is now allowed to sleep</div>
+        <div class="sleep-countdown-hint" id="sleepCountdownHint" style="display:none;" data-i18n="countdown_expired_hint">PC is now allowed to sleep</div>
         <!-- Next schedule / resumes box -->
         <div class="sleep-next-profile" id="sleepNextProfile" data-tauri-drag-region>
           <div class="sleep-next-label" id="sleepNextLabel" data-i18n="next_schedule">Next schedule</div>
@@ -5843,11 +5876,25 @@
     let focusTriggered = false;
     let minimizeTriggered = false;
     let lastActivityIconAt = 0;
+    let lastInactivityStart = Date.now();
+    let wasMainVisible = true;
 
     // ===== COUNTDOWN TIMER STATE =====
     let countdownDurationMins = 60;
     let countdownTargetTime = 0;
     let lastLockState = false;
+    let lastProcessedUnlockTime = 0;
+
+    function handleUnlockReset() {
+      if (scheduleActionMode === 'countdown' && timeProfilesEnabled) {
+        countdownTargetTime = Date.now() + countdownDurationMins * 60 * 1000;
+        lastLockState = false;
+        if (isSleeping) {
+          exitSleepModeAndPreventSleep();
+        }
+        updateUI();
+      }
+    }
 
     // Helpers
     function hexToRgb(hex) {
@@ -6162,7 +6209,7 @@
       if (scheduleActionMode === 'countdown') {
         if (iconEl) {
           iconEl.style.backgroundImage = 'none';
-          iconEl.innerHTML = `<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--theme-color);filter:drop-shadow(0 0 10px var(--theme-color));"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+          iconEl.innerHTML = `<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--theme-color);filter:drop-shadow(0 0 8px var(--theme-color));"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
         }
         if (titleEl) {
           titleEl.textContent = t.sleep_countdown_title || 'Countdown Finished';
@@ -6193,7 +6240,7 @@
       } else if (scheduleActionMode === 'pause') {
         if (iconEl) {
           iconEl.style.backgroundImage = 'none';
-          iconEl.innerHTML = `<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--theme-color);filter:drop-shadow(0 0 10px var(--theme-color));"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+          iconEl.innerHTML = `<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--theme-color);filter:drop-shadow(0 0 8px var(--theme-color));"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
         }
         if (titleEl) {
           titleEl.textContent = t.sleep_pause_title || 'Prevention Paused';
@@ -6367,6 +6414,9 @@
     function resetDarkenTimer() {
       const total = (darkenHours * 3600) + (darkenMinutes * 60);
       darkenTargetTime = Date.now() + (total * 1000);
+      lastInactivityStart = Date.now();
+      minimizeTriggered = false;
+      focusTriggered = false;
     }
 
     function resetShutdownTimer() {
@@ -6475,11 +6525,16 @@
       document.getElementById('sleepOverlay').classList.add('show');
       isScreenOn = false;
 
-      if (options.focus !== false && quitFocusOnCountdown && window.__TAURI__) {
+      // Always pop the window out of the system tray when entering sleep mode,
+      // so the user can see the sleep overlay and interact with it.
+      if (window.__TAURI__) {
         focusMainWindow().catch(() => { });
+        // Always close any active darken/screen overlay when sleep begins.
+        window.__TAURI__.invoke('close_screen_overlay').catch(() => { });
       }
 
       if (window.__TAURI__) window.__TAURI__.invoke('allow_sleep').catch(() => { });
+      screenDarkened = false;
       updateSleepOverlayUI();
       updateUI();
     }
@@ -6631,15 +6686,18 @@
       if (scheduleActionMode === 'countdown' && timeProfilesEnabled) {
         try {
           if (window.__TAURI__) {
+            const lastUnlock = await window.__TAURI__.invoke('get_last_unlock_time');
+            if (lastUnlock > lastProcessedUnlockTime) {
+              lastProcessedUnlockTime = lastUnlock;
+              handleUnlockReset();
+            }
+
             const isLocked = await window.__TAURI__.invoke('is_workstation_locked');
             if (isLocked && !lastLockState) {
               lastLockState = true;
             } else if (!isLocked && lastLockState) {
-              countdownTargetTime = Date.now() + countdownDurationMins * 60 * 1000;
               lastLockState = false;
-              if (isSleeping) {
-                exitSleepModeAndPreventSleep();
-              }
+              handleUnlockReset();
             }
           }
         } catch(e) {}
@@ -6655,32 +6713,38 @@
       if (!isScreenOn && !screenDarkened && !isSleeping) {
         const now = Date.now();
         const rem = (darkenTargetTime - now) / 1000;
+        const inactivitySeconds = (now - lastInactivityStart) / 1000;
 
-        // 1. Focus Logic
-        if (focusOnCountdown && rem <= 10 && rem > 0 && !focusTriggered) {
-          if (window.__TAURI__) {
-            const isVisible = await window.__TAURI__.invoke('is_main_visible');
-            if (isVisible) {
-              focusTriggered = true;
-              await focusMainWindow();
-            }
+        if (window.__TAURI__) {
+          const isVisible = await window.__TAURI__.invoke('is_main_visible');
+          if (isVisible && !wasMainVisible) {
+            lastInactivityStart = Date.now();
+            minimizeTriggered = false;
+          }
+          wasMainVisible = isVisible;
+
+          // 1. Minimize Window to System Tray 10 seconds after countdown starts with no cursor/keyboard activity
+          if (minimizeOnDarken && inactivitySeconds >= 10 && !minimizeTriggered && isVisible) {
+            minimizeTriggered = true;
+            await window.__TAURI__.invoke('hide_window');
           }
         }
 
-        // 2. Overlay
+        // 2. Focus Logic (Pop up window 10s before darken from system tray)
+        if (focusOnCountdown && rem <= 10 && rem > 0 && !focusTriggered) {
+          focusTriggered = true;
+          if (window.__TAURI__) {
+            await focusMainWindow();
+            lastInactivityStart = Date.now();
+            minimizeTriggered = false;
+          }
+        }
+
+        // 3. Overlay
         if (rem <= 0) {
           await createOverlay();
           notify('Screens Dark', 'Moved mouse to wake');
           darkModeStartTime = Date.now();
-        }
-      }
-
-      // 3. Minimize Logic (After Dark Mode starts)
-      if (screenDarkened && !isSleeping && minimizeOnDarken && !minimizeTriggered) {
-        const darkDuration = (Date.now() - darkModeStartTime) / 1000;
-        if (darkDuration >= 10) {
-          minimizeTriggered = true;
-          if (window.__TAURI__) await window.__TAURI__.invoke('minimize_window');
         }
       }
 
@@ -6812,6 +6876,13 @@
     }
 
     if (window.__TAURI__ && window.__TAURI__.event) {
+      window.__TAURI__.event.listen('workstation-unlocked', (event) => {
+        if (event && typeof event.payload === 'number') {
+          lastProcessedUnlockTime = event.payload;
+        }
+        handleUnlockReset();
+      });
+
       window.__TAURI__.event.listen('tray-action', (event) => {
         const action = event.payload;
         if (!action) return;

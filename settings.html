@@ -2308,7 +2308,7 @@
                 <div class="popup-body">
                     <!-- Card 1: Timings & Window Options -->
                     <div style="background:var(--surface-card,rgba(255,255,255,0.06));border:1px solid var(--surface-card-border,rgba(255,255,255,0.13));border-radius:14px;padding:6px 16px 16px;">
-                        <div class="settings-item">
+                        <div class="settings-item" style="border-bottom:none !important;padding-bottom:0 !important;">
                             <div class="label-group"><span class="item-label" data-i18n="default_darken">Default Darken Time</span></div>
                             <div class="input-row">
                                 <div class="input-wrapper">
@@ -2321,20 +2321,6 @@
                                     <span class="input-label" data-i18n="minutes">min</span>
                                 </div>
                             </div>
-                        </div>
-                        <div class="settings-item">
-                            <div class="label-group">
-                                <span class="item-label" data-i18n="focus_countdown">Pop up window before darken</span>
-                                <span class="item-sub" data-i18n="focus_countdown_sub">10 seconds before darkening</span>
-                            </div>
-                            <div class="toggle" id="focusToggle"><div class="toggle-knob"></div></div>
-                        </div>
-                        <div class="settings-item" style="border-bottom:none !important;padding-bottom:0 !important;">
-                            <div class="label-group">
-                                <span class="item-label" data-i18n="minimize_window">Minimize Window</span>
-                                <span class="item-sub" data-i18n="minimize_window_sub">10 seconds after start</span>
-                            </div>
-                            <div class="toggle" id="minimizeToggle"><div class="toggle-knob"></div></div>
                         </div>
                     <div class="section-divider"></div>
                     <!-- Darken Method Selection -->
@@ -2495,6 +2481,21 @@
                             </div>
                         </div>
                     </div>
+                        <div class="section-divider" style="margin:16px 0 6px 0;"></div>
+                        <div class="settings-item">
+                            <div class="label-group">
+                                <span class="item-label" data-i18n="focus_countdown">Pop up window before darken</span>
+                                <span class="item-sub" data-i18n="focus_countdown_sub">10 seconds before darkening</span>
+                            </div>
+                            <div class="toggle" id="focusToggle"><div class="toggle-knob"></div></div>
+                        </div>
+                        <div class="settings-item" style="border-bottom:none !important;padding-bottom:0 !important;">
+                            <div class="label-group">
+                                <span class="item-label" data-i18n="minimize_window">Minimize Window</span>
+                                <span class="item-sub" data-i18n="minimize_window_sub">10 seconds after countdown start</span>
+                            </div>
+                            <div class="toggle" id="minimizeToggle"><div class="toggle-knob"></div></div>
+                        </div>
                     </div><!-- end unified card -->
 
                 </div>
@@ -3479,6 +3480,8 @@
             const COUNTDOWN_PRESETS = [30, 60, 90, 120, 180, 240, 720];
             let selectedCountdownMins = settings.countdownDurationMins || 60;
             let isCustomCountdown = !COUNTDOWN_PRESETS.includes(selectedCountdownMins);
+            // Last custom value typed by user — restored when they click Custom again
+            let lastCustomCountdownMins = settings.lastCustomCountdownMins || (isCustomCountdown ? selectedCountdownMins : 60);
 
             function getCustomCountdownMins() {
                 const h = parseInt(document.getElementById('countdownCustomHours')?.value || '0', 10) || 0;
@@ -3517,6 +3520,8 @@
 
             function saveCountdownSettings(save = true) {
                 settings.countdownDurationMins = selectedCountdownMins;
+                // Persist last custom value so it's restored on next Custom click
+                if (isCustomCountdown) settings.lastCustomCountdownMins = lastCustomCountdownMins;
                 // Signal main window to restart countdown with new duration
                 settings._countdownRestartAt = Date.now();
                 if (save) saveSettings();
@@ -3528,12 +3533,13 @@
                     const mins = card.dataset.minutes;
                     if (mins === 'custom') {
                         isCustomCountdown = true;
-                        // Set inputs from current selection
+                        // Restore last custom value the user typed (not the current preset value)
+                        selectedCountdownMins = lastCustomCountdownMins;
                         const hEl = document.getElementById('countdownCustomHours');
                         const mEl = document.getElementById('countdownCustomMins');
                         if (hEl && mEl) {
-                            hEl.value = Math.floor(selectedCountdownMins / 60);
-                            mEl.value = selectedCountdownMins % 60;
+                            hEl.value = Math.floor(lastCustomCountdownMins / 60);
+                            mEl.value = lastCustomCountdownMins % 60;
                         }
                     } else {
                         isCustomCountdown = false;
@@ -3564,6 +3570,7 @@
                     const mins = getCustomCountdownMins();
                     if (mins < 1) return; // user is mid-edit (e.g. cleared field), don't save yet
                     selectedCountdownMins = mins;
+                    lastCustomCountdownMins = mins; // remember the custom value for next time
                     const customPreview = document.getElementById('countdownCustomPreview');
                     if (customPreview) {
                         const h = Math.floor(selectedCountdownMins / 60);
@@ -3586,6 +3593,7 @@
                     }
                     const mins = getCustomCountdownMins();
                     selectedCountdownMins = Math.max(1, mins);
+                    lastCustomCountdownMins = selectedCountdownMins; // persist for next Custom click
                     clearTimeout(_countdownSaveTimer);
                     saveCountdownSettings();
                 });
