@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" dir="ltr">
 
 <head>
@@ -61,6 +61,10 @@
     #shutdownToggleLabel:hover {
       opacity: 0.75;
       text-decoration: underline dotted;
+    }
+
+    #shutdownToggleLabel {
+      -webkit-app-region: no-drag;
     }
 
     /* Coffee theme only: make "Keep screen" text a little smaller */
@@ -496,6 +500,12 @@
 
     body.schedule-panel-hidden #panelRight .schedule-cover {
       opacity: 1;
+      pointer-events: auto;
+      -webkit-app-region: no-drag;
+    }
+
+    body.schedule-panel-hidden #panelRight .schedule-cover * {
+      -webkit-app-region: no-drag;
     }
 
     body.classic-mode .schedule-cover-content {
@@ -891,6 +901,72 @@
         opacity: 1;
         transform: scale(1);
       }
+    }
+
+    .lock-warning-toast {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: rgba(15, 23, 42, 0.94);
+      border: 1px solid rgba(239, 68, 68, 0.85);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(239, 68, 68, 0.4);
+      padding: 6px 12px 6px 14px;
+      border-radius: 30px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      backdrop-filter: blur(8px);
+    }
+
+    .lock-warning-toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+      pointer-events: auto;
+    }
+
+    .lock-warning-icon {
+      color: #ef4444;
+      display: flex;
+      align-items: center;
+      animation: lockPulse 1s infinite alternate;
+    }
+
+    @keyframes lockPulse {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.15); filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.8)); }
+    }
+
+    .lock-cancel-btn {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.6);
+      color: #fca5a5;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .lock-cancel-btn:hover {
+      background: #ef4444;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+    }
+
+    body.white-mode .lock-warning-toast {
+      background: rgba(255, 255, 255, 0.95);
+      color: #0f172a;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15), 0 0 15px rgba(239, 68, 68, 0.3);
     }
 
     .sleep-overlay {
@@ -5577,15 +5653,14 @@
         <div class="panel-content" data-tauri-drag-region>
           <div class="toggle-row" data-tauri-drag-region><span class="toggle-label" id="shutdownToggleLabel"
               style="font-size:20px;font-weight:600;cursor:pointer;" title="Open Schedule Settings"
-              data-tauri-drag-region data-i18n="category_auto_quit"
-              onclick="if(window.__TAURI__)window.__TAURI__.invoke('open_settings',{section:'schedule'}).catch(()=>{})">Schedule</span>
+              data-i18n-title="tray_open_schedule_settings" data-i18n="category_auto_quit">Schedule</span>
           </div>
           <div class="timer-section tooltip-target" id="shutdownSection" data-tauri-drag-region>
             <div class="timer-label" id="shutdownLabel" data-i18n="time_left">Time left</div>
             <div class="timer-value green" id="shutdownTimer">00:00:00</div>
           </div>
         </div>
-        <div class="schedule-cover" role="status" data-tauri-drag-region>
+        <div class="schedule-cover" id="scheduleCover" role="status" data-tauri-drag-region>
           <div class="schedule-cover-content" data-tauri-drag-region>
             <svg class="schedule-cover-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -5641,6 +5716,17 @@
           <button class="sleep-btn sleep-btn-secondary" id="sleepSettingsBtn" data-i18n="disable_schedule_btn">Disable</button>
         </div>
       </div>
+    </div>
+    <!-- Pre-lock warning toast -->
+    <div class="lock-warning-toast" id="lockWarningToast">
+      <div class="lock-warning-icon">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+      </div>
+      <span id="lockWarningText">Locking PC in 15s...</span>
+      <button type="button" class="lock-cancel-btn" id="lockCancelBtn">Cancel</button>
     </div>
   </div>
   <script>
@@ -5853,8 +5939,8 @@
     let soundEnabled = false;
     let focusOnCountdown = false;
     let minimizeOnDarken = false;
-    let quitFocusOnCountdown = true;
-    let darkenMethod = 'overlay';
+    let lockOnCountdown = false;
+    let darkenMethod = 'ddcci';
     let controlMyMonitorPath = '';
 
     // Runtime state
@@ -5886,6 +5972,7 @@
     let lastProcessedUnlockTime = 0;
 
     function handleUnlockReset() {
+      cancelPreLockWarning();
       if (scheduleActionMode === 'countdown' && timeProfilesEnabled) {
         countdownTargetTime = Date.now() + countdownDurationMins * 60 * 1000;
         lastLockState = false;
@@ -6390,8 +6477,8 @@
         disableOnVideo = s.disableOnVideo === true;
         focusOnCountdown = s.focusOnCountdown === undefined ? false : s.focusOnCountdown;
         minimizeOnDarken = s.minimizeOnDarken === undefined ? false : s.minimizeOnDarken;
-        quitFocusOnCountdown = s.quitFocusOnCountdown === undefined ? true : s.quitFocusOnCountdown;
-        darkenMethod = s.darkenMethod || 'overlay';
+        lockOnCountdown = s.lockOnCountdown === undefined ? false : !!s.lockOnCountdown;
+        darkenMethod = s.darkenMethod || 'ddcci';
         controlMyMonitorPath = s.controlMyMonitorPath || '';
 
         if (window.__TAURI__ && s.pinned !== undefined) {
@@ -6405,6 +6492,12 @@
           const c = JSON.parse(cmd);
           if (c.type === 'recalculateProfiles') {
             if (profileControlledAwake) resetShutdownTimer();
+          } else if (c.type === 'setAppDisabled') {
+            disabledByMedia = false;
+            setAppDisabled(!!c.value);
+          } else if (c.type === 'toggleAppDisabled') {
+            disabledByMedia = false;
+            setAppDisabled(!appDisabled);
           }
         }
         syncTrayState();
@@ -6515,6 +6608,75 @@
       } catch (e) { }
     }
 
+    // ===== PRE-LOCK WARNING CONTROLLER =====
+    let lockWarningTimer = null;
+    let lockWarningRemaining = 0;
+
+    function cancelPreLockWarning() {
+      if (lockWarningTimer) {
+        clearInterval(lockWarningTimer);
+        lockWarningTimer = null;
+      }
+      lockWarningRemaining = 0;
+      const toast = document.getElementById('lockWarningToast');
+      if (toast) toast.classList.remove('visible');
+    }
+
+    function triggerPreLockWarning() {
+      if (!lockOnCountdown || lockWarningTimer) return;
+
+      if (window.__TAURI__) {
+        window.__TAURI__.invoke('is_workstation_locked').then(isLocked => {
+          if (isLocked) return;
+          startWarningCountdown();
+        }).catch(() => startWarningCountdown());
+      } else {
+        startWarningCountdown();
+      }
+    }
+
+    function startWarningCountdown() {
+      cancelPreLockWarning();
+      lockWarningRemaining = 15;
+      const toast = document.getElementById('lockWarningToast');
+      const text = document.getElementById('lockWarningText');
+      const cancelBtn = document.getElementById('lockCancelBtn');
+
+      function updateWarningUI() {
+        const lang = window.currentLang || 'en';
+        const template = (translations[lang] && translations[lang].lock_warning_msg)
+          ? translations[lang].lock_warning_msg
+          : 'Locking PC in {s}s...';
+        if (text) text.textContent = template.replace('{s}', lockWarningRemaining);
+        if (cancelBtn) {
+          cancelBtn.textContent = (translations[lang] && translations[lang].lock_cancel)
+            ? translations[lang].lock_cancel
+            : 'Cancel';
+        }
+      }
+
+      updateWarningUI();
+      if (toast) toast.classList.add('visible');
+
+      if (window.__TAURI__) {
+        focusMainWindow().catch(() => {});
+      }
+
+      lockWarningTimer = setInterval(() => {
+        lockWarningRemaining--;
+        if (lockWarningRemaining > 0) {
+          updateWarningUI();
+        } else {
+          cancelPreLockWarning();
+          if (window.__TAURI__) {
+            window.__TAURI__.invoke('lock_workstation').catch(err => {
+              console.error('Failed to lock workstation:', err);
+            });
+          }
+        }
+      }, 1000);
+    }
+
     function enterSleepMode(options = {}) {
       // Snapshot the user's darken preference the first time we enter sleep mode
       // (don't overwrite if already sleeping — e.g. mode switch while overlay is open)
@@ -6540,6 +6702,7 @@
     }
 
     function exitSleepModeAndPreventSleep() {
+      cancelPreLockWarning();
       const wasSleeping = isSleeping;
       isSleeping = false;
       document.getElementById('sleepOverlay').classList.remove('show');
@@ -6705,6 +6868,9 @@
           countdownTargetTime = 0;
           if (window.__TAURI__) window.__TAURI__.invoke('allow_sleep').catch(() => {});
           enterSleepMode({ mode: 'countdown' });
+          if (lockOnCountdown) {
+            triggerPreLockWarning();
+          }
           notify('NeverSleep', (translations[window.currentLang] && translations[window.currentLang].countdown_expired) ? translations[window.currentLang].countdown_expired : 'Countdown ended \u2014 sleep prevention paused.');
         }
       }
@@ -6757,6 +6923,9 @@
           }
         } else if (!isSleeping) {
           enterSleepMode({ mode: scheduleActionMode });
+          if (lockOnCountdown) {
+            triggerPreLockWarning();
+          }
         }
       }
 
@@ -6820,6 +6989,7 @@
 
     let activeDurationMins = null;
     let durationTimerId = null;
+    let durationTimerEndTime = 0;
 
     function setDurationTimer(mins) {
       if (durationTimerId) {
@@ -6828,15 +6998,18 @@
       }
       if (!mins) {
         activeDurationMins = null;
+        durationTimerEndTime = 0;
         syncTrayState();
         return;
       }
       activeDurationMins = mins;
+      durationTimerEndTime = Date.now() + mins * 60 * 1000;
       syncTrayState();
 
       durationTimerId = setTimeout(() => {
         activeDurationMins = null;
         durationTimerId = null;
+        durationTimerEndTime = 0;
         setAppDisabled(true);
         syncTrayState();
       }, mins * 60 * 1000);
@@ -6854,6 +7027,45 @@
         statusText = '🌙 Never Sleep: Screen Darken';
       }
 
+      
+      // Compute Schedule details for Tray
+      const schedStatus = (typeof getProfileStatus === 'function') ? getProfileStatus() : null;
+      let schedLabel = 'Time left';
+      let schedRemainingSec = 0;
+      let schedIsActive = false;
+
+      if (timeProfilesEnabled) {
+        if (scheduleActionMode === 'countdown') {
+          if (countdownTargetTime > 0) {
+            const remMs = countdownTargetTime - Date.now();
+            schedRemainingSec = Math.max(0, Math.floor(remMs / 1000));
+            schedLabel = 'Time left';
+            schedIsActive = schedRemainingSec > 0;
+          } else {
+            schedRemainingSec = 0;
+            schedLabel = 'Expired';
+            schedIsActive = false;
+          }
+        } else if (schedStatus !== null) {
+          schedRemainingSec = schedStatus.remainingSeconds || 0;
+          schedIsActive = !!schedStatus.isActive;
+          schedLabel = schedStatus.isActive ? 'Time left' : 'Starts in';
+        }
+      }
+
+      // Broadcast live runtime state so tray flyout can sync when it opens
+      localStorage.setItem('neverSleepLiveState', JSON.stringify({
+        appDisabled: !!appDisabled,
+        isScreenOn: !!isScreenOn,
+        timeProfilesEnabled: !!timeProfilesEnabled,
+        scheduleActionMode: scheduleActionMode || 'keep_awake',
+        scheduleLabel: schedLabel,
+        scheduleRemainingSec: schedRemainingSec,
+        scheduleIsActive: schedIsActive,
+        countdownTargetTime: typeof countdownTargetTime !== 'undefined' ? countdownTargetTime : 0,
+        isMediaDisabled: !!(appDisabled && disabledByMedia),
+        ts: Date.now()
+      }));
       window.__TAURI__.invoke('check_autostart').then((autostart) => {
         let s = {};
         try {
@@ -6870,7 +7082,7 @@
           notificationsEnabled: !!notificationsEnabled,
           pinned: !!s.pinned,
           autostart: !!autostart,
-          darkenMethod: s.darkenMethod || darkenMethod || 'overlay'
+          darkenMethod: s.darkenMethod || darkenMethod || 'ddcci'
         }).catch(() => {});
       }).catch(() => {});
     }
@@ -7041,12 +7253,28 @@
         await window.__TAURI__.invoke('open_settings', { section: 'schedule' }).catch(() => { });
       }
     };
+    async function openScheduleSettings() {
+      if (!window.__TAURI__) return;
+      try {
+        await window.__TAURI__.invoke('open_settings', { section: 'schedule' });
+      } catch (error) {
+        console.error('Failed to open schedule settings:', error);
+      }
+    }
+
+    document.getElementById('shutdownToggleLabel')?.addEventListener('click', openScheduleSettings);
+    document.getElementById('scheduleCover')?.addEventListener('click', openScheduleSettings);
+
     document.getElementById('trayBtn').onclick = async () => {
       if (window.__TAURI__) {
         await window.__TAURI__.invoke('close_settings');
         await window.__TAURI__.invoke('hide_window');
       }
     };
+    document.getElementById('lockCancelBtn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      cancelPreLockWarning();
+    });
 
     // ===== COFFEE STREAM CANVAS ENGINE =====
     (function () {
@@ -7478,6 +7706,11 @@
           } catch (e) { }
         }
       }).catch(() => { });
+
+      // Enforce Classic-Only install policy
+      window.__TAURI__.invoke('is_classic_only').then(classicOnly => {
+        if (classicOnly) applyViewMode('classic');
+      }).catch(() => {});
 
       if (window.__TAURI__.event) {
         window.__TAURI__.event.listen('settings-updated', (event) => {

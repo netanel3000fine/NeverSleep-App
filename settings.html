@@ -1268,6 +1268,43 @@
             left: 6px;
         }
 
+        /* Classic-Only install policy lock */
+        .view-mode-tile.locked {
+            opacity: 0.45;
+            cursor: not-allowed !important;
+            pointer-events: none;
+        }
+        .view-mode-tile.locked::before {
+            content: '🔒';
+            position: absolute;
+            top: 5px;
+            right: 6px;
+            font-size: 11px;
+            line-height: 1;
+            z-index: 2;
+        }
+        body[dir="rtl"] .view-mode-tile.locked::before {
+            right: auto;
+            left: 6px;
+        }
+        #classicOnlyNotice {
+            display: none;
+            margin-top: 8px;
+            font-size: 11.5px;
+            color: var(--text-muted, rgba(255,255,255,0.45));
+            text-align: center;
+            padding: 5px 8px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        body.white-mode #classicOnlyNotice {
+            color: rgba(0,0,0,0.45);
+            background: rgba(0,0,0,0.04);
+            border-color: rgba(0,0,0,0.1);
+        }
+        #classicOnlyNotice.visible { display: block; }
+
         .view-mode-preview {
             width: 100%;
             height: 48px;
@@ -1951,6 +1988,24 @@
             margin: 14px 0 10px;
         }
 
+        .app-icon-heading-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px 12px;
+            margin: 14px 0 10px;
+        }
+
+        .app-icon-heading-row .icon-section-label {
+            margin: 0;
+        }
+
+        .app-icon-heading-row .app-icon-actions {
+            gap: 8px;
+            margin: 0;
+            min-height: 0;
+        }
+
         .app-icon-grid {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
@@ -2330,14 +2385,34 @@
                         </div>
 
                         <div class="darken-methods-list" id="darkenMethodCardsList">
-                        <!-- 1. Overlay Window -->
-                        <div class="darken-method-card active" data-method="overlay" id="dmOverlay">
+                        <!-- 1. Hardware DDC/CI (Unified Native dxva2 + Overlay) -->
+                        <div class="darken-method-card active" data-method="ddcci" id="dmDdcci">
+                            <div class="darken-method-radio"></div>
+                            <div class="darken-method-info">
+                                <div class="darken-method-header-row">
+                                    <div class="darken-method-title-wrap">
+                                        <span class="darken-method-name" data-i18n="darken_method_ddcci">Hardware DDC/CI (Native)</span>
+                                        <span class="darken-method-badge">Default · Windows dxva2</span>
+                                    </div>
+                                    <button type="button" class="darken-test-btn" data-method="ddcci" title="Test this method for 4 seconds">
+                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                                            <polygon points="5 3 19 12 5 21 5 3"/>
+                                        </svg>
+                                        <span class="test-btn-text" data-i18n="darken_test">Test</span>
+                                    </button>
+                                </div>
+                                <span class="darken-method-hint" data-i18n="darken_method_ddcci_hint">Sends hardware standby signals to DDC/CI monitors and automatically overlays black on laptop or non-DDC/CI displays.</span>
+                            </div>
+                        </div>
+
+                        <!-- 2. Overlay Window -->
+                        <div class="darken-method-card" data-method="overlay" id="dmOverlay">
                             <div class="darken-method-radio"></div>
                             <div class="darken-method-info">
                                 <div class="darken-method-header-row">
                                     <div class="darken-method-title-wrap">
                                         <span class="darken-method-name" data-i18n="darken_method_overlay">Overlay Window</span>
-                                        <span class="darken-method-badge">Default</span>
+                                        <span class="darken-method-badge">Fallback</span>
                                     </div>
                                     <button type="button" class="darken-test-btn" data-method="overlay" title="Test this method for 4 seconds">
                                         <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
@@ -2407,26 +2482,6 @@
                                     </button>
                                 </div>
                                 <span class="darken-method-hint" data-i18n="darken_method_gamma_hint">Direct GPU display dimming to pure black without any windows.</span>
-                            </div>
-                        </div>
-
-                        <!-- 5. Hardware DDC/CI (Unified Native dxva2 + Overlay) -->
-                        <div class="darken-method-card" data-method="ddcci" id="dmDdcci">
-                            <div class="darken-method-radio"></div>
-                            <div class="darken-method-info">
-                                <div class="darken-method-header-row">
-                                    <div class="darken-method-title-wrap">
-                                        <span class="darken-method-name" data-i18n="darken_method_ddcci">Hardware DDC/CI (Native)</span>
-                                        <span class="darken-method-badge">Windows dxva2</span>
-                                    </div>
-                                    <button type="button" class="darken-test-btn" data-method="ddcci" title="Test this method for 4 seconds">
-                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                                            <polygon points="5 3 19 12 5 21 5 3"/>
-                                        </svg>
-                                        <span class="test-btn-text" data-i18n="darken_test">Test</span>
-                                    </button>
-                                </div>
-                                <span class="darken-method-hint" data-i18n="darken_method_ddcci_hint">Sends hardware standby signals to DDC/CI monitors and automatically overlays black on laptop or non-DDC/CI displays.</span>
                             </div>
                         </div>
 
@@ -2574,6 +2629,7 @@
                             </div>
                         </div>
                     </div>
+                    <div id="classicOnlyNotice" data-i18n="classic_only_notice">Locked to Classic theme by installation policy</div>
                     <div class="color-section-label" data-i18n="theme_color">Theme Color</div>
                     <div class="color-picker-container">
                         <div class="color-option bg-orange selected" data-color="#f97316"></div>
@@ -2595,7 +2651,21 @@
                         </div>
                     </div>
 
-                    <div class="icon-section-label" data-i18n="app_icon">App Icon</div>
+                    <div class="app-icon-heading-row">
+                        <div class="icon-section-label" data-i18n="app_icon">App Icon</div>
+                        <div class="app-icon-actions">
+                            <button type="button" id="hardApplyIconBtn" class="app-icon-apply-btn" data-i18n-title="apply_to_windows" title="Apply to Windows shortcuts">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M21 12a9 9 0 0 1-9 9 8.7 8.7 0 0 1-6.3-2.7"/>
+                                    <path d="M3 12a9 9 0 0 1 15.3-6.3"/>
+                                    <path d="M3 5v7h7"/>
+                                    <path d="M21 19v-7h-7"/>
+                                </svg>
+                                <span data-i18n="apply_to_windows">Apply to Windows</span>
+                            </button>
+                            <span id="appIconStatus" class="app-icon-status" aria-live="polite"></span>
+                        </div>
+                    </div>
                     <div class="app-icon-grid" id="appIconGrid">
                         <div class="app-icon-option" data-icon="IMG_6276.png" title="Coffee Cup Classic">
                             <img src="IMG_6276.png" alt="Coffee Cup Classic">
@@ -2615,18 +2685,6 @@
                         <div class="app-icon-option" data-icon="3D Battery Icon with Lightning Bolt in Isometric View.png" title="Battery">
                             <img src="3D Battery Icon with Lightning Bolt in Isometric View.png" alt="Battery">
                         </div>
-                    </div>
-                    <div class="app-icon-actions">
-                        <button type="button" id="hardApplyIconBtn" class="app-icon-apply-btn" data-i18n-title="apply_to_windows" title="Apply to Windows shortcuts">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M21 12a9 9 0 0 1-9 9 8.7 8.7 0 0 1-6.3-2.7"/>
-                                <path d="M3 12a9 9 0 0 1 15.3-6.3"/>
-                                <path d="M3 5v7h7"/>
-                                <path d="M21 19v-7h-7"/>
-                            </svg>
-                            <span data-i18n="apply_to_windows">Apply to Windows</span>
-                        </button>
-                        <span id="appIconStatus" class="app-icon-status"></span>
                     </div>
                 </div>
             </div>
@@ -2737,10 +2795,10 @@
                     <div class="section-divider"></div>
                     <div class="settings-item">
                         <div class="label-group">
-                            <span class="item-label" data-i18n="pop_window">Pop up window when done</span>
-                            <span class="item-sub" data-i18n="pop_window_sub">When app is not in front</span>
+                            <span class="item-label" data-i18n="lock_pc_countdown">Lock PC when done</span>
+                            <span class="item-sub" data-i18n="lock_pc_countdown_sub">Lock workstation (Win + L) when schedule or timer ends</span>
                         </div>
-                        <div class="toggle" id="quitFocusToggle"><div class="toggle-knob"></div></div>
+                        <div class="toggle" id="lockOnCountdownToggle"><div class="toggle-knob"></div></div>
                     </div>
                 </div>
             </div>
@@ -2809,7 +2867,7 @@
         let settings = {};
         let themeColor = '#f97316';
         let isInitializing = true;
-        let activeDarkenMethod = 'overlay';
+        let activeDarkenMethod = 'ddcci';
 
         function applySettingsViewMode(mode) {
             const container = document.getElementById('appContainer');
@@ -3034,7 +3092,7 @@
         }
 
         function setupDarkenMethodSubpage() {
-            activeDarkenMethod = settings.darkenMethod || 'overlay';
+            activeDarkenMethod = settings.darkenMethod || 'ddcci';
             if (activeDarkenMethod === 'ddcci_laptop_overlay') {
                 activeDarkenMethod = 'ddcci';
                 settings.darkenMethod = 'ddcci';
@@ -3301,8 +3359,15 @@
 
             if (settings.themeColor) applyTheme(settings.themeColor);
             applyWhiteMode(!!settings.whiteMode);
-            if (settings.appIcon) applyAppIcon(settings.appIcon, false);
-            activeDarkenMethod = settings.darkenMethod || 'overlay';
+            if (settings.appIcon) {
+                applyAppIcon(settings.appIcon, false);
+                if (window.__TAURI__) {
+                    window.__TAURI__.invoke('set_app_icon', { filename: settings.appIcon }).catch(err => {
+                        console.error('Failed to restore settings window icon:', err);
+                    });
+                }
+            }
+            activeDarkenMethod = settings.darkenMethod || 'ddcci';
             setupDarkenMethodSubpage();
             setupPopupNavigation();
             updateBadges();
@@ -3346,7 +3411,31 @@
             settings.viewMode = currentMode;
             applySettingsViewMode(currentMode);
 
+            // Classic-Only enforcement
+            let _classicOnlyActive = false;
+            async function enforceClassicOnly() {
+                if (!window.__TAURI__) return;
+                try {
+                    _classicOnlyActive = await window.__TAURI__.invoke('is_classic_only');
+                } catch (e) { _classicOnlyActive = false; }
+                if (_classicOnlyActive) {
+                    // Force classic
+                    settings.viewMode = 'classic';
+                    applySettingsViewMode('classic');
+                    // Lock non-classic tiles
+                    ['vmTileLiquid', 'vmTileCoffee'].forEach(id => {
+                        const tile = document.getElementById(id);
+                        if (tile) tile.classList.add('locked');
+                    });
+                    // Show notice
+                    const notice = document.getElementById('classicOnlyNotice');
+                    if (notice) notice.classList.add('visible');
+                }
+            }
+            enforceClassicOnly();
+
             function selectViewMode(mode) {
+                if (_classicOnlyActive && mode !== 'classic') return; // block non-classic
                 settings.viewMode = mode;
                 document.querySelectorAll('#viewModeGrid .view-mode-tile').forEach(tile => {
                     tile.classList.toggle('selected', tile.dataset.mode === mode);
@@ -3367,7 +3456,7 @@
             setupToggle('minimizeToggle', 'minimizeOnDarken', false);
             setupToggle('notificationsToggle', 'notificationsEnabled', true, setNotificationOptionsVisible);
             setupToggle('soundToggle', 'soundEnabled', false);
-            setupToggle('quitFocusToggle', 'quitFocusOnCountdown', true);
+            setupToggle('lockOnCountdownToggle', 'lockOnCountdown', false);
 
             setupInput('defaultDarkenHours', 'darkenHours', 0);
             setupInput('defaultDarkenMinutes', 'darkenMinutes', 10);
@@ -4313,7 +4402,7 @@
                 minimizeOnDarken: getToggle('minimizeToggle'),
                 notificationsEnabled: getToggle('notificationsToggle'),
                 soundEnabled: getToggle('soundToggle'),
-                quitFocusOnCountdown: getToggle('quitFocusToggle'),
+                lockOnCountdown: getToggle('lockOnCountdownToggle'),
                 autostartMinimized: getToggle('autostartMinimizedToggle')
             };
             settings = newSettings;

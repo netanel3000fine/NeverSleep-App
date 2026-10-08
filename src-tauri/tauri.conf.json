@@ -82,6 +82,9 @@
         "certificateThumbprint": null,
         "digestAlgorithm": "sha256",
         "timestampUrl": "",
+        "nsis": {
+          "template": "installer.nsi"
+        },
         "wix": {
           "language": "en-US"
         }
@@ -118,6 +121,20 @@
         "url": "settings.html",
         "visible": false,
         "transparent": true
+      },
+      {
+        "fullscreen": false,
+        "height": 380,
+        "width": 320,
+        "resizable": false,
+        "title": "Never Sleep Tray",
+        "label": "tray",
+        "url": "tray.html",
+        "visible": false,
+        "transparent": true,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true
       }
     ],
     "systemTray": {

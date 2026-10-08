@@ -10,7 +10,8 @@ $filesToSync = @(
     "settings.html",
     "lang.js",
     "overlay.html",
-    "sleep.html"
+    "sleep.html",
+    "tray.html"
 )
 
 foreach ($file in $filesToSync) {
@@ -53,7 +54,7 @@ if ($LASTEXITCODE -eq 0) {
 
     # Kill running app
     taskkill /F /IM "Never Sleep.exe" 2>$null
-    Start-Sleep -Milliseconds 800
+    Start-Sleep -Milliseconds 2500
 
     # Clear WebView2 cache
     Remove-Item -Recurse -Force "$env:LOCALAPPDATA\com.neversleep.app\EBWebView\Default\Cache" -ErrorAction SilentlyContinue

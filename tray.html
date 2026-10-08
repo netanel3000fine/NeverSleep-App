@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <script src="lang.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Never Sleep Tray</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --theme-color: #f97316;
+            --theme-color-rgb: 249, 115, 22;
+            --theme-glow: rgba(249, 115, 22, 0.35);
+            --bg-base: #0b0f1a;
+            --surface: rgba(255, 255, 255, 0.05);
+            --surface-hover: rgba(255, 255, 255, 0.09);
+            --surface-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f1f5f9;
+            --text-secondary: rgba(241, 245, 249, 0.65);
+            --text-muted: rgba(241, 245, 249, 0.35);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: transparent;
+            font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text-primary);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ===== FLYOUT CARD CONTAINER ===== */
+        .tray-card {
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(28px) saturate(180%);
+            -webkit-backdrop-filter: blur(28px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 18px;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+            padding: 14px;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+            animation: flyoutSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes flyoutSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px) scale(0.97);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* ===== THEMES ===== */
+        body.liquid-glass-mode .tray-card {
+            background: rgba(18, 24, 38, 0.88);
+            border-color: rgba(255, 255, 255, 0.16);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.18);
+        }
+
+        body.coffee-mode .tray-card {
+            background: rgba(28, 20, 16, 0.94);
+            border-color: rgba(180, 110, 60, 0.25);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+        }
+
+        body.white-mode .tray-card {
+            background: rgba(248, 250, 252, 0.96);
+            border-color: rgba(0, 0, 0, 0.12);
+            color: #0f172a;
+            box-shadow: none;
+        }
+        body.white-mode {
+            --text-primary: #0f172a;
+            --text-secondary: rgba(15, 23, 42, 0.65);
+            --text-muted: rgba(15, 23, 42, 0.4);
+            --surface: rgba(0, 0, 0, 0.04);
+            --surface-hover: rgba(0, 0, 0, 0.07);
+            --surface-border: rgba(0, 0, 0, 0.08);
+        }
+
+        /* ===== HEADER ROW ===== */
+        .header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--surface-border);
+        }
+
+        .brand-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            flex: 0 0 36px;
+            border-radius: 9px;
+            background: linear-gradient(135deg, rgba(var(--theme-color-rgb), 0.25), rgba(var(--theme-color-rgb), 0.08));
+            border: 1px solid rgba(var(--theme-color-rgb), 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            box-shadow: 0 0 12px rgba(var(--theme-color-rgb), 0.25);
+        }
+
+        .brand-icon img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-title {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: -0.2px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Keep the activity indicator after the title in left-to-right languages. */
+        html[dir="ltr"] .brand-title {
+            flex-direction: row-reverse;
+        }
+
+        .status-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 9px #22c55e;
+            transition: all 0.3s ease;
+        }
+
+        .status-dot.disabled {
+            background: #ef4444;
+            box-shadow: 0 0 8px #ef4444;
+        }
+
+        .status-dot.media {
+            background: #3b82f6;
+            box-shadow: 0 0 8px #3b82f6;
+        }
+
+        .status-subtitle {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 700;
+            letter-spacing: -0.2px;
+        }
+
+        /* Power Switch Toggle */
+        .power-toggle {
+            width: 44px;
+            height: 24px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.12);
+            position: relative;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            border: 1px solid var(--surface-border);
+            flex-shrink: 0;
+            border-color: rgba(255, 255, 255, 0.38);
+        }
+
+        body.white-mode .power-toggle {
+            background: rgba(0, 0, 0, 0.12);
+            border-color: rgba(15, 23, 42, 0.38);
+        }
+
+        .power-toggle.active {
+            background: var(--theme-color);
+            border-color: rgba(255, 255, 255, 0.72);
+            box-shadow: 0 0 12px var(--theme-glow);
+        }
+
+        body.classic-mode .power-toggle {
+            border-radius: 5px;
+        }
+
+        body.classic-mode .power-knob {
+            border-radius: 3px;
+        }
+
+        .power-knob {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #fff;
+            position: absolute;
+            top: 2px;
+            left: 3px;
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+        }
+
+        .power-toggle.active .power-knob {
+            transform: translateX(19px);
+        }
+
+        /* ===== HEADER UPTIME ===== */
+        .header-uptime {
+            color: var(--text-muted);
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-left: auto;
+            margin-right: 6px;
+            padding: 3px 6px;
+            border-radius: 6px;
+            background: var(--surface);
+            border: 1px solid var(--surface-border);
+            line-height: 1;
+        }
+
+        /* ===== SECTION LABEL ===== */
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section-label-name {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .section-active-dot {
+            display: none;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 5px rgba(34, 197, 94, 0.75);
+        }
+
+        .section-active-dot.active {
+            display: inline-block;
+        }
+
+        /* ===== SCHEDULE BOX ===== */
+        .schedule-section {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .schedule-header-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .schedule-mode-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: none;
+            letter-spacing: normal;
+        }
+
+        .status-off-tag {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: none;
+            letter-spacing: normal;
+        }
+
+        .schedule-settings-icon {
+            font-size: 13px;
+            cursor: pointer;
+            opacity: 1;
+            color: var(--text-secondary);
+            width: 22px;
+            height: 22px;
+            border: 1px solid var(--surface-border);
+            border-radius: 7px;
+            background: var(--surface);
+            transition: color 0.15s, background 0.15s, border-color 0.15s, transform 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        .schedule-settings-icon:hover {
+            color: var(--text-primary);
+            background: var(--surface-hover);
+            border-color: rgba(var(--theme-color-rgb), 0.45);
+            transform: rotate(30deg);
+        }
+
+        .schedule-box {
+            background: var(--surface);
+            border: 1px solid var(--surface-border);
+            border-radius: 12px;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: all 0.25s ease;
+        }
+
+        .schedule-box.active {
+            border-color: rgba(var(--theme-color-rgb), 0.45);
+        }
+
+        .schedule-timer-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+        }
+
+        .schedule-timer-label {
+            font-size: 10.5px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .schedule-countdown {
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--theme-color);
+            letter-spacing: 1px;
+            text-shadow: 0 0 12px rgba(var(--theme-color-rgb), 0.35);
+        }
+
+        /* ===== DARKEN METHOD SELECTOR ===== */
+        .select-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--surface);
+            border: 1px solid var(--surface-border);
+            border-radius: 10px;
+            padding: 4px 10px;
+        }
+
+        .select-row svg {
+            color: var(--theme-color);
+            flex-shrink: 0;
+        }
+
+        .select-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .select-input option {
+            background: #111827;
+            color: #f1f5f9;
+        }
+
+        /* ===== QUICK TOGGLES ===== */
+        .quick-toggles-box {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            padding: 0 2px;
+        }
+
+        .toggle-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 4px;
+            min-width: 0;
+            font-size: 10px;
+            line-height: 1.1;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .toggle-item > span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .toggle-item > span [data-i18n] {
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .mini-toggle {
+            width: 27px;
+            height: 15px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.12);
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.38);
+        }
+
+        body.white-mode .mini-toggle {
+            background: rgba(0, 0, 0, 0.12);
+            border-color: rgba(15, 23, 42, 0.38);
+        }
+
+        .mini-toggle.active {
+            background: var(--theme-color);
+            border-color: rgba(255, 255, 255, 0.72);
+            box-shadow: 0 0 8px var(--theme-glow);
+        }
+
+        .mini-knob {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            background: #fff;
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .mini-toggle.active .mini-knob {
+            transform: translateX(12px);
+        }
+
+        body.classic-mode .mini-toggle {
+            border-radius: 5px;
+        }
+
+        body.classic-mode .mini-knob {
+            border-radius: 3px;
+        }
+
+        /* ===== DARKEN SECTION WRAPPER ===== */
+        .darken-section {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        /* ===== ACTION FOOTER ===== */
+        .footer-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: auto;
+            padding-top: 8px;
+            border-top: 1px solid var(--surface-border);
+        }
+
+        .action-btn {
+            flex: 1;
+            height: 32px;
+            padding: 0 4px;
+            border-radius: 9px;
+            background: var(--surface);
+            border: 1px solid var(--surface-border);
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            white-space: nowrap;
+            box-sizing: border-box;
+        }
+
+        .action-btn:hover {
+            background: var(--surface-hover);
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.16);
+        }
+
+        .action-btn.primary {
+            background: var(--theme-color);
+            border-color: var(--theme-color);
+            color: #fff;
+            box-shadow: 0 0 12px var(--theme-glow);
+        }
+
+        .action-btn.primary:hover {
+            filter: brightness(1.1);
+        }
+
+        .action-btn.danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: #ef4444;
+            color: #fca5a5;
+        }
+    </style>
+</head>
+
+<body>
+        <div class="tray-card" id="trayCard">
+        <!-- Header -->
+        <div class="header-row">
+            <div class="brand-wrap">
+                <div class="brand-icon">
+                    <span id="brandIconFallback" aria-hidden="true">⚡</span>
+                    <img id="brandAppIcon" alt="App icon" style="display:none;">
+                </div>
+                <div class="brand-text">
+                    <div class="brand-title">
+                        <div class="status-dot" id="statusDot"></div>
+                        <div class="status-subtitle" id="statusSubtitle" data-i18n="tray_preventing_sleep">Preventing Sleep</div>
+                    </div>
+                </div>
+            </div>
+            <div class="header-uptime" id="heroUptimeText" title="Uptime" data-i18n-title="uptime">00:00:00</div>
+            <div class="power-toggle active" id="powerToggle" title="Toggle Sleep Prevention" data-i18n-title="tray_toggle_sleep_prevention">
+                <div class="power-knob"></div>
+            </div>
+        </div>
+
+        <!-- Schedule Section -->
+        <div class="schedule-section" id="scheduleSection">
+            <div class="section-label">
+                <span class="section-label-name"><span data-i18n="tray_schedule">Schedule</span><span class="section-active-dot" id="scheduleActiveDot" aria-label="Active"></span></span>
+                <div class="schedule-header-right">
+                    <span class="schedule-mode-name" id="scheduleModeName"></span>
+                    <span class="status-off-tag" id="scheduleOffTag" data-i18n="tray_off" style="display:none;">Off</span>
+                    <span class="schedule-settings-icon" id="scheduleOpenBtn" title="Open Schedule Settings" data-i18n-title="tray_open_schedule_settings">⚙️</span>
+                </div>
+            </div>
+            <div class="schedule-box" id="scheduleBox">
+                <div class="schedule-timer-row">
+                    <div class="schedule-timer-label" id="scheduleTimerLabel" data-i18n="time_left">Time left</div>
+                    <div class="schedule-countdown" id="scheduleCountdown">00:00:00</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Screen Darken Method -->
+        <div class="darken-section" id="darkenSection">
+            <div class="section-label" id="darkenSectionLabel">
+                <span class="section-label-name"><span data-i18n="darken_method_title">Darken Method</span><span class="section-active-dot" id="darkenActiveDot" aria-label="Active"></span></span>
+                <span class="status-off-tag" id="darkenOffTag" data-i18n="tray_inactive">Inactive</span>
+            </div>
+            <div class="select-row" id="darkenSelectRow" style="display:none;">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+                <select class="select-input" id="darkenMethodSelect">
+                    <option value="ddcci" data-i18n="darken_method_ddcci">🖥️ Hardware DDC/CI (Native)</option>
+                    <option value="overlay" data-i18n="darken_method_overlay">🪟 HTML Overlay</option>
+                    <option value="displaysleep" data-i18n="darken_method_displaysleep">🔌 Display Sleep (Standby)</option>
+                    <option value="win32" data-i18n="darken_method_win32">🔲 Win32 Black Window</option>
+                    <option value="gamma" data-i18n="darken_method_gamma">💡 Gamma Ramp Blackout</option>
+                    <option value="brightness" data-i18n="darken_method_brightness">🔅 Screen Brightness</option>
+                    <option value="cmm" data-i18n="darken_method_cmm">🛠️ ControlMyMonitor (NirSoft)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Quick Features -->
+        <div class="quick-toggles-box">
+            <div class="toggle-item">
+                <span><span aria-hidden="true">📌</span><span data-i18n="tray_always_on_top">Always On Top</span></span>
+                <div class="mini-toggle" id="pinToggle"><div class="mini-knob"></div></div>
+            </div>
+            <div class="toggle-item">
+                <span><span aria-hidden="true">🚀</span><span data-i18n="tray_run_at_startup">Run at Windows Startup</span></span>
+                <div class="mini-toggle" id="autostartToggle"><div class="mini-knob"></div></div>
+            </div>
+        </div>
+
+        <!-- Action Footer -->
+        <div class="footer-actions">
+            <button type="button" class="action-btn primary" id="openMainBtn" title="Open Main Window" data-i18n-title="tray_open_main_window">
+                <span>💻 <span data-i18n="tray_open">Open</span></span>
+            </button>
+            <button type="button" class="action-btn" id="openSettingsBtn" title="Open Settings" data-i18n-title="tray_open_settings">
+                <span>⚙️ <span data-i18n="settings_btn">Settings</span></span>
+            </button>
+            <button type="button" class="action-btn" id="restartBtn" title="Restart Never Sleep" data-i18n-title="tray_restart_never_sleep">
+                <span>🔄 <span data-i18n="tray_restart">Restart</span></span>
+            </button>
+            <button type="button" class="action-btn danger" id="quitBtn" title="Quit Application" data-i18n-title="tray_quit_application">
+                <span>❌ <span data-i18n="tray_quit">Quit</span></span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let settings = {};
+        let isAppDisabled = false;
+        let isMediaDisabled = false;
+        let _scheduleTickInterval = null;
+        let _lastTrayHeight = null;
+        let trayLanguage = 'en';
+        let _autostartSyncVersion = 0;
+        let _autostartUpdateInFlight = false;
+
+        function trayText(key, fallback) {
+            const dictionary = translations[trayLanguage] || translations.en;
+            return dictionary?.[key] || fallback;
+        }
+
+        async function syncAutostartToggle() {
+            if (!window.__TAURI__ || _autostartUpdateInFlight) return;
+            const version = ++_autostartSyncVersion;
+            try {
+                const result = await window.__TAURI__.invoke('check_autostart');
+                if (version !== _autostartSyncVersion || _autostartUpdateInFlight) return;
+                const enabled = !!result?.enabled;
+                document.getElementById('autostartToggle')?.classList.toggle('active', enabled);
+                settings.autostart = enabled;
+            } catch (error) {
+                console.error('Failed to check startup setting:', error);
+            }
+        }
+
+        function resizeTrayWindowToContent() {
+            if (!window.__TAURI__) return;
+            requestAnimationFrame(() => {
+                const card = document.getElementById('trayCard');
+                if (!card) return;
+
+                const children = Array.from(card.children).filter(child => getComputedStyle(child).display !== 'none');
+                const gap = parseFloat(getComputedStyle(card).rowGap) || 0;
+                const cardStyle = getComputedStyle(card);
+                const bodyStyle = getComputedStyle(document.body);
+                const contentHeight = children.reduce((total, child) => total + child.getBoundingClientRect().height, 0);
+                const gapsHeight = Math.max(0, children.length - 1) * gap;
+                const verticalInsets =
+                    parseFloat(cardStyle.paddingTop) + parseFloat(cardStyle.paddingBottom) +
+                    parseFloat(cardStyle.borderTopWidth) + parseFloat(cardStyle.borderBottomWidth) +
+                    parseFloat(bodyStyle.paddingTop) + parseFloat(bodyStyle.paddingBottom);
+                const desiredHeight = Math.ceil(contentHeight + gapsHeight + verticalInsets);
+
+                if (_lastTrayHeight !== null && Math.abs(desiredHeight - _lastTrayHeight) < 2) return;
+                _lastTrayHeight = desiredHeight;
+                window.__TAURI__.invoke('resize_tray_window', { height: desiredHeight }).catch(() => {});
+            });
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '249, 115, 22';
+        }
+
+        function applyTheme(color, mode) {
+            const c = color || '#f97316';
+            document.documentElement.style.setProperty('--theme-color', c);
+            document.documentElement.style.setProperty('--theme-color-rgb', hexToRgb(c));
+
+            document.body.classList.remove('liquid-glass-mode', 'coffee-mode', 'classic-mode', 'white-mode');
+            if (settings.whiteMode) document.body.classList.add('white-mode');
+
+            if (mode === 'liquid-glass') document.body.classList.add('liquid-glass-mode');
+            else if (mode === 'coffee') document.body.classList.add('coffee-mode');
+            else document.body.classList.add('classic-mode');
+        }
+
+        function syncFromStorage() {
+            try {
+                settings = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
+            } catch (e) {
+                settings = {};
+            }
+
+            trayLanguage = translations[settings.language] ? settings.language : 'en';
+            applyLanguage(trayLanguage);
+            applyTheme(settings.themeColor, settings.viewMode);
+            updateTrayAppIcon(settings.appIcon);
+
+            // Enforce Classic-Only install policy
+            if (window.__TAURI__) {
+                window.__TAURI__.invoke('is_classic_only').then(classicOnly => {
+                    if (classicOnly) applyTheme(settings.themeColor, 'classic');
+                }).catch(() => {});
+            }
+
+            // Sync Darken Method
+            const darkenSelect = document.getElementById('darkenMethodSelect');
+            if (darkenSelect && settings.darkenMethod) {
+                darkenSelect.value = settings.darkenMethod;
+            }
+
+            // Sync Pinned Toggle
+            const pinToggle = document.getElementById('pinToggle');
+            if (pinToggle) {
+                pinToggle.classList.toggle('active', !!settings.pinned);
+            }
+
+
+            // Read live runtime state (appDisabled, schedule)
+            let liveState = {};
+            try {
+                liveState = JSON.parse(localStorage.getItem('neverSleepLiveState') || '{}');
+                if (typeof liveState.appDisabled === 'boolean') {
+                    isAppDisabled = liveState.appDisabled;
+                    isMediaDisabled = !!liveState.isMediaDisabled;
+                }
+            } catch(e) {}
+
+            updateStatusUI();
+            updateScheduleUI(liveState);
+            updateDarkenUI(liveState);
+            resizeTrayWindowToContent();
+        }
+
+        function updateTrayAppIcon(filename) {
+            const image = document.getElementById('brandAppIcon');
+            const fallback = document.getElementById('brandIconFallback');
+            if (!image || !fallback) return;
+
+            if (!filename) {
+                image.removeAttribute('src');
+                image.style.display = 'none';
+                fallback.style.display = '';
+                return;
+            }
+
+            image.onerror = () => {
+                image.style.display = 'none';
+                fallback.style.display = '';
+            };
+            image.onload = () => {
+                image.style.display = 'block';
+                fallback.style.display = 'none';
+            };
+            image.src = encodeURI(filename);
+        }
+
+        function updateStatusUI() {
+            const dot = document.getElementById('statusDot');
+            const sub = document.getElementById('statusSubtitle');
+            const powerToggle = document.getElementById('powerToggle');
+
+            if (isAppDisabled) {
+                if (dot) { dot.className = 'status-dot disabled'; }
+                if (sub) {
+                    sub.textContent = isMediaDisabled
+                        ? trayText('tray_paused_media', 'Paused (Media Playing)')
+                        : trayText('pill_disabled', 'Disabled');
+                }
+                if (powerToggle) { powerToggle.classList.remove('active'); }
+            } else {
+                if (dot) { dot.className = 'status-dot'; }
+                if (sub) { sub.textContent = trayText('tray_preventing_sleep', 'Preventing Sleep'); }
+                if (powerToggle) { powerToggle.classList.add('active'); }
+            }
+        }
+
+        // Power Toggle Click — toggle via Tauri command (which emit_all to main window)
+        document.getElementById('powerToggle')?.addEventListener('click', async () => {
+            if (window.__TAURI__) {
+                // The main window handles the emitted tray-action and owns the state change.
+                try {
+                    await window.__TAURI__.invoke('toggle_app_disabled');
+                } catch(e) {
+                    // Fallback: write command to localStorage for storage event pickup
+                    isAppDisabled = !isAppDisabled;
+                    localStorage.setItem('neverSleepCommand', JSON.stringify({
+                        type: 'setAppDisabled',
+                        value: isAppDisabled,
+                        timestamp: Date.now()
+                    }));
+                }
+                // Optimistically update local UI — will be corrected by next syncFromStorage
+                isAppDisabled = !isAppDisabled;
+                updateStatusUI();
+            }
+        });
+
+        // Schedule Settings Link
+        document.getElementById('scheduleOpenBtn')?.addEventListener('click', async () => {
+            await hideTrayWindow();
+            if (window.__TAURI__) {
+                await window.__TAURI__.invoke('open_settings', { section: 'schedule' }).catch(() => {});
+            }
+        });
+
+        // ===== SCHEDULE UI =====
+        function updateScheduleUI(liveState) {
+            const section = document.getElementById('scheduleSection');
+            const box = document.getElementById('scheduleBox');
+            const modeNameEl = document.getElementById('scheduleModeName');
+            const offTagEl = document.getElementById('scheduleOffTag');
+            const activeDot = document.getElementById('scheduleActiveDot');
+            const labelEl = document.getElementById('scheduleTimerLabel');
+            const countdownEl = document.getElementById('scheduleCountdown');
+
+            if (!section) return;
+
+            if (_scheduleTickInterval) {
+                clearInterval(_scheduleTickInterval);
+                _scheduleTickInterval = null;
+            }
+
+            const enabled = liveState && !!liveState.timeProfilesEnabled;
+            if (activeDot) activeDot.classList.toggle('active', !!enabled);
+            if (!enabled) {
+                if (box) box.style.display = 'none';
+                if (modeNameEl) { modeNameEl.textContent = ''; modeNameEl.style.display = 'none'; }
+                if (offTagEl) offTagEl.style.display = 'inline-block';
+                return;
+            }
+
+            if (offTagEl) offTagEl.style.display = 'none';
+            if (box) box.style.display = 'flex';
+
+            const mode = liveState.scheduleActionMode || 'keep_awake';
+            const modeMap = {
+                keep_awake: trayText('tray_mode_keep_awake', 'Keep PC Awake Mode'),
+                pause:      trayText('tray_mode_pause', 'Pause Prevention Mode'),
+                countdown:  trayText('tray_mode_countdown', 'Countdown Timer Mode')
+            };
+            const modeLabel = modeMap[mode] || 'Keep PC Awake Mode';
+
+            if (modeNameEl) {
+                modeNameEl.textContent = modeLabel;
+                modeNameEl.style.display = 'inline-block';
+            }
+
+            function formatSec(totalSec) {
+                const sClamped = Math.max(0, Math.floor(totalSec));
+                const h = Math.floor(sClamped / 3600);
+                const m = Math.floor((sClamped % 3600) / 60);
+                const s = sClamped % 60;
+                return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            }
+
+            function renderTick() {
+                let current = liveState;
+                try {
+                    const fresh = JSON.parse(localStorage.getItem('neverSleepLiveState') || '{}');
+                    if (fresh && fresh.ts) current = fresh;
+                } catch(e) {}
+
+                if (!current.timeProfilesEnabled) {
+                    if (box) box.style.display = 'none';
+                    if (modeNameEl) { modeNameEl.textContent = ''; modeNameEl.style.display = 'none'; }
+                    if (offTagEl) offTagEl.style.display = 'inline-block';
+                    if (_scheduleTickInterval) {
+                        clearInterval(_scheduleTickInterval);
+                        _scheduleTickInterval = null;
+                    }
+                    return;
+                }
+
+                if (mode === 'countdown') {
+                    const target = current.countdownTargetTime || 0;
+                    if (target > 0) {
+                        const remSec = Math.max(0, Math.floor((target - Date.now()) / 1000));
+                        if (remSec > 0) {
+                            if (box) box.classList.add('active');
+                            if (labelEl) labelEl.textContent = trayText('time_left', 'Time left');
+                            if (countdownEl) countdownEl.textContent = formatSec(remSec);
+                        } else {
+                            if (box) box.classList.remove('active');
+                            if (labelEl) labelEl.textContent = trayText('tray_expired', 'Expired');
+                            if (countdownEl) countdownEl.textContent = '00:00:00';
+                        }
+                    } else {
+                        if (box) box.classList.remove('active');
+                        if (labelEl) labelEl.textContent = trayText('time_left', 'Time left');
+                        if (countdownEl) countdownEl.textContent = '00:00:00';
+                    }
+                } else {
+                    const isActive = !!current.scheduleIsActive;
+                    const remSec = current.scheduleRemainingSec || 0;
+                    const label = isActive
+                        ? trayText('time_left', 'Time left')
+                        : trayText('starts_in', 'Starts in');
+
+                    if (box) box.classList.toggle('active', isActive);
+                    if (labelEl) labelEl.textContent = label;
+                    if (countdownEl) countdownEl.textContent = formatSec(remSec);
+                }
+            }
+
+            renderTick();
+            _scheduleTickInterval = setInterval(renderTick, 1000);
+        }
+
+        // ===== DARKEN UI =====
+        function updateDarkenUI(liveState) {
+            const offTag = document.getElementById('darkenOffTag');
+            const selectRow = document.getElementById('darkenSelectRow');
+            const activeDot = document.getElementById('darkenActiveDot');
+            if (!offTag || !selectRow) return;
+
+            // When isScreenOn is true -> screen is kept on, so screen darken is OFF
+            // When isScreenOn is false -> screen darken is ON
+            const isDarkenOff = liveState && (liveState.isScreenOn !== false);
+            if (activeDot) activeDot.classList.toggle('active', !isDarkenOff);
+            if (isDarkenOff) {
+                offTag.style.display = 'inline-block';
+                selectRow.style.display = 'none';
+            } else {
+                offTag.style.display = 'none';
+                selectRow.style.display = 'flex';
+            }
+            // Sync the darken method select value
+            const darkenSelect = document.getElementById('darkenMethodSelect');
+            if (darkenSelect && settings.darkenMethod) {
+                darkenSelect.value = settings.darkenMethod;
+            }
+        }
+
+        // Darken Method Changed
+        document.getElementById('darkenMethodSelect')?.addEventListener('change', async (e) => {
+            const method = e.target.value;
+            settings.darkenMethod = method;
+            localStorage.setItem('neverSleepSettings', JSON.stringify(settings));
+            localStorage.setItem('neverSleepCommand', JSON.stringify({
+                type: 'setDarkenMethod',
+                method: method,
+                timestamp: Date.now()
+            }));
+            if (window.__TAURI__) {
+                await window.__TAURI__.invoke('save_settings', { settings: JSON.stringify(settings) }).catch(() => {});
+            }
+        });
+
+        // Quick Feature Toggles
+        document.getElementById('pinToggle')?.addEventListener('click', async () => {
+            const toggle = document.getElementById('pinToggle');
+            const newState = !toggle.classList.contains('active');
+            toggle.classList.toggle('active', newState);
+            settings.pinned = newState;
+            localStorage.setItem('neverSleepSettings', JSON.stringify(settings));
+            if (window.__TAURI__) {
+                await window.__TAURI__.invoke('set_pinned', { pinned: newState }).catch(() => {});
+                await window.__TAURI__.invoke('save_settings', { settings: JSON.stringify(settings) }).catch(() => {});
+            }
+        });
+
+        document.getElementById('autostartToggle')?.addEventListener('click', async () => {
+            if (_autostartUpdateInFlight) return;
+            const toggle = document.getElementById('autostartToggle');
+            if (!toggle) return;
+            const previousState = toggle.classList.contains('active');
+            const newState = !toggle.classList.contains('active');
+            toggle.classList.toggle('active', newState);
+            _autostartUpdateInFlight = true;
+            ++_autostartSyncVersion;
+            if (window.__TAURI__) {
+                try {
+                    await window.__TAURI__.invoke('set_autostart', {
+                        enable: newState,
+                        minimized: !!settings.autostartMinimized
+                    });
+                } catch (error) {
+                    toggle.classList.toggle('active', previousState);
+                    settings.autostart = previousState;
+                    console.error('Failed to update startup setting:', error);
+                    _autostartUpdateInFlight = false;
+                    syncAutostartToggle();
+                    return;
+                }
+
+                settings.autostart = newState;
+                const serializedSettings = JSON.stringify(settings);
+                localStorage.setItem('neverSleepSettings', serializedSettings);
+                await window.__TAURI__.invoke('save_settings', { settings: serializedSettings }).catch(error => {
+                    console.error('Failed to save startup preference:', error);
+                });
+            }
+            _autostartUpdateInFlight = false;
+            syncAutostartToggle();
+        });
+
+        // ===== AUTO-DISMISS ON BLUR =====
+        let _openedAt = 0;
+        let _blurTimer = null;
+        let _isMouseOver = false;
+
+        document.addEventListener('mouseenter', () => {
+            _isMouseOver = true;
+            if (_blurTimer) {
+                clearTimeout(_blurTimer);
+                _blurTimer = null;
+            }
+        });
+
+        document.addEventListener('mouseleave', () => {
+            _isMouseOver = false;
+        });
+
+        window.addEventListener('mousedown', () => {
+            if (_blurTimer) {
+                clearTimeout(_blurTimer);
+                _blurTimer = null;
+            }
+        });
+
+        // Action Buttons
+        async function hideTrayWindow() {
+            if (_blurTimer) {
+                clearTimeout(_blurTimer);
+                _blurTimer = null;
+            }
+            if (window.__TAURI__) {
+                const win = window.__TAURI__.window.getCurrent();
+                await win.hide();
+            }
+        }
+
+        document.getElementById('openMainBtn')?.addEventListener('click', async () => {
+            await hideTrayWindow();
+            if (window.__TAURI__) {
+                const mainWin = window.__TAURI__.window.getAll().find(w => w.label === 'main');
+                if (mainWin) {
+                    await mainWin.unminimize().catch(() => {});
+                    await mainWin.show();
+                    await mainWin.setFocus();
+                }
+            }
+        });
+
+        document.getElementById('openSettingsBtn')?.addEventListener('click', async () => {
+            await hideTrayWindow();
+            if (window.__TAURI__) {
+                await window.__TAURI__.invoke('open_settings', { section: null });
+            }
+        });
+
+        document.getElementById('restartBtn')?.addEventListener('click', async () => {
+            if (window.__TAURI__) {
+                await window.__TAURI__.invoke('restart_app');
+            }
+        });
+
+        document.getElementById('quitBtn')?.addEventListener('click', async () => {
+            if (window.__TAURI__) {
+                await window.__TAURI__.invoke('quit_app');
+            }
+        });
+
+        // Close on Escape key
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') hideTrayWindow();
+        });
+
+        // Blur-based auto-dismiss (debounced, with grace period and mouseover protection)
+        if (window.__TAURI__ && window.__TAURI__.event) {
+            window.__TAURI__.event.listen('tauri://blur', () => {
+                // Ignore blur during the initial 600ms grace period while Windows Explorer settles focus
+                if (Date.now() - _openedAt < 600) return;
+                // Never dismiss if the cursor is currently inside the flyout
+                if (_isMouseOver) return;
+
+                if (_blurTimer) clearTimeout(_blurTimer);
+                _blurTimer = setTimeout(() => {
+                    if (!_isMouseOver && Date.now() - _openedAt >= 600) {
+                        hideTrayWindow();
+                    }
+                }, 250);
+            });
+
+            window.__TAURI__.event.listen('tauri://focus', () => {
+                if (_blurTimer) {
+                    clearTimeout(_blurTimer);
+                    _blurTimer = null;
+                }
+            });
+
+            window.__TAURI__.event.listen('tray-opened', () => {
+                _openedAt = Date.now();
+                if (_blurTimer) {
+                    clearTimeout(_blurTimer);
+                    _blurTimer = null;
+                }
+                syncFromStorage();
+                syncAutostartToggle();
+            });
+        }
+
+        // Uptime Clock
+        function updateUptime() {
+            const start = parseInt(localStorage.getItem('app_start_timestamp'));
+            if (start) {
+                const diff = Math.floor((Date.now() - start) / 1000);
+                const h = Math.floor(diff / 3600);
+                const m = Math.floor((diff % 3600) / 60);
+                const s = diff % 60;
+                const uptimeEl = document.getElementById('heroUptimeText');
+                if (uptimeEl) {
+                    uptimeEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                }
+            }
+        }
+        setInterval(updateUptime, 1000);
+        updateUptime();
+
+        // Listen for external storage / settings updates
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'neverSleepSettings' || e.key === 'neverSleepCommand' || e.key === 'neverSleepLiveState') {
+                syncFromStorage();
+                if (e.key === 'neverSleepSettings') syncAutostartToggle();
+            }
+        });
+
+        // Initial Sync
+        syncFromStorage();
+        syncAutostartToggle();
+
+    </script>
+</body>
+
+</html>

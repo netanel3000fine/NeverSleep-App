@@ -156,6 +156,24 @@ fn is_workstation_locked() -> Result<bool, String> {
     Ok(is_windows_workstation_locked())
 }
 
+#[tauri::command]
+fn lock_workstation() -> Result<bool, String> {
+    #[cfg(target_os = "windows")]
+    {
+        use winapi::um::winuser::LockWorkStation;
+        let success = unsafe { LockWorkStation() };
+        if success != 0 {
+            Ok(true)
+        } else {
+            Err("Failed to lock workstation display".into())
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Err("Lock workstation is only supported on Windows".into())
+    }
+}
+
 static LAST_UNLOCK_TIME: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
 #[tauri::command]
@@ -325,7 +343,7 @@ async fn create_screen_overlay(
     method: Option<String>,
     custom_path: Option<String>,
 ) -> Result<(), String> {
-    let m = method.unwrap_or_else(|| "overlay".to_string());
+    let m = method.unwrap_or_else(|| "ddcci".to_string());
     match m.as_str() {
         "win32" => create_darken_win32(),
         "gamma" => create_darken_gamma(),
@@ -350,7 +368,7 @@ async fn close_screen_overlay(
     method: Option<String>,
     custom_path: Option<String>,
 ) -> Result<(), String> {
-    let m = method.unwrap_or_else(|| "overlay".to_string());
+    let m = method.unwrap_or_else(|| "ddcci".to_string());
     match m.as_str() {
         "win32" => close_darken_win32(),
         "gamma" => close_darken_gamma(),
@@ -1216,7 +1234,46 @@ fn get_settings_path(app: tauri::AppHandle) -> Result<std::path::PathBuf, String
 }
 
 #[tauri::command]
-fn save_settings(app: tauri::AppHandle, settings: String) -> Result<(), String> {
+fn is_classic_only() -> bool {
+    // 1. Check for classic_only.flag next to current exe
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(dir) = exe_path.parent() {
+            if dir.join("classic_only.flag").exists() {
+                return true;
+            }
+        }
+    }
+
+    // 2. Check Windows Registry (HKCU\Software\neversleep\Never Sleep)
+    #[cfg(target_os = "windows")]
+    {
+        use winreg::enums::*;
+        use winreg::RegKey;
+        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+        if let Ok(sub) = hkcu.open_subkey("Software\\neversleep\\Never Sleep") {
+            if let Ok(val) = sub.get_value::<u32, _>("ClassicOnly") {
+                if val == 1 {
+                    return true;
+                }
+            }
+        }
+    }
+
+    false
+}
+
+#[tauri::command]
+fn save_settings(app: tauri::AppHandle, mut settings: String) -> Result<(), String> {
+    if is_classic_only() {
+        if let Ok(mut json) = serde_json::from_str::<serde_json::Value>(&settings) {
+            if let Some(obj) = json.as_object_mut() {
+                obj.insert("viewMode".to_string(), serde_json::Value::String("classic".to_string()));
+                if let Ok(updated) = serde_json::to_string(&json) {
+                    settings = updated;
+                }
+            }
+        }
+    }
     let path = get_settings_path(app.clone())?;
     std::fs::write(path, &settings).map_err(|e| e.to_string())?;
     let _ = app.emit_all("settings-updated", settings);
@@ -1228,9 +1285,23 @@ fn load_settings(app: tauri::AppHandle) -> Result<String, String> {
     let path = get_settings_path(app)?;
     if path.exists() {
         let content = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+        if is_classic_only() {
+            if let Ok(mut json) = serde_json::from_str::<serde_json::Value>(&content) {
+                if let Some(obj) = json.as_object_mut() {
+                    obj.insert("viewMode".to_string(), serde_json::Value::String("classic".to_string()));
+                    if let Ok(updated) = serde_json::to_string(&json) {
+                        return Ok(updated);
+                    }
+                }
+            }
+        }
         Ok(content)
     } else {
-        Ok("{}".to_string())
+        if is_classic_only() {
+            Ok(r#"{"viewMode":"classic"}"#.to_string())
+        } else {
+            Ok("{}".to_string())
+        }
     }
 }
 
@@ -1940,63 +2011,54 @@ async fn is_media_playing() -> bool {
 
 #[tauri::command]
 fn update_tray_menu_state(
-    app: tauri::AppHandle,
-    status_text: String,
-    disabled: bool,
-    keep_awake: bool,
-    schedule_mode_active: bool,
-    active_duration_mins: Option<u32>,
-    media_enabled: bool,
-    notifications_enabled: bool,
-    pinned: bool,
-    autostart: bool,
-    darken_method: Option<String>,
+    _app: tauri::AppHandle,
+    _status_text: String,
+    _disabled: bool,
+    _keep_awake: bool,
+    _schedule_mode_active: bool,
+    _active_duration_mins: Option<u32>,
+    _media_enabled: bool,
+    _notifications_enabled: bool,
+    _pinned: bool,
+    _autostart: bool,
+    _darken_method: Option<String>,
 ) -> Result<(), String> {
-    let handle = app.tray_handle();
-
-    let _ = handle.get_item("status_header").set_title(&status_text);
-    let _ = handle.get_item("disable_app").set_selected(disabled);
-    let _ = handle.get_item("keep_awake").set_selected(keep_awake && !disabled);
-
-    let darken_method_ids = [
-        ("darken_overlay", "overlay"),
-        ("darken_displaysleep", "displaysleep"),
-        ("darken_win32", "win32"),
-        ("darken_gamma", "gamma"),
-        ("darken_ddcci", "ddcci"),
-        ("darken_cmm", "controlmymonitor"),
-        ("darken_brightness", "brightness"),
-    ];
-    let cur_method = darken_method.as_deref().unwrap_or("overlay");
-    for (id, method) in darken_method_ids {
-        let _ = handle.get_item(id).set_selected(cur_method == method);
-    }
-
-    let duration_enabled = !schedule_mode_active && !disabled;
-    let timer_ids = [
-        ("timer_15m", 15),
-        ("timer_30m", 30),
-        ("timer_1h", 60),
-        ("timer_2h", 120),
-        ("timer_4h", 240),
-    ];
-
-    for (id, mins) in timer_ids {
-        let item = handle.get_item(id);
-        let _ = item.set_enabled(duration_enabled);
-        let is_selected = active_duration_mins == Some(mins);
-        let _ = item.set_selected(is_selected);
-    }
-    let cancel_item = handle.get_item("timer_cancel");
-    let _ = cancel_item.set_enabled(duration_enabled);
-    let _ = cancel_item.set_selected(active_duration_mins.is_none());
-
-    let _ = handle.get_item("feat_media").set_selected(media_enabled);
-    let _ = handle.get_item("feat_notifications").set_selected(notifications_enabled);
-    let _ = handle.get_item("feat_pinned").set_selected(pinned);
-    let _ = handle.get_item("feat_autostart").set_selected(autostart);
-
     Ok(())
+}
+
+#[tauri::command]
+fn toggle_app_disabled(app: tauri::AppHandle) -> Result<bool, String> {
+    // The main window owns the state transition; emitting only avoids toggling twice.
+    let _ = app.emit_all("tray-action", "disable_app");
+    Ok(true)
+}
+
+#[tauri::command]
+fn resize_tray_window(app: tauri::AppHandle, height: f64) {
+    if let Some(tray_win) = app.get_window("tray") {
+        let sf = if let Some(monitor) = tray_win.primary_monitor().ok().flatten() {
+            monitor.scale_factor()
+        } else {
+            1.0
+        };
+        let (_screen_w, screen_h) = if let Some(monitor) = tray_win.primary_monitor().ok().flatten() {
+            let s = monitor.size();
+            (s.width as f64 / sf, s.height as f64 / sf)
+        } else {
+            (1920.0, 1080.0)
+        };
+        let current_pos = tray_win.outer_position().unwrap_or_default();
+        let current_size = tray_win.outer_size().unwrap_or_default();
+        let current_h = current_size.height as f64 / sf;
+        let current_x = current_pos.x as f64 / sf;
+        let current_y = current_pos.y as f64 / sf;
+
+        let target_h = height.max(180.0).min(500.0);
+        let new_y = current_y + (current_h - target_h);
+
+        let _ = tray_win.set_size(tauri::Size::Logical(tauri::LogicalSize { width: 320.0, height: target_h }));
+        let _ = tray_win.set_position(tauri::LogicalPosition::new(current_x, new_y.max(8.0).min(screen_h - target_h - 8.0)));
+    }
 }
 
 fn clear_webview_http_cache() {
@@ -2154,7 +2216,7 @@ fn main() {
     let update = CustomMenuItem::new("update".to_string(), "⬆️ Check for Updates");
     let quit = CustomMenuItem::new("quit".to_string(), "❌ Quit");
 
-    let tray_menu = SystemTrayMenu::new()
+    let _tray_menu = SystemTrayMenu::new()
         .add_item(status_header)
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(disable_app)
@@ -2185,6 +2247,7 @@ fn main() {
             get_last_activity,
             record_input_activity,
             is_workstation_locked,
+            lock_workstation,
             get_last_unlock_time,
             show_notification,
             log_to_file,
@@ -2213,11 +2276,15 @@ fn main() {
             hard_apply_app_icon,
             update_tray_menu_state,
             get_screen_brightness,
-            check_control_my_monitor
+            check_control_my_monitor,
+            is_classic_only,
+            toggle_app_disabled,
+            resize_tray_window
         ])
-        .system_tray(SystemTray::new().with_menu(tray_menu))
+        .system_tray(SystemTray::new())
         .on_system_tray_event(|app, event| match event {
             SystemTrayEvent::LeftClick { .. } => {
+                // Left-click: focus the main window
                 let window = app.get_window("main").unwrap();
                 if window.is_minimized().unwrap_or(false) {
                     window.unminimize().unwrap();
@@ -2225,52 +2292,66 @@ fn main() {
                 window.show().unwrap();
                 window.set_focus().unwrap();
             }
-            SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
-                "show" => {
-                    let window = app.get_window("main").unwrap();
-                    if window.is_minimized().unwrap_or(false) {
-                        window.unminimize().unwrap();
+            SystemTrayEvent::RightClick { position, size, .. } => {
+                // Right-click: show custom glassmorphic tray flyout above the cursor
+                if let Some(tray_win) = app.get_window("tray") {
+                    if tray_win.is_visible().unwrap_or(false) {
+                        let _ = tray_win.hide();
+                        return;
                     }
-                    window.show().unwrap();
-                    window.set_focus().unwrap();
-                }
-                "settings" => {
-                    open_settings(app.clone(), None);
-                }
-                "restart" => {
-                    restart_app(app.clone());
-                }
-                "update" => {
-                    if let Some(window) = app.get_window("main") {
-                        let _ = window.show();
-                        let _ = window.set_focus();
-                        let _ = window.emit("check-for-updates", ());
+
+                    // Flyout dimensions (must match tauri.conf.json)
+                    let sf = if let Some(monitor) = tray_win.primary_monitor().ok().flatten() {
+                        monitor.scale_factor()
+                    } else {
+                        1.0
+                    };
+                    let flyout_w: f64 = 320.0;
+                    let flyout_h = tray_win
+                        .outer_size()
+                        .map(|size| size.height as f64 / sf)
+                        .unwrap_or(380.0);
+
+                    let (screen_w, screen_h) = if let Some(monitor) = tray_win.primary_monitor().ok().flatten() {
+                        let s = monitor.size();
+                        (s.width as f64 / sf, s.height as f64 / sf)
+                    } else {
+                        (1920.0, 1080.0)
+                    };
+
+                    // position and size from Tauri are in PHYSICAL pixels: convert to logical
+                    let icon_cx = (position.x + size.width / 2.0) / sf;
+                    let icon_top = position.y / sf;
+                    let icon_bottom = (position.y + size.height) / sf;
+
+                    let mut x = icon_cx - flyout_w / 2.0;
+                    let mut y = icon_top - flyout_h - 10.0;
+
+                    // If taskbar is at the top of the screen
+                    if y < 8.0 {
+                        y = icon_bottom + 10.0;
                     }
+
+                    // Clamp to screen bounds
+                    if x + flyout_w > screen_w - 8.0 { x = screen_w - flyout_w - 8.0; }
+                    if x < 8.0 { x = 8.0; }
+                    if y + flyout_h > screen_h - 8.0 { y = screen_h - flyout_h - 8.0; }
+                    if y < 8.0 { y = 8.0; }
+
+                    let _ = tray_win.set_position(tauri::LogicalPosition::new(x, y));
+                    let _ = tray_win.show();
+                    let _ = tray_win.set_focus();
+                    // Notify the tray window to sync its state
+                    let _ = tray_win.emit("tray-opened", ());
                 }
-                "quit" => {
-                    std::process::exit(0);
-                }
-                "feat_autostart" => {
-                    if let Ok(res) = check_autostart() {
-                        let current = res.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false);
-                        let minimized = res.get("minimized").and_then(|v| v.as_bool()).unwrap_or(false);
-                        let new_state = !current;
-                        let _ = set_autostart(new_state, minimized);
-                        let _ = app.tray_handle().get_item("feat_autostart").set_selected(new_state);
-                        let _ = app.emit_all("tray-action", "autostart-toggled");
-                    }
-                }
-                action => {
-                    let _ = app.emit_all("tray-action", action);
-                }
-            },
+            }
             _ => {}
         })
         .on_window_event(|event| match event.event() {
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 let window = event.window();
-                if window.label() == "settings" {
-                    // Hide instead of close to keep state and avoid crash
+                if window.label() == "settings" || window.label() == "tray" {
+                    // Hide instead of close to keep state
                     window.hide().unwrap();
                     api.prevent_close();
                 } else if window.label() == "main" {

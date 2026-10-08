@@ -85,8 +85,10 @@ const translations = {
     
     "default_timer": "Default Timer",
     "stop_by_time": "Stop by time",
-    "pop_window": "Pop up window when done",
-    "pop_window_sub": "When app is not in front",
+    "lock_pc_countdown": "Lock PC when done",
+    "lock_pc_countdown_sub": "Lock workstation (Win + L) when schedule or timer ends",
+    "lock_warning_msg": "Locking PC in {s}s...",
+    "lock_cancel": "Cancel",
     
     "enable_notifications": "Enable notifications",
     "system_sounds": "Play system sounds",
@@ -106,6 +108,7 @@ const translations = {
     
     "view_mode": "View Mode",
     "view_mode_sub": "Classic / Liquid Glass / Coffee",
+    "classic_only_notice": "Locked to Classic theme by installation policy",
     "theme_color": "Theme Color",
     "language": "Language",
     
@@ -161,7 +164,27 @@ const translations = {
     "sched_action_pause_sub": "Pause sleep prevention during these hours. Outside these hours, PC stays awake.",
     "sched_action_countdown": "Countdown Timer",
     "countdown_hint": "Timer resets automatically when you unlock your PC",
-    "countdown_expired": "Countdown ended \u2014 sleep prevention paused."
+    "countdown_expired": "Countdown ended \u2014 sleep prevention paused.",
+    "tray_schedule": "Schedule",
+    "tray_always_on_top": "Always On Top",
+    "tray_run_at_startup": "Startup Run",
+    "tray_preventing_sleep": "Preventing Sleep",
+    "tray_paused_media": "Paused (Media Playing)",
+    "tray_inactive": "Inactive",
+    "tray_off": "Off",
+    "tray_mode_keep_awake": "Keep PC Awake Mode",
+    "tray_mode_pause": "Pause Prevention Mode",
+    "tray_mode_countdown": "Countdown Timer Mode",
+    "tray_expired": "Expired",
+    "tray_open": "Open",
+    "tray_restart": "Restart",
+    "tray_quit": "Quit",
+    "tray_open_main_window": "Open Main Window",
+    "tray_open_settings": "Open Settings",
+    "tray_restart_never_sleep": "Restart Never Sleep",
+    "tray_quit_application": "Quit Application",
+    "tray_toggle_sleep_prevention": "Toggle Sleep Prevention",
+    "tray_open_schedule_settings": "Open Schedule Settings"
   },
   he: {
     "pill_active": "פעיל",
@@ -245,8 +268,10 @@ const translations = {
     
     "default_timer": "ברירת מחדל לטיימר",
     "stop_by_time": "עצור לפי שעה",
-    "pop_window": "הקפץ חלון בסיום",
-    "pop_window_sub": "כשהאפליקציה לא בחזית",
+    "lock_pc_countdown": "נעל מחשב בסיום",
+    "lock_pc_countdown_sub": "נעילת תחנת עבודה (Win + L) כשהזמן או הטיימר מסתיימים",
+    "lock_warning_msg": "נעילת מחשב בעוד {s} שנ׳...",
+    "lock_cancel": "ביטול",
     
     "enable_notifications": "הפעל התראות",
     "system_sounds": "שמע התראות מערכת",
@@ -269,6 +294,7 @@ const translations = {
 
     "view_mode": "מצב תצוגה",
     "view_mode_sub": "חסכני / Liquid Glass / קפה",
+    "classic_only_notice": "נעול לערכת נושא קלאסית לפי הגדרות ההתקנה",
     "theme_color": "ערכת נושא",
     "language": "שפה",
     
@@ -318,7 +344,27 @@ const translations = {
     "sched_action_pause_sub": "משהה מניעת שינה בשעות אלו. מחוץ לשעות, המחשב נשאר ער.",
     "sched_action_countdown": "טיימר ספירה לאחור",
     "countdown_hint": "הטיימר מתאפס אוטומטית בעת ביטול נעילת המחשב",
-    "countdown_expired": "הספירה הסתיימה — מניעת שינה הושהתה."
+    "countdown_expired": "הספירה הסתיימה — מניעת שינה הושהתה.",
+    "tray_schedule": "לוח זמנים",
+    "tray_always_on_top": "תמיד למעלה",
+    "tray_run_at_startup": "הפעלה אוטומטית",
+    "tray_preventing_sleep": "מניעת שינה פעילה",
+    "tray_paused_media": "מושהה (מדיה מתנגנת)",
+    "tray_inactive": "לא פעיל",
+    "tray_off": "כבוי",
+    "tray_mode_keep_awake": "מצב שמירת המחשב ער",
+    "tray_mode_pause": "מצב השהיית מניעת שינה",
+    "tray_mode_countdown": "מצב טיימר ספירה לאחור",
+    "tray_expired": "הסתיים",
+    "tray_open": "פתח",
+    "tray_restart": "הפעל מחדש",
+    "tray_quit": "יציאה",
+    "tray_open_main_window": "פתח חלון ראשי",
+    "tray_open_settings": "פתח הגדרות",
+    "tray_restart_never_sleep": "הפעל מחדש את Never Sleep",
+    "tray_quit_application": "צא מהיישום",
+    "tray_toggle_sleep_prevention": "החלף מצב מניעת שינה",
+    "tray_open_schedule_settings": "פתח הגדרות לוח הזמנים"
   },
   ru: {
     "pill_active": "Активен",
@@ -402,8 +448,10 @@ const translations = {
     
     "default_timer": "Таймер по умолчанию",
     "stop_by_time": "Остановить по времени",
-    "pop_window": "Показать окно",
-    "pop_window_sub": "Когда приложение не на переднем плане",
+    "lock_pc_countdown": "Блокировать ПК при завершении",
+    "lock_pc_countdown_sub": "Блокировать систему (Win + L) по окончании времени или таймера",
+    "lock_warning_msg": "Блокировка ПК через {s} сек...",
+    "lock_cancel": "Отмена",
 
     "enable_notifications": "Включить уведомления",
     "system_sounds": "Системные звуки",
@@ -426,6 +474,7 @@ const translations = {
 
     "view_mode": "Режим просмотра",
     "view_mode_sub": "Классический / Liquid Glass / Кофе",
+    "classic_only_notice": "Заблокировано на классической теме политикой установки",
     "theme_color": "Цвет темы",
     "language": "Язык",
 
@@ -476,7 +525,27 @@ const translations = {
     "sched_action_countdown": "Таймер обратного отсчёта",
     "countdown_hint": "Таймер автоматически сбрасывается при разблокировке ПК",
     "countdown_expired": "Отсчёт завершён — предотвращение сна приостановлено.",
-    "schedule_explainer": "Настройте расписание с 3 режимами: поддерживать ПК активным в выбранные часы, приостанавливать в эти часы, или использовать таймер обратного отсчёта, который сбрасывается при каждой разблокировке ПК."
+    "schedule_explainer": "Настройте расписание с 3 режимами: поддерживать ПК активным в выбранные часы, приостанавливать в эти часы, или использовать таймер обратного отсчёта, который сбрасывается при каждой разблокировке ПК.",
+    "tray_schedule": "Расписание",
+    "tray_always_on_top": "Поверх всех окон",
+    "tray_run_at_startup": "Автозапуск",
+    "tray_preventing_sleep": "Предотвращение сна активно",
+    "tray_paused_media": "Пауза (воспроизводится медиа)",
+    "tray_inactive": "Неактивно",
+    "tray_off": "Выкл.",
+    "tray_mode_keep_awake": "Режим бодрствования ПК",
+    "tray_mode_pause": "Режим паузы предотвращения сна",
+    "tray_mode_countdown": "Режим таймера обратного отсчёта",
+    "tray_expired": "Завершено",
+    "tray_open": "Открыть",
+    "tray_restart": "Перезапустить",
+    "tray_quit": "Выход",
+    "tray_open_main_window": "Открыть главное окно",
+    "tray_open_settings": "Открыть настройки",
+    "tray_restart_never_sleep": "Перезапустить Never Sleep",
+    "tray_quit_application": "Выйти из приложения",
+    "tray_toggle_sleep_prevention": "Переключить предотвращение сна",
+    "tray_open_schedule_settings": "Открыть настройки расписания"
   }
 };
 

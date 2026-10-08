@@ -1,0 +1,64 @@
+Asset `coffe1.png` not found; fallback to coffe1.png.html
+Asset `coffe1.png` not found; fallback to coffe1.png.html
+Asset `coffe2.png` not found; fallback to coffe2.png.html
+failed to build tray: error encountered during tray setup: os error at C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tao-0.16.10\src\platform_impl\windows\system_tray.rs:112: Error with shellapi::Shell_NotifyIconW
+
+thread 'main' (9436) panicked at C:\Users\ntnlb\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-1.8.3\src\app\tray.rs:610:5:
+item id not found
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'main' (9436) panicked at library\core\src\panicking.rs:230:5:
+panic in a function that cannot unwind
+stack backtrace:
+   0:     0x7ff6699170b2 - <unknown>
+   1:     0x7ff669922d6a - <unknown>
+   2:     0x7ff6698f6a37 - <unknown>
+   3:     0x7ff669907515 - <unknown>
+   4:     0x7ff66990c719 - <unknown>
+   5:     0x7ff66990c508 - <unknown>
+   6:     0x7ff66990cf9b - <unknown>
+   7:     0x7ff66990cd32 - <unknown>
+   8:     0x7ff66990771f - <unknown>
+   9:     0x7ff6698f364e - <unknown>
+  10:     0x7ff669957f95 - <unknown>
+  11:     0x7ff669957ee3 - <unknown>
+  12:     0x7ff669958111 - <unknown>
+  13:     0x7ff6697978a5 - <unknown>
+  14:     0x7ff6699346d0 - <unknown>
+  15:     0x7ff66993369b - <unknown>
+  16:     0x7ffe916a3e86 - RtlCaptureContext2
+  17:     0x7ff66979783f - <unknown>
+  18:     0x7ffe2a228214 - CreateSharedWebViewEnvironmentInternal
+  19:     0x7ffe2a2280a4 - CreateSharedWebViewEnvironmentInternal
+  20:     0x7ffe2a2a28d3 - DllCanUnloadNow
+  21:     0x7ffe2a2a4e3e - DllCanUnloadNow
+  22:     0x7ffe2a2a4caf - DllCanUnloadNow
+  23:     0x7ffe2a68dc04 - telemetry_client::IDataFieldVisitor::~IDataFieldVisitor
+  24:     0x7ffe2a3954f9 - DllCanUnloadNow
+  25:     0x7ffe2a3abea2 - DllCanUnloadNow
+  26:     0x7ffe2a39646f - DllCanUnloadNow
+  27:     0x7ffe2a3948f6 - DllCanUnloadNow
+  28:     0x7ffe2a3abea2 - DllCanUnloadNow
+  29:     0x7ffe2a37087b - DllCanUnloadNow
+  30:     0x7ffe2a374ce2 - DllCanUnloadNow
+  31:     0x7ffe2a354494 - DllCanUnloadNow
+  32:     0x7ffe2a27b162 - DllCanUnloadNow
+  33:     0x7ffe2a27af8a - DllCanUnloadNow
+  34:     0x7ffe2a27a6b2 - DllCanUnloadNow
+  35:     0x7ffe2a3ffa98 - DllCanUnloadNow
+  36:     0x7ffe2a3ffa00 - DllCanUnloadNow
+  37:     0x7ffe2a3ff64f - DllCanUnloadNow
+  38:     0x7ffe8f4252e6 - CallWindowProcW
+  39:     0x7ffe8f425dbd - IsWindowUnicode
+  40:     0x7ff66953e34c - <unknown>
+  41:     0x7ff669534564 - <unknown>
+  42:     0x7ff669499935 - <unknown>
+  43:     0x7ff66942571a - <unknown>
+  44:     0x7ff66946f166 - <unknown>
+  45:     0x7ff66948ecec - <unknown>
+  46:     0x7ff6698f7c25 - <unknown>
+  47:     0x7ff66943710c - <unknown>
+  48:     0x7ff66992f3e8 - <unknown>
+  49:     0x7ffe8f79cdf7 - BaseThreadInitThunk
+  50:     0x7ffe915fee4c - RtlUserThreadStart
+thread caused non-unwinding panic. aborting.
