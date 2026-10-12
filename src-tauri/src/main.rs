@@ -2379,9 +2379,14 @@ fn main() {
                     if let Ok(path) = get_settings_path(app_handle.clone()) {
                         if let Ok(content) = std::fs::read_to_string(&path) {
                             if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-                                if let Some(icon_file) = json.get("appIcon").and_then(|v| v.as_str()) {
-                                    let _ = set_app_icon(app_handle, icon_file.to_string());
-                                }
+                                let icon_file = json
+                                    .get("appIcon")
+                                    .and_then(|v| v.as_str())
+                                    .filter(|filename| !filename.is_empty())
+                                    .unwrap_or("A visually striking illustration.png");
+                                // Reapply the saved icon to recreated Windows shortcuts after reinstall,
+                                // as well as to the live window and system tray.
+                                let _ = hard_apply_app_icon(app_handle, icon_file.to_string());
                             }
                         }
                     }
