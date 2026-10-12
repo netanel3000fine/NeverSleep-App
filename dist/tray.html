@@ -198,8 +198,9 @@
         }
 
         body.white-mode .power-toggle {
-            background: rgba(0, 0, 0, 0.12);
-            border-color: rgba(15, 23, 42, 0.38);
+            background: #d7dde7;
+            border-color: #98a3b3;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.16);
         }
 
         .power-toggle.active {
@@ -452,8 +453,16 @@
         }
 
         body.white-mode .mini-toggle {
-            background: rgba(0, 0, 0, 0.12);
-            border-color: rgba(15, 23, 42, 0.38);
+            background: #d7dde7;
+            border-color: #98a3b3;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.16);
+        }
+
+        body.white-mode .power-toggle.active,
+        body.white-mode .mini-toggle.active {
+            background: var(--theme-color);
+            border-color: rgba(15, 23, 42, 0.4);
+            box-shadow: 0 0 0 1px rgba(var(--theme-color-rgb, 249, 115, 22), 0.18), 0 0 8px var(--theme-glow);
         }
 
         .mini-toggle.active {
