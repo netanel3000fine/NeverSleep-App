@@ -29,10 +29,13 @@
     // Close overlay on any mouse movement or keyboard input
     let hasInput = false;
 
-    function closeOverlay() {
+    async function closeOverlay() {
       if (!hasInput && window.__TAURI__) {
         hasInput = true;
-        window.__TAURI__.invoke('close_screen_overlay');
+        try {
+          await window.__TAURI__.invoke('record_input_activity', { inputType: 'mouse' });
+        } catch (e) {}
+        window.__TAURI__.invoke('close_screen_overlay').catch(() => {});
       }
     }
 
@@ -45,8 +48,6 @@
     // Force focus
     window.onload = () => {
       window.focus();
-      // Also try to close if clicked immediately
-      document.body.click();
     };
   </script>
 </body>

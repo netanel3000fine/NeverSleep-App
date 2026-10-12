@@ -64,9 +64,12 @@
         } catch(e) {}
 
         let active = false;
-        function wake() {
+        async function wake() {
             if (active) return;
             active = true;
+            try {
+                if (window.__TAURI__) await window.__TAURI__.invoke('record_input_activity', { inputType: 'mouse' });
+            } catch (e) {}
             invoke('close_screen_overlay').catch(console.error);
         }
         window.addEventListener('mousemove', wake);

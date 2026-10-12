@@ -145,29 +145,32 @@
 
         /* ===== VIEW MODES ===== */
         .liquid-glass-mode {
-            background: rgba(11, 15, 26, 0.82) !important;
-            backdrop-filter: blur(25px) !important;
-            -webkit-backdrop-filter: blur(25px) !important;
+            background: rgba(14, 18, 28, 0.85) !important;
+            backdrop-filter: blur(32px) saturate(160%) brightness(104%) !important;
+            -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(104%) !important;
+            font-family: system-ui, -apple-system, 'SF Pro Display', 'Segoe UI', sans-serif !important;
         }
         .liquid-glass-mode .category-block {
-            background: rgba(255, 255, 255, 0.03) !important;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.07) !important;
-            box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.05) !important;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.14) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 4px 20px 0 rgba(0, 0, 0, 0.22);
+            border-radius: 16px;
         }
         body.white-mode.liquid-glass-mode,
         body.white-mode .liquid-glass-mode {
-            background: rgba(240, 242, 247, 0.85) !important;
+            background: rgba(245, 247, 250, 0.88) !important;
         }
         body.white-mode .liquid-glass-mode .category-block {
-            background: rgba(255, 255, 255, 0.92) !important;
-            border: 1px solid rgba(15, 23, 42, 0.08) !important;
-            box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.05);
+            background: rgba(255, 255, 255, 0.75) !important;
+            border: 1px solid rgba(0, 0, 0, 0.08) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.90), 0 4px 20px 0 rgba(0, 0, 0, 0.05);
+            border-radius: 16px;
         }
         body.white-mode .app-container.liquid-glass-mode .category-block {
-            background: rgba(255, 255, 255, 0.92) !important;
-            border-color: rgba(15, 23, 42, 0.08) !important;
+            background: rgba(255, 255, 255, 0.75) !important;
+            border-color: rgba(0, 0, 0, 0.08) !important;
         }
 
         .coffee-mode {
@@ -511,10 +514,17 @@
             background: rgba(15, 23, 42, 0.38);
         }
 
-        body.white-mode .popup-modal {
-            background: #ffffff;
-            border-color: rgba(0, 0, 0, 0.1);
-            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.16);
+        body.white-mode .popup-modal,
+        body.white-mode .liquid-glass-mode .popup-modal,
+        body.white-mode.liquid-glass-mode .popup-modal,
+        .white-mode .popup-modal {
+            background: rgba(255, 255, 255, 0.94) !important;
+            backdrop-filter: blur(32px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(32px) saturate(180%) !important;
+            border: 1px solid rgba(0, 0, 0, 0.10) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), 0 20px 50px rgba(0, 0, 0, 0.16) !important;
+            border-radius: 18px;
+            color: #0f172a !important;
         }
 
         body.coffee-mode .popup-modal {
@@ -523,11 +533,15 @@
             box-shadow: 0 24px 50px rgba(0, 0, 0, 0.7) !important;
         }
 
-        .liquid-glass-mode .popup-modal {
-            background: rgba(17, 24, 39, 0.88) !important;
-            backdrop-filter: blur(24px) !important;
-            -webkit-backdrop-filter: blur(24px) !important;
-            border-color: rgba(255, 255, 255, 0.16) !important;
+        body:not(.white-mode) .liquid-glass-mode .popup-modal,
+        body:not(.white-mode).liquid-glass-mode .popup-modal,
+        .liquid-glass-mode:not(.white-mode) .popup-modal {
+            background: rgba(18, 22, 34, 0.90) !important;
+            backdrop-filter: blur(28px) saturate(160%) !important;
+            -webkit-backdrop-filter: blur(28px) saturate(160%) !important;
+            border: 1px solid rgba(255, 255, 255, 0.20) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.30), 0 20px 50px rgba(0, 0, 0, 0.45) !important;
+            border-radius: 18px;
         }
 
         .popup-header {
@@ -542,8 +556,27 @@
         }
 
         body.white-mode .popup-header {
-            background: rgba(0, 0, 0, 0.02);
-            border-bottom-color: rgba(0, 0, 0, 0.06);
+            background: rgba(0, 0, 0, 0.02) !important;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.07) !important;
+        }
+
+        body.white-mode .popup-title {
+            color: #0f172a !important;
+        }
+
+        body.white-mode .popup-desc {
+            color: rgba(15, 23, 42, 0.65) !important;
+        }
+
+        body.white-mode .popup-close-btn {
+            background: rgba(0, 0, 0, 0.04) !important;
+            color: #0f172a !important;
+            border: 1px solid rgba(0, 0, 0, 0.08) !important;
+        }
+
+        body.white-mode .popup-close-btn:hover {
+            background: rgba(0, 0, 0, 0.08) !important;
+            color: #000000 !important;
         }
 
         .popup-header-title-wrap {
@@ -1364,8 +1397,10 @@
         }
 
         .preview-liquid {
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
-            backdrop-filter: blur(10px);
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.05));
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.20);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
         }
 
         .preview-coffee {
@@ -1437,6 +1472,63 @@
             font-size: 10px;
             color: var(--text-secondary);
             font-weight: 500;
+        }
+
+        body.white-mode .view-mode-tile {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1.5px solid rgba(0, 0, 0, 0.10);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        body.white-mode .view-mode-tile:hover {
+            background: rgba(255, 255, 255, 0.98);
+            border-color: rgba(0, 0, 0, 0.20);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+        }
+
+        body.white-mode .view-mode-tile.selected {
+            background: rgba(var(--theme-color-rgb, 249, 115, 22), 0.14);
+            border-color: var(--theme-color);
+            box-shadow: 0 0 12px rgba(var(--theme-color-rgb, 249, 115, 22), 0.25), 0 0 0 1px var(--theme-color);
+        }
+
+        body.white-mode .view-mode-tile-title {
+            color: #0f172a !important;
+        }
+
+        body.white-mode .view-mode-tile-sub {
+            color: rgba(15, 23, 42, 0.65) !important;
+        }
+
+        body.white-mode .preview-liquid {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(240, 243, 248, 0.92));
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1);
+        }
+        body.white-mode .preview-liquid .vm-mock-window {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+        }
+        body.white-mode .preview-liquid .vm-mock-bar {
+            background: rgba(0, 0, 0, 0.25);
+        }
+
+        body.white-mode .preview-classic {
+            background: #e2e8f0;
+            border: 1px solid rgba(0, 0, 0, 0.10);
+        }
+        body.white-mode .preview-classic .vm-mock-window {
+            background: #ffffff;
+            border-color: rgba(0, 0, 0, 0.12);
+        }
+        body.white-mode .preview-classic .vm-mock-bar {
+            background: rgba(0, 0, 0, 0.25);
+        }
+
+        body.white-mode .color-section-label,
+        body.white-mode .icon-section-label {
+            color: rgba(15, 23, 42, 0.65) !important;
         }
 
         /* ===== EXPANDABLE PROFILE CARDS WITH CIRCULAR 24-HOUR DIAL ===== */
@@ -2901,11 +2993,24 @@
 
         function applySettingsViewMode(mode) {
             const container = document.getElementById('appContainer');
-            container.classList.remove('liquid-glass-mode', 'coffee-mode', 'classic-mode');
-            if (mode === 'liquid-glass') container.classList.add('liquid-glass-mode');
-            else if (mode === 'coffee') container.classList.add('coffee-mode');
-            else container.classList.add('classic-mode');
+            if (container) {
+                container.classList.remove('liquid-glass-mode', 'coffee-mode', 'classic-mode');
+                if (mode === 'liquid-glass') container.classList.add('liquid-glass-mode');
+                else if (mode === 'coffee') container.classList.add('coffee-mode');
+                else container.classList.add('classic-mode');
+            }
+            document.body.classList.remove('liquid-glass-mode', 'coffee-mode', 'classic-mode');
+            if (mode === 'liquid-glass') document.body.classList.add('liquid-glass-mode');
+            else if (mode === 'coffee') document.body.classList.add('coffee-mode');
+            else document.body.classList.add('classic-mode');
+
+            // Apply / clear native Windows DWM Acrylic blur
+            if (window.__TAURI__) {
+                const effect = (mode === 'liquid-glass') ? 'acrylic' : 'none';
+                window.__TAURI__.invoke('set_window_effect', { effect }).catch(() => {});
+            }
         }
+
 
         function hexToRgb(hex) {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);

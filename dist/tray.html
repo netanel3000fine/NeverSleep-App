@@ -74,10 +74,13 @@
         }
 
         /* ===== THEMES ===== */
-        body.liquid-glass-mode .tray-card {
-            background: rgba(18, 24, 38, 0.88);
-            border-color: rgba(255, 255, 255, 0.16);
-            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.18);
+        body:not(.white-mode).liquid-glass-mode .tray-card {
+            background: rgba(18, 22, 34, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.20);
+            box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.32), 0 12px 36px rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(28px) saturate(160%);
+            -webkit-backdrop-filter: blur(28px) saturate(160%);
+            font-family: system-ui, -apple-system, 'SF Pro Display', 'Segoe UI', sans-serif;
         }
 
         body.coffee-mode .tray-card {
@@ -86,11 +89,14 @@
             box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
         }
 
+        body.white-mode.liquid-glass-mode .tray-card,
         body.white-mode .tray-card {
-            background: rgba(248, 250, 252, 0.96);
-            border-color: rgba(0, 0, 0, 0.12);
-            color: #0f172a;
-            box-shadow: none;
+            background: rgba(255, 255, 255, 0.92) !important;
+            border: 1px solid rgba(0, 0, 0, 0.10) !important;
+            box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.95), 0 12px 36px rgba(0, 0, 0, 0.12) !important;
+            backdrop-filter: blur(28px) saturate(160%);
+            -webkit-backdrop-filter: blur(28px) saturate(160%);
+            color: #0f172a !important;
         }
         body.white-mode {
             --text-primary: #0f172a;
@@ -532,16 +538,16 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            margin-top: auto;
-            padding-top: 8px;
-            border-top: 1px solid var(--surface-border);
+            margin-top: 0;
+            padding-top: 0;
+            border-top: none;
         }
 
         .action-btn {
             flex: 1;
-            height: 32px;
+            height: 26px;
             padding: 0 4px;
-            border-radius: 9px;
+            border-radius: 7px;
             background: var(--surface);
             border: 1px solid var(--surface-border);
             color: var(--text-secondary);
@@ -553,9 +559,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 5px;
             white-space: nowrap;
             box-sizing: border-box;
+            line-height: 1;
         }
 
         .action-btn:hover {
@@ -568,7 +574,7 @@
             background: var(--theme-color);
             border-color: var(--theme-color);
             color: #fff;
-            box-shadow: 0 0 12px var(--theme-glow);
+            box-shadow: 0 0 10px var(--theme-glow);
         }
 
         .action-btn.primary:hover {
@@ -668,16 +674,16 @@
         <!-- Action Footer -->
         <div class="footer-actions">
             <button type="button" class="action-btn primary" id="openMainBtn" title="Open Main Window" data-i18n-title="tray_open_main_window">
-                <span>💻 <span data-i18n="tray_open">Open</span></span>
+                <span data-i18n="tray_open">Open</span>
             </button>
             <button type="button" class="action-btn" id="openSettingsBtn" title="Open Settings" data-i18n-title="tray_open_settings">
-                <span>⚙️ <span data-i18n="settings_btn">Settings</span></span>
+                <span data-i18n="settings_btn">Settings</span>
             </button>
             <button type="button" class="action-btn" id="restartBtn" title="Restart Never Sleep" data-i18n-title="tray_restart_never_sleep">
-                <span>🔄 <span data-i18n="tray_restart">Restart</span></span>
+                <span data-i18n="tray_restart">Restart</span>
             </button>
             <button type="button" class="action-btn danger" id="quitBtn" title="Quit Application" data-i18n-title="tray_quit_application">
-                <span>❌ <span data-i18n="tray_quit">Quit</span></span>
+                <span data-i18n="tray_quit">Quit</span>
             </button>
         </div>
     </div>
@@ -751,7 +757,14 @@
             if (mode === 'liquid-glass') document.body.classList.add('liquid-glass-mode');
             else if (mode === 'coffee') document.body.classList.add('coffee-mode');
             else document.body.classList.add('classic-mode');
+
+            // Apply / clear native Windows DWM Acrylic blur
+            if (window.__TAURI__) {
+                const effect = (mode === 'liquid-glass') ? 'acrylic' : 'none';
+                window.__TAURI__.invoke('set_window_effect', { effect }).catch(() => {});
+            }
         }
+
 
         function syncFromStorage() {
             try {
@@ -1203,6 +1216,7 @@
         // Initial Sync
         syncFromStorage();
         syncAutostartToggle();
+        window.addEventListener('load', () => resizeTrayWindowToContent());
 
     </script>
 </body>

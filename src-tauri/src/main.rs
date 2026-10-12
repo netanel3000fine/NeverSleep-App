@@ -292,9 +292,38 @@ fn force_sleep(_app: tauri::AppHandle, _state: tauri::State<'_, AppState>) -> Re
     Ok(())
 }
 
+#[cfg(target_os = "windows")]
+fn get_windows_last_input_time() -> Option<u64> {
+    use winapi::um::winuser::{GetLastInputInfo, LASTINPUTINFO};
+    use winapi::um::sysinfoapi::GetTickCount;
+    unsafe {
+        let mut lii = LASTINPUTINFO {
+            cbSize: std::mem::size_of::<LASTINPUTINFO>() as u32,
+            dwTime: 0,
+        };
+        if GetLastInputInfo(&mut lii) != 0 {
+            let current_tick = GetTickCount();
+            let elapsed_ms = current_tick.wrapping_sub(lii.dwTime) as u64;
+            let now_ms = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .ok()?
+                .as_millis() as u64;
+            Some(now_ms.saturating_sub(elapsed_ms))
+        } else {
+            None
+        }
+    }
+}
+
 #[tauri::command]
 fn get_last_activity(state: tauri::State<'_, AppState>) -> Result<(u64, String), String> {
-    let activity = state.last_activity.lock().unwrap();
+    let mut activity = state.last_activity.lock().unwrap();
+    #[cfg(target_os = "windows")]
+    if let Some(win_input_time) = get_windows_last_input_time() {
+        if win_input_time > activity.0.saturating_add(50) {
+            *activity = (win_input_time, "mouse".to_string());
+        }
+    }
     Ok(activity.clone())
 }
 
@@ -610,7 +639,7 @@ async fn close_screen_overlay(
     custom_path: Option<String>,
 ) -> Result<(), String> {
     let m = method.unwrap_or_else(|| "ddcci".to_string());
-    match m.as_str() {
+    let close_result = match m.as_str() {
         "win32" => close_darken_win32(),
         "gamma" => close_darken_gamma(),
         "ddcci" | "ddcci_laptop_overlay" => {
@@ -644,7 +673,21 @@ async fn close_screen_overlay(
             overlay_windows.clear();
             Ok(())
         }
+    };
+
+    let now: u64 = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis()
+        .try_into()
+        .unwrap_or(0);
+    {
+        let mut last = state.last_activity.lock().unwrap();
+        *last = (now, "mouse".to_string());
     }
+    let _ = app.emit_all("darken-overlay-closed", ());
+
+    close_result
 }
 
 // ===== BRIGHTNESS METHOD (via PowerShell WMI) =====
@@ -2188,12 +2231,15 @@ fn set_window_effect(app: tauri::AppHandle, effect: String) {
     {
         use window_vibrancy::{apply_acrylic, clear_acrylic};
 
-        let labels = ["main", "settings"];
+        let labels = ["main", "settings", "tray"];
         for label in labels {
             if let Some(window) = app.get_window(label) {
+                // DWM Acrylic requires the window to be resizable on Windows
+                let _ = window.set_resizable(true);
                 match effect.as_str() {
                     "acrylic" => {
-                        let _ = apply_acrylic(&window, Some((10, 10, 15, 60)));
+                        // RGBA tint: dark (18,18,24) at ~59% opacity (150/255) for frosted glass
+                        let _ = apply_acrylic(&window, Some((18, 18, 24, 150)));
                     }
                     "none" => {
                         let _ = clear_acrylic(&window);
@@ -2352,7 +2398,7 @@ fn resize_tray_window(app: tauri::AppHandle, height: f64) {
         let current_x = current_pos.x as f64 / sf;
         let current_y = current_pos.y as f64 / sf;
 
-        let target_h = height.max(180.0).min(500.0);
+        let target_h = height.max(150.0).min(500.0);
         let new_y = current_y + (current_h - target_h);
 
         let _ = tray_win.set_size(tauri::Size::Logical(tauri::LogicalSize { width: 320.0, height: target_h }));
