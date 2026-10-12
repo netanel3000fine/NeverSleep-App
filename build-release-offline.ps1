@@ -16,7 +16,7 @@ Write-Host ""
 
 # 1. Sync source to dist
 Write-Host "Syncing source files to dist/..." -ForegroundColor Cyan
-$filesToSync = @("index.html","settings.html","lang.js","overlay.html","sleep.html")
+$filesToSync = @("index.html","settings.html","lang.js","debug_logging.js","overlay.html","sleep.html")
 foreach ($file in $filesToSync) {
     if (Test-Path $file) {
         Copy-Item $file "dist\$file" -Force

@@ -3,6 +3,7 @@
 
 <head>
     <script src="lang.js"></script>
+    <script src="debug_logging.js"></script>
     <meta charset="UTF-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -54,8 +55,8 @@
             --surface-border: rgba(0, 0, 0, 0.07);
             --surface-card-border: rgba(0, 0, 0, 0.12);
             --text-primary: #0f172a;
-            --text-secondary: rgba(15, 23, 42, 0.5);
-            --text-muted: rgba(15, 23, 42, 0.3);
+            --text-secondary: rgba(15, 23, 42, 0.72);
+            --text-muted: rgba(15, 23, 42, 0.54);
             --input-bg: rgba(0, 0, 0, 0.04);
             --input-border: rgba(0, 0, 0, 0.12);
             --scrollbar-thumb: rgba(0, 0, 0, 0.12);
@@ -76,7 +77,15 @@
         }
 
         body.white-mode .toggle {
-            background: rgba(0, 0, 0, 0.12);
+            background: #d5dbe5;
+            border-color: #aab4c3;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.12);
+        }
+
+        body.white-mode .toggle.active {
+            background: var(--theme-color);
+            border-color: var(--theme-color);
+            box-shadow: 0 0 8px rgba(var(--theme-color-rgb, 249, 115, 22), 0.32);
         }
 
         body.white-mode .input-field,
@@ -719,6 +728,10 @@
             gap: 12px;
         }
 
+        .settings-item.dependent-disabled {
+            opacity: 0.45;
+        }
+
         .settings-item:last-child {
             border-bottom: none;
             padding-bottom: 0;
@@ -761,6 +774,11 @@
         .toggle.active {
             background: var(--theme-color);
             border-color: transparent;
+        }
+
+        .toggle.dependent-disabled {
+            cursor: not-allowed;
+            pointer-events: none;
         }
 
         .toggle-knob {
@@ -2180,8 +2198,8 @@
         <!-- Header -->
         <div class="header">
             <div class="header-icon-wrap">
-                <img id="headerAppIconBg" src="IMG_6276.png" alt="" class="header-icon-bg">
-                <img id="headerAppIcon" src="IMG_6276.png" alt="App Icon" class="header-icon-fg">
+                <img id="headerAppIconBg" src="A visually striking illustration.png" alt="" class="header-icon-bg">
+                <img id="headerAppIcon" src="A visually striking illustration.png" alt="App Icon" class="header-icon-fg">
             </div>
             <div class="header-text">
                 <div class="header-title-row">
@@ -2338,6 +2356,14 @@
                         </div>
                         <div class="toggle" id="disableOnVideoToggle"><div class="toggle-knob"></div></div>
                     </div>
+                    <div class="settings-item">
+                        <div class="label-group">
+                            <span class="item-label" data-i18n="debug_logging">Debug logging</span>
+                            <span class="item-sub" data-i18n="debug_logging_sub">Save detailed app activity to daily text files on the Desktop</span>
+                        </div>
+                        <div class="toggle" id="debugLoggingToggle" role="switch" aria-label="Debug logging"><div class="toggle-knob"></div></div>
+                    </div>
+                    <div class="item-sub" data-debug-log-status role="status" aria-live="polite" style="padding:0 0 12px 0">Debug logging is off</div>
                     <div class="settings-item" style="border-bottom:none;padding-bottom:0">
                         <div class="label-group">
                             <span class="item-label" data-i18n="uptime">Uptime</span>
@@ -2683,7 +2709,7 @@
                         <div class="app-icon-option" data-icon="Stylized Coffee Machine Icon with White Cup - Woopicx.png" title="Coffee Machine">
                             <img src="Stylized Coffee Machine Icon with White Cup - Woopicx.png" alt="Coffee Machine">
                         </div>
-                        <div class="app-icon-option" data-icon="A visually striking illustration.png" title="Energy Can">
+                        <div class="app-icon-option selected" data-icon="A visually striking illustration.png" title="Energy Can">
                             <img src="A visually striking illustration.png" alt="Energy Can">
                         </div>
                         <div class="app-icon-option" data-icon="3D Battery Icon with Lightning Bolt in Isometric View.png" title="Battery">
@@ -2916,15 +2942,39 @@
             el.dataset.val = val ? 'true' : 'false';
             el.onclick = (e) => {
                 if (e) e.stopPropagation();
+                if (el.dataset.disabled === 'true') return;
                 const n = el.dataset.val !== 'true';
                 el.dataset.val = n ? 'true' : 'false';
                 el.classList.toggle('active', n);
                 settings[key] = n;
                 if (callback) callback(n);
+                if (key === 'autostart') {
+                    window.__neverSleepDebugLog?.(`Setting changed: autostart=${n}`);
+                }
                 updateBadges();
                 if (typeof saveSettings === 'function') saveSettings();
             };
             if (callback) callback(val);
+        }
+
+        function syncLockOnCountdownToggle(scheduleEnabled) {
+            const toggle = document.getElementById('lockOnCountdownToggle');
+            if (!toggle) return false;
+            const enabled = !!scheduleEnabled;
+            const row = toggle.closest('.settings-item');
+            if (row) row.classList.toggle('dependent-disabled', !enabled);
+            toggle.classList.toggle('dependent-disabled', !enabled);
+            toggle.dataset.disabled = enabled ? 'false' : 'true';
+            toggle.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+
+            if (!enabled) {
+                const wasEnabled = toggle.dataset.val === 'true' || settings.lockOnCountdown === true;
+                toggle.dataset.val = 'false';
+                toggle.classList.remove('active');
+                settings.lockOnCountdown = false;
+                return wasEnabled;
+            }
+            return false;
         }
 
         // Collapse everything under "Enable notifications" while it is off
@@ -2953,6 +3003,13 @@
                     scheduleToggle.dataset.val = enabled ? 'true' : 'false';
                     scheduleToggle.classList.toggle('active', enabled);
                 }
+                const lockToggle = document.getElementById('lockOnCountdownToggle');
+                if (lockToggle && fresh.lockOnCountdown !== undefined) {
+                    const enabled = !!fresh.lockOnCountdown;
+                    lockToggle.dataset.val = enabled ? 'true' : 'false';
+                    lockToggle.classList.toggle('active', enabled);
+                }
+                syncLockOnCountdownToggle(scheduleToggle?.dataset.val === 'true');
                 if (fresh.darkenMethod) {
                     activeDarkenMethod = fresh.darkenMethod;
                     const darkenMethodCards = document.querySelectorAll('#darkenMethodCardsList .darken-method-card');
@@ -3363,13 +3420,12 @@
 
             if (settings.themeColor) applyTheme(settings.themeColor);
             applyWhiteMode(!!settings.whiteMode);
-            if (settings.appIcon) {
-                applyAppIcon(settings.appIcon, false);
-                if (window.__TAURI__) {
-                    window.__TAURI__.invoke('set_app_icon', { filename: settings.appIcon }).catch(err => {
-                        console.error('Failed to restore settings window icon:', err);
-                    });
-                }
+            settings.appIcon = settings.appIcon || 'A visually striking illustration.png';
+            applyAppIcon(settings.appIcon, false);
+            if (window.__TAURI__) {
+                window.__TAURI__.invoke('set_app_icon', { filename: settings.appIcon }).catch(err => {
+                    console.error('Failed to restore settings window icon:', err);
+                });
             }
             activeDarkenMethod = settings.darkenMethod || 'ddcci';
             setupDarkenMethodSubpage();
@@ -3409,6 +3465,7 @@
                 if (window.__TAURI__) window.__TAURI__.invoke('set_pinned', { pinned: val });
             });
             setupToggle('disableOnVideoToggle', 'disableOnVideo', false);
+            setupToggle('debugLoggingToggle', 'debugLoggingEnabled', false);
 
             let currentMode = settings.viewMode || 'liquid-glass';
             if (currentMode === 'modern') currentMode = 'liquid-glass';
@@ -3494,13 +3551,16 @@
                     parentToggle.dataset.val = active ? 'true' : 'false';
                     parentToggle.classList.toggle('active', active);
                     settings.timeProfilesEnabled = active;
+                    syncLockOnCountdownToggle(active);
                     updateBadges();
                 }
             }
 
             const defaultEnabled = settings.timeProfilesEnabled !== undefined ? !!settings.timeProfilesEnabled : (window.timeProfiles.length > 0 && window.timeProfiles.some(p => p.enabled !== false));
+            const lockNeedsPersistence = !defaultEnabled && !!settings.lockOnCountdown;
             setupToggle('timeProfilesEnabledToggle', 'timeProfilesEnabled', defaultEnabled, (val) => {
                 settings.timeProfilesEnabled = val;
+                syncLockOnCountdownToggle(val);
                 if (val && settings.scheduleActionMode === 'countdown') {
                     settings._countdownRestartAt = Date.now();
                 }
@@ -4237,6 +4297,7 @@
             // Do not let programmatic setup (notably the initial theme apply)
             // autosave default/empty controls over the values just loaded.
             isInitializing = false;
+            if (lockNeedsPersistence) setTimeout(() => saveSettings(), 0);
         }
 
         window.showOnlySection = function(section) {
@@ -4300,7 +4361,7 @@
         if (hardApplyBtn) {
             hardApplyBtn.addEventListener('click', async () => {
                 const selectedOpt = document.querySelector('.app-icon-option.selected');
-                const filename = selectedOpt ? selectedOpt.dataset.icon : (settings.appIcon || 'IMG_6276.png');
+                const filename = selectedOpt ? selectedOpt.dataset.icon : (settings.appIcon || 'A visually striking illustration.png');
                 hardApplyBtn.disabled = true;
                 if (hardApplyStatus) hardApplyStatus.textContent = 'Updating Windows shortcuts...';
 
@@ -4399,6 +4460,7 @@
                 breakMinutes: enforceMin('breakMinutes', 1),
                 pinned: getToggle('pinToggle'),
                 disableOnVideo: getToggle('disableOnVideoToggle'),
+                debugLoggingEnabled: getToggle('debugLoggingToggle'),
                 viewMode: settings.viewMode || 'liquid-glass',
                 language: document.getElementById('languageSelect')?.value || 'en',
                 whiteMode: document.body.classList.contains('white-mode'),
@@ -4406,7 +4468,7 @@
                 minimizeOnDarken: getToggle('minimizeToggle'),
                 notificationsEnabled: getToggle('notificationsToggle'),
                 soundEnabled: getToggle('soundToggle'),
-                lockOnCountdown: getToggle('lockOnCountdownToggle'),
+                lockOnCountdown: getToggle('timeProfilesEnabledToggle') && getToggle('lockOnCountdownToggle'),
                 autostartMinimized: getToggle('autostartMinimizedToggle')
             };
             settings = newSettings;

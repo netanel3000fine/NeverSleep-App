@@ -3,6 +3,7 @@
 
 <head>
   <script src="lang.js"></script>
+  <script src="debug_logging.js"></script>
   <meta charset="UTF-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -5270,6 +5271,51 @@
       box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
     }
 
+    body.white-mode .toggle-label,
+    body.white-mode .timer-label,
+    body.white-mode #shutdownToggleLabel {
+      color: #0f172a !important;
+      text-shadow: none !important;
+    }
+
+    body.white-mode .status-text {
+      color: #0f172a !important;
+      text-shadow: none !important;
+    }
+
+    body.white-mode .status-text span {
+      color: var(--theme-color) !important;
+      text-shadow: none !important;
+    }
+
+    body.white-mode #darkenTimerContainer {
+      color: #0f172a !important;
+      text-shadow: none !important;
+      filter: none !important;
+    }
+
+    body.white-mode .schedule-cover-content {
+      color: #0f172a !important;
+      text-shadow: none !important;
+    }
+
+    body.white-mode .schedule-cover-sub {
+      color: rgba(15, 23, 42, 0.72) !important;
+    }
+
+    body.white-mode.coffee-mode .status,
+    body.white-mode.coffee-mode .timer-label,
+    body.white-mode.coffee-mode .status-text {
+      color: #0f172a !important;
+      text-shadow: none !important;
+    }
+
+    body.white-mode.coffee-mode .toggle-row .toggle-label,
+    body.white-mode.coffee-mode .toggle-row:has(.toggle.active) .toggle-label {
+      color: #0f172a !important;
+      text-shadow: none !important;
+    }
+
     body.white-mode .icon-btn:hover {
       background: rgba(15, 23, 42, 0.06);
     }
@@ -5946,8 +5992,12 @@
     // Runtime state
     let isSleeping = false;
     let screenDarkened = false;
+    let overlayRetryCount = 0;
+    let overlayRetryAt = 0;
+    let overlayRetryDelayMs = 1000;
     let initCheck = true;
     let lastAct = 0;
+    let lastLoggedKeyboardActivityAt = 0;
     let lastBreak = 0;
     let uptime = 0;
     // Snapshot of isScreenOn captured the moment schedule-driven sleep begins,
@@ -6173,6 +6223,10 @@
           }
 
           if (!isScreenOn && !isSleeping) {
+            if (type === 'keyboard' && now - lastLoggedKeyboardActivityAt >= 1000) {
+              lastLoggedKeyboardActivityAt = now;
+              window.__neverSleepDebugLog?.('Darken timer reset by keyboard activity; key contents not recorded');
+            }
             resetDarkenTimer();
           }
 
@@ -6477,7 +6531,9 @@
         disableOnVideo = s.disableOnVideo === true;
         focusOnCountdown = s.focusOnCountdown === undefined ? false : s.focusOnCountdown;
         minimizeOnDarken = s.minimizeOnDarken === undefined ? false : s.minimizeOnDarken;
-        lockOnCountdown = s.lockOnCountdown === undefined ? false : !!s.lockOnCountdown;
+        const wasLockOnCountdown = lockOnCountdown;
+        lockOnCountdown = timeProfilesEnabled && s.lockOnCountdown === true;
+        if (wasLockOnCountdown && !lockOnCountdown) cancelPreLockWarning();
         darkenMethod = s.darkenMethod || 'ddcci';
         controlMyMonitorPath = s.controlMyMonitorPath || '';
 
@@ -6507,6 +6563,9 @@
     function resetDarkenTimer() {
       const total = (darkenHours * 3600) + (darkenMinutes * 60);
       darkenTargetTime = Date.now() + (total * 1000);
+      overlayRetryCount = 0;
+      overlayRetryAt = 0;
+      overlayRetryDelayMs = 1000;
       lastInactivityStart = Date.now();
       minimizeTriggered = false;
       focusTriggered = false;
@@ -6521,9 +6580,28 @@
       }
     }
 
-    function createOverlay() {
-      if (window.__TAURI__) window.__TAURI__.invoke('create_screen_overlay', { method: darkenMethod, customPath: controlMyMonitorPath || null }).catch(() => { });
+    async function createOverlay() {
+      if (Date.now() < overlayRetryAt) return false;
+      if (overlayRetryCount === 0) {
+        window.__neverSleepDebugLog?.(`Screen darken started; method=${darkenMethod}; customMonitorPath=${controlMyMonitorPath || 'auto-detect'}`);
+      } else {
+        window.__neverSleepDebugLog?.(`Retrying screen overlay creation; attempt=${overlayRetryCount + 1}`);
+      }
+      if (!window.__TAURI__) return false;
+      try {
+        await window.__TAURI__.invoke('create_screen_overlay', { method: darkenMethod, customPath: controlMyMonitorPath || null });
+      } catch (error) {
+        window.__neverSleepDebugLog?.(`Could not create screen overlay: ${error}; retrying after ${overlayRetryDelayMs}ms`);
+        overlayRetryAt = Date.now() + overlayRetryDelayMs;
+        overlayRetryDelayMs = Math.min(overlayRetryDelayMs * 2, 10000);
+        overlayRetryCount++;
+        return false;
+      }
       screenDarkened = true;
+      overlayRetryCount = 0;
+      overlayRetryAt = 0;
+      overlayRetryDelayMs = 1000;
+      return true;
     }
 
     // Overlay Tooltips - Fixed Target Parent
@@ -6622,22 +6700,26 @@
       if (toast) toast.classList.remove('visible');
     }
 
-    function triggerPreLockWarning() {
+    function triggerPreLockWarning(reason) {
       if (!lockOnCountdown || lockWarningTimer) return;
+      window.__neverSleepDebugLog?.(`Lock countdown requested; reason=${reason}`);
 
       if (window.__TAURI__) {
         window.__TAURI__.invoke('is_workstation_locked').then(isLocked => {
           if (isLocked) return;
-          startWarningCountdown();
-        }).catch(() => startWarningCountdown());
+          startWarningCountdown(reason);
+        }).catch(error => {
+          window.__neverSleepDebugLog?.(`Could not verify workstation lock state; skipping lock countdown: ${error}`);
+        });
       } else {
-        startWarningCountdown();
+        startWarningCountdown(reason);
       }
     }
 
-    function startWarningCountdown() {
+    function startWarningCountdown(reason) {
       cancelPreLockWarning();
       lockWarningRemaining = 15;
+      window.__neverSleepDebugLog?.(`Lock countdown started; reason=${reason}; seconds=15`);
       const toast = document.getElementById('lockWarningToast');
       const text = document.getElementById('lockWarningText');
       const cancelBtn = document.getElementById('lockCancelBtn');
@@ -6669,6 +6751,7 @@
         } else {
           cancelPreLockWarning();
           if (window.__TAURI__) {
+            window.__neverSleepDebugLog?.(`Lock workstation command issued; reason=${reason}`);
             window.__TAURI__.invoke('lock_workstation').catch(err => {
               console.error('Failed to lock workstation:', err);
             });
@@ -6678,6 +6761,7 @@
     }
 
     function enterSleepMode(options = {}) {
+      window.__neverSleepDebugLog?.(`Sleep mode entered; mode=${options.mode || scheduleActionMode}; focus=${options.focus === true}`);
       // Snapshot the user's darken preference the first time we enter sleep mode
       // (don't overwrite if already sleeping — e.g. mode switch while overlay is open)
       if (!isSleeping && preScheduleScreenOn === null) {
@@ -6702,6 +6786,7 @@
     }
 
     function exitSleepModeAndPreventSleep() {
+      window.__neverSleepDebugLog?.('Sleep mode exited; sleep prevention resumed');
       cancelPreLockWarning();
       const wasSleeping = isSleeping;
       isSleeping = false;
@@ -6747,7 +6832,7 @@
           // Not sleeping but schedule turned off — also clear snapshot
           preScheduleScreenOn = null;
           if (!isScreenOn) resetDarkenTimer();
-          else if (window.__TAURI__) window.__TAURI__.invoke('prevent_sleep').catch(() => { });
+          if (window.__TAURI__) window.__TAURI__.invoke('prevent_sleep').catch(() => { });
         }
         shutdownTargetTime = 0;
         updateSleepOverlayUI();
@@ -6789,7 +6874,7 @@
         screenDarkened = false;
         if (window.__TAURI__) {
           window.__TAURI__.invoke('close_screen_overlay', { method: darkenMethod, customPath: controlMyMonitorPath || null }).catch(() => { });
-          if (isScreenOn) window.__TAURI__.invoke('prevent_sleep').catch(() => { });
+          window.__TAURI__.invoke('prevent_sleep').catch(() => { });
         }
         shutdownTargetTime = 0;
         if (isScreenOn) {
@@ -6818,7 +6903,11 @@
     }
 
     // Main Loop
+    let mainLoopRunning = false;
     setInterval(async () => {
+      if (mainLoopRunning) return;
+      mainLoopRunning = true;
+      try {
       // 0. Background media playback check
       if (disableOnVideo && window.__TAURI__) {
         try {
@@ -6869,7 +6958,7 @@
           if (window.__TAURI__) window.__TAURI__.invoke('allow_sleep').catch(() => {});
           enterSleepMode({ mode: 'countdown' });
           if (lockOnCountdown) {
-            triggerPreLockWarning();
+            triggerPreLockWarning('countdown ended');
           }
           notify('NeverSleep', (translations[window.currentLang] && translations[window.currentLang].countdown_expired) ? translations[window.currentLang].countdown_expired : 'Countdown ended \u2014 sleep prevention paused.');
         }
@@ -6879,15 +6968,18 @@
       if (!isScreenOn && !screenDarkened && !isSleeping) {
         const now = Date.now();
         const rem = (darkenTargetTime - now) / 1000;
-        const inactivitySeconds = (now - lastInactivityStart) / 1000;
+        let inactivitySeconds = (now - lastInactivityStart) / 1000;
+        let mainWindowVisible = false;
 
         if (window.__TAURI__) {
           const isVisible = await window.__TAURI__.invoke('is_main_visible');
+          mainWindowVisible = isVisible;
           if (isVisible && !wasMainVisible) {
             lastInactivityStart = Date.now();
             minimizeTriggered = false;
           }
           wasMainVisible = isVisible;
+          inactivitySeconds = (Date.now() - lastInactivityStart) / 1000;
 
           // 1. Minimize Window to System Tray 10 seconds after countdown starts with no cursor/keyboard activity
           if (minimizeOnDarken && inactivitySeconds >= 10 && !minimizeTriggered && isVisible) {
@@ -6897,20 +6989,25 @@
         }
 
         // 2. Focus Logic (Pop up window 10s before darken from system tray)
-        if (focusOnCountdown && rem <= 10 && rem > 0 && !focusTriggered) {
-          focusTriggered = true;
+        if (focusOnCountdown && rem <= 10 && rem > 0 && !focusTriggered && !mainWindowVisible) {
           if (window.__TAURI__) {
-            await focusMainWindow();
-            lastInactivityStart = Date.now();
-            minimizeTriggered = false;
+            try {
+              await window.__TAURI__.invoke('show_main_window');
+              focusTriggered = true;
+              window.__neverSleepDebugLog?.('Main window shown before darken without taking keyboard focus');
+            } catch (error) {
+              window.__neverSleepDebugLog?.(`Could not show main window before darken: ${error}`);
+            }
           }
         }
 
         // 3. Overlay
         if (rem <= 0) {
-          await createOverlay();
-          notify('Screens Dark', 'Moved mouse to wake');
-          darkModeStartTime = Date.now();
+          const overlayCreated = await createOverlay();
+          if (overlayCreated) {
+            notify('Screens Dark', 'Moved mouse to wake');
+            darkModeStartTime = Date.now();
+          }
         }
       }
 
@@ -6924,7 +7021,7 @@
         } else if (!isSleeping) {
           enterSleepMode({ mode: scheduleActionMode });
           if (lockOnCountdown) {
-            triggerPreLockWarning();
+            triggerPreLockWarning('scheduled sleep started');
           }
         }
       }
@@ -6940,11 +7037,20 @@
 
       updateUI();
       updateCoffeePour();
+      } catch (error) {
+        window.__neverSleepDebugLog?.(`Main loop error: ${error}`);
+      } finally {
+        mainLoopRunning = false;
+      }
     }, 1000);
 
     // ── Disable toggle logic ──
     function setAppDisabled(disabled) {
+      const previousDisabled = appDisabled;
       appDisabled = disabled;
+      if (previousDisabled !== disabled) {
+        window.__neverSleepDebugLog?.(`App disabled state changed: ${previousDisabled} -> ${disabled}; reason=${disabledByMedia ? 'media playback' : 'user or schedule'}`);
+      }
       document.body.classList.toggle('app-disabled', disabled);
       const dot = document.getElementById('pillDot');
       const label = document.getElementById('pillLabel');
@@ -6981,6 +7087,7 @@
         if (sleepOverlay) sleepOverlay.classList.remove('show');
       } else {
         applyScheduleState({ focus: false });
+        if (!isSleeping && window.__TAURI__) window.__TAURI__.invoke('prevent_sleep').catch(() => { });
         updateUI();
         updateCoffeePour();
       }
@@ -7107,6 +7214,7 @@
             setAppDisabled(false);
           }
           isScreenOn = !isScreenOn;
+          window.__neverSleepDebugLog?.(`Keep-awake state changed from tray: screenOn=${isScreenOn}`);
           saveTogglesState();
           if (isScreenOn) {
             const darkenTimerContainer = document.getElementById('darkenTimerContainer');
@@ -7191,6 +7299,7 @@
 
     document.getElementById('activateToggle').onclick = async function () {
       isScreenOn = !isScreenOn; this.classList.toggle('active', isScreenOn);
+      window.__neverSleepDebugLog?.(`Keep-awake state changed by user: screenOn=${isScreenOn}`);
       saveTogglesState();
       if (isScreenOn) {
         if (darkenTimerContainer) darkenTimerContainer.style.display = 'none';

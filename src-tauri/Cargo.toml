@@ -23,6 +23,7 @@ tauri-build = { version = "1.5.5", features = [] }
 tauri = { version = "1.8.1", features = [ "icon-png", "icon-ico", "shell-open", "notification-all", "window-minimize", "window-close", "system-tray", "window-hide", "window-start-dragging", "window-show", "notification", "dialog"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+dirs-next = "2"
 reqwest = { version = "0.11", features = ["blocking", "native-tls", "json"] }
 rdev = "0.5"
 winreg = "0.50"
@@ -32,9 +33,9 @@ image = { version = "0.24", default-features = false, features = ["png", "jpeg"]
 
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["winbase", "winnt", "synchapi", "errhandlingapi", "winerror", "winuser", "dwmapi", "windef", "handleapi", "wingdi", "libloaderapi"] }
+winapi = { version = "0.3", features = ["winbase", "winnt", "synchapi", "errhandlingapi", "winerror", "winuser", "dwmapi", "windef", "handleapi", "wingdi", "libloaderapi", "minwinbase", "sysinfoapi"] }
 window-vibrancy = "0.4"
-windows = { version = "0.52.0", features = ["Media_Control", "Foundation", "Foundation_Collections", "Media"] }
+windows = { version = "0.52.0", features = ["Media_Control", "Foundation", "Foundation_Collections", "Media", "Win32_Foundation", "Win32_System_Power", "Win32_System_Threading"] }
 
 
 

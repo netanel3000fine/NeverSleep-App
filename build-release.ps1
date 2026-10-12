@@ -9,6 +9,7 @@ $filesToSync = @(
     "index.html",
     "settings.html",
     "lang.js",
+    "debug_logging.js",
     "overlay.html",
     "sleep.html",
     "tray.html"

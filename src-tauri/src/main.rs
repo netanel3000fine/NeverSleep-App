@@ -28,40 +28,247 @@ struct AppState {
     overlay_windows: Mutex<Vec<String>>,
     // Store timestamp and input type ("mouse" or "keyboard")
     last_activity: Arc<Mutex<(u64, String)>>,
+    debug_log: Mutex<DebugLogState>,
+    // Keep the Windows power request handle alive while the app prevents idle lock/sleep.
+    power_request: Mutex<Option<isize>>,
+}
+
+struct DebugLogState {
+    enabled: bool,
+    desktop_dir: Option<std::path::PathBuf>,
+    last_error: Option<String>,
 }
 
 #[tauri::command]
-fn log_to_file(_msg: String) -> Result<(), String> {
+fn log_to_file(app: tauri::AppHandle, state: tauri::State<'_, AppState>, msg: String) -> Result<(), String> {
+    append_debug_log(&app, &state, &msg)
+}
+
+#[cfg(not(target_os = "windows"))]
+fn utc_timestamp() -> (String, String) {
+    let milliseconds = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_millis())
+        .unwrap_or(0);
+    let seconds = milliseconds / 1_000;
+    let days = (seconds / 86_400) as i64;
+    let day_seconds = seconds % 86_400;
+
+    // Convert the UTC day count to a Gregorian calendar date without another crate.
+    let z = days + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let day_of_era = z - era * 146_097;
+    let year_of_era = (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+    let mut year = year_of_era + era * 400;
+    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+    let month_part = (5 * day_of_year + 2) / 153;
+    let day = day_of_year - (153 * month_part + 2) / 5 + 1;
+    let month = month_part + if month_part < 10 { 3 } else { -9 };
+    year += if month <= 2 { 1 } else { 0 };
+    let hour = day_seconds / 3_600;
+    let minute = (day_seconds % 3_600) / 60;
+    let second = day_seconds % 60;
+    let millisecond = milliseconds % 1_000;
+    (
+        format!("{:04}-{:02}-{:02}", year, month, day),
+        format!("{:04}-{:02}-{:02} {:02}:{:02}:{:02}.{:03} UTC", year, month, day, hour, minute, second, millisecond),
+    )
+}
+
+#[cfg(target_os = "windows")]
+fn local_timestamp() -> (String, String) {
+    use winapi::um::minwinbase::SYSTEMTIME;
+    use winapi::um::sysinfoapi::GetLocalTime;
+
+    let mut time: SYSTEMTIME = unsafe { std::mem::zeroed() };
+    unsafe { GetLocalTime(&mut time) };
+    let date = format!("{:04}-{:02}-{:02}", time.wYear, time.wMonth, time.wDay);
+    let timestamp = format!(
+        "{} {:02}:{:02}:{:02}.{:03}",
+        date, time.wHour, time.wMinute, time.wSecond, time.wMilliseconds
+    );
+    (date, timestamp)
+}
+
+#[cfg(not(target_os = "windows"))]
+fn local_timestamp() -> (String, String) {
+    utc_timestamp()
+}
+
+fn write_debug_log_line(logger: &mut DebugLogState, message: &str) -> Result<(), String> {
+    let desktop = logger.desktop_dir.as_ref().ok_or_else(|| "Could not locate the Desktop folder".to_string())?;
+    let (date, timestamp) = local_timestamp();
+    let path = desktop.join(format!("NeverSleep-debug-{}.log", date));
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+        .map_err(|error| format!("Could not open {}: {}", path.display(), error))?;
+    use std::io::Write;
+    writeln!(file, "[{}] {}", timestamp, message)
+        .map_err(|error| format!("Could not write {}: {}", path.display(), error))?;
     Ok(())
 }
 
+fn publish_debug_log_status(app: &tauri::AppHandle, status: String) {
+    let _ = app.emit_all("debug-log-status", status);
+}
+
+fn append_debug_log(app: &tauri::AppHandle, state: &AppState, message: &str) -> Result<(), String> {
+    let mut logger = state.debug_log.lock().map_err(|_| "Debug logger lock is unavailable".to_string())?;
+    if !logger.enabled {
+        return Ok(());
+    }
+    let previous_error = logger.last_error.clone();
+    let result = write_debug_log_line(&mut logger, message);
+    if let Err(error) = &result {
+        logger.last_error = Some(error.clone());
+    } else {
+        logger.last_error = None;
+    }
+    let status = logger.last_error.clone().map(|error| format!("Error: {}", error)).unwrap_or_else(|| {
+        logger.desktop_dir.as_ref().map(|path| format!("Logging to {}", path.display())).unwrap_or_else(|| "Debug logging is enabled".to_string())
+    });
+    drop(logger);
+    if result.is_err() || previous_error.is_some() {
+        publish_debug_log_status(app, status);
+    }
+    result
+}
+
+fn set_debug_logging(app: &tauri::AppHandle, state: &AppState, enabled: bool) -> String {
+    let mut logger = match state.debug_log.lock() {
+        Ok(logger) => logger,
+        Err(_) => return "Error: Debug logger lock is unavailable".to_string(),
+    };
+    let was_enabled = logger.enabled;
+    if enabled {
+        logger.desktop_dir = dirs_next::desktop_dir();
+        logger.enabled = true;
+        if !was_enabled {
+            if let Err(error) = write_debug_log_line(&mut logger, "Debug logging enabled") {
+                logger.last_error = Some(error);
+            } else {
+                logger.last_error = None;
+            }
+        }
+    } else if was_enabled {
+        let final_write = write_debug_log_line(&mut logger, "Debug logging disabled");
+        logger.enabled = false;
+        logger.last_error = final_write.err();
+    }
+    let status = logger.last_error.clone().map(|error| format!("Error: {}", error)).unwrap_or_else(|| {
+        if logger.enabled {
+            logger.desktop_dir.as_ref().map(|path| format!("Logging to {}", path.display())).unwrap_or_else(|| "Debug logging is enabled".to_string())
+        } else {
+            "Debug logging is off".to_string()
+        }
+    });
+    drop(logger);
+    publish_debug_log_status(app, status.clone());
+    status
+}
+
 #[tauri::command]
-fn prevent_sleep() -> Result<(), String> {
+fn get_debug_log_status(state: tauri::State<'_, AppState>) -> String {
+    let logger = match state.debug_log.lock() {
+        Ok(logger) => logger,
+        Err(_) => return "Error: Debug logger lock is unavailable".to_string(),
+    };
+    logger.last_error.clone().map(|error| format!("Error: {}", error)).unwrap_or_else(|| {
+        if logger.enabled {
+            logger.desktop_dir.as_ref().map(|path| format!("Logging to {}", path.display())).unwrap_or_else(|| "Debug logging is enabled".to_string())
+        } else {
+            "Debug logging is off".to_string()
+        }
+    })
+}
+
+#[tauri::command]
+fn prevent_sleep(state: tauri::State<'_, AppState>) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
-        use winapi::um::winbase::SetThreadExecutionState;
-        use winapi::um::winnt::{ES_CONTINUOUS, ES_DISPLAY_REQUIRED, ES_SYSTEM_REQUIRED};
-
-        unsafe {
-            SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED);
-        }
+        set_windows_power_request(&state, true)?;
     }
 
     Ok(())
 }
 
 #[tauri::command]
-fn allow_sleep() -> Result<(), String> {
+fn allow_sleep(state: tauri::State<'_, AppState>) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
-        use winapi::um::winbase::SetThreadExecutionState;
-        use winapi::um::winnt::ES_CONTINUOUS;
-
-        unsafe {
-            SetThreadExecutionState(ES_CONTINUOUS);
-        }
+        set_windows_power_request(&state, false)?;
     }
 
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+fn set_windows_power_request(state: &AppState, enabled: bool) -> Result<(), String> {
+    use windows::Win32::Foundation::{CloseHandle, HANDLE};
+    use windows::Win32::System::Power::{
+        PowerClearRequest, PowerCreateRequest, PowerRequestDisplayRequired,
+        PowerRequestSystemRequired, PowerSetRequest,
+    };
+    use windows::Win32::System::Threading::{
+        REASON_CONTEXT, REASON_CONTEXT_0, POWER_REQUEST_CONTEXT_SIMPLE_STRING,
+    };
+    use windows::core::PWSTR;
+
+    let mut request_slot = state
+        .power_request
+        .lock()
+        .map_err(|_| "Power request state is unavailable".to_string())?;
+
+    if enabled {
+        if request_slot.is_some() {
+            return Ok(());
+        }
+
+        let mut reason: Vec<u16> = "Never Sleep is keeping the PC awake"
+            .encode_utf16()
+            .chain(std::iter::once(0))
+            .collect();
+        let context = REASON_CONTEXT {
+            Version: 0,
+            Flags: POWER_REQUEST_CONTEXT_SIMPLE_STRING,
+            Reason: REASON_CONTEXT_0 {
+                SimpleReasonString: PWSTR(reason.as_mut_ptr()),
+            },
+        };
+        let handle = unsafe { PowerCreateRequest(&context) }
+            .map_err(|error| format!("Could not create Windows power request: {error}"))?;
+
+        if let Err(error) = unsafe { PowerSetRequest(handle, PowerRequestDisplayRequired) } {
+            let _ = unsafe { CloseHandle(handle) };
+            return Err(format!("Could not prevent Windows idle lock: {error}"));
+        }
+        if let Err(error) = unsafe { PowerSetRequest(handle, PowerRequestSystemRequired) } {
+            let _ = unsafe { PowerClearRequest(handle, PowerRequestDisplayRequired) };
+            let _ = unsafe { CloseHandle(handle) };
+            return Err(format!("Could not prevent Windows sleep: {error}"));
+        }
+
+        *request_slot = Some(handle.0);
+        return Ok(());
+    }
+
+    if let Some(raw_handle) = request_slot.take() {
+        let handle = HANDLE(raw_handle);
+        let display_result = unsafe { PowerClearRequest(handle, PowerRequestDisplayRequired) };
+        let system_result = unsafe { PowerClearRequest(handle, PowerRequestSystemRequired) };
+        let close_result = unsafe { CloseHandle(handle) };
+        display_result.map_err(|error| format!("Could not release display power request: {error}"))?;
+        system_result.map_err(|error| format!("Could not release system power request: {error}"))?;
+        close_result.map_err(|error| format!("Could not close Windows power request: {error}"))?;
+    }
+
+    Ok(())
+}
+
+#[cfg(not(target_os = "windows"))]
+fn set_windows_power_request(_state: &AppState, _enabled: bool) -> Result<(), String> {
     Ok(())
 }
 
@@ -114,7 +321,7 @@ fn record_input_activity(
 }
 
 #[cfg(target_os = "windows")]
-fn is_windows_workstation_locked() -> bool {
+fn workstation_lock_state() -> Result<bool, String> {
     use winapi::um::winuser::{
         CloseDesktop, GetUserObjectInformationW, OpenInputDesktop, DESKTOP_READOBJECTS, UOI_NAME,
     };
@@ -122,7 +329,7 @@ fn is_windows_workstation_locked() -> bool {
     unsafe {
         let desktop = OpenInputDesktop(0, 0, DESKTOP_READOBJECTS);
         if desktop.is_null() {
-            return true;
+            return Err(format!("OpenInputDesktop failed: {}", std::io::Error::last_os_error()));
         }
 
         let mut name = [0u16; 256];
@@ -134,26 +341,43 @@ fn is_windows_workstation_locked() -> bool {
             (name.len() * std::mem::size_of::<u16>()) as u32,
             &mut needed,
         );
+        let query_error = if ok == 0 {
+            Some(std::io::Error::last_os_error())
+        } else {
+            None
+        };
         CloseDesktop(desktop);
 
-        if ok == 0 || needed < std::mem::size_of::<u16>() as u32 {
-            return true;
+        if let Some(error) = query_error {
+            return Err(format!("GetUserObjectInformationW failed: {error}"));
+        }
+        if needed < std::mem::size_of::<u16>() as u32 {
+            return Err("GetUserObjectInformationW returned an empty desktop name".into());
+        }
+        if needed as usize > name.len() * std::mem::size_of::<u16>() {
+            return Err("GetUserObjectInformationW returned a desktop name larger than the buffer".into());
         }
 
         let len = (needed as usize / std::mem::size_of::<u16>()).saturating_sub(1);
         let desktop_name = String::from_utf16_lossy(&name[..len]);
-        !desktop_name.eq_ignore_ascii_case("Default")
+        if desktop_name.eq_ignore_ascii_case("Default") {
+            Ok(false)
+        } else if desktop_name.eq_ignore_ascii_case("Winlogon") {
+            Ok(true)
+        } else {
+            Err(format!("Unexpected input desktop: {desktop_name}"))
+        }
     }
 }
 
 #[cfg(not(target_os = "windows"))]
-fn is_windows_workstation_locked() -> bool {
-    false
+fn workstation_lock_state() -> Result<bool, String> {
+    Ok(false)
 }
 
 #[tauri::command]
 fn is_workstation_locked() -> Result<bool, String> {
-    Ok(is_windows_workstation_locked())
+    workstation_lock_state()
 }
 
 #[tauri::command]
@@ -189,7 +413,7 @@ async fn show_notification(
 ) -> Result<(), String> {
     use tauri::api::notification::Notification;
 
-    if is_windows_workstation_locked() {
+    if matches!(workstation_lock_state(), Ok(true)) {
         return Ok(());
     }
 
@@ -208,8 +432,6 @@ async fn show_notification(
 
     Ok(())
 }
-
-fn append_log(_msg: &str) {}
 
 fn create_overlay_window(
     app: &tauri::AppHandle,
@@ -230,6 +452,7 @@ fn create_overlay_window(
     let monitors = main_window
         .available_monitors()
         .map_err(|e| format!("Failed to get monitors: {}", e))?;
+    let mut failures = Vec::new();
 
     for (i, monitor) in monitors.iter().enumerate() {
         let safe_title = title
@@ -248,22 +471,40 @@ fn create_overlay_window(
             .visible(false) // Start hidden to avoid flicker
             .build();
 
-        if let Ok(window) = window {
-            // Force maximize for Windows 11 compat
-            let _ = window.maximize();
+        let window = match window {
+            Ok(window) => window,
+            Err(error) => {
+                failures.push(format!("monitor {}: {}", i, error));
+                continue;
+            }
+        };
 
-            // Use explicit Physical Position/Size to correctly cover monitor regardless of DPI
-            let _ = window.set_position(tauri::Position::Physical(monitor.position().clone()));
-            let _ = window.set_size(tauri::Size::Physical(monitor.size().clone()));
+        // Force maximize for Windows 11 compat
+        let _ = window.maximize();
 
-            // Show it
-            let _ = window.show();
-            // Focus it
-            let _ = window.set_focus();
+        // Use explicit Physical Position/Size to correctly cover monitor regardless of DPI
+        let _ = window.set_position(tauri::Position::Physical(monitor.position().clone()));
+        let _ = window.set_size(tauri::Size::Physical(monitor.size().clone()));
 
-            overlay_windows.push(label);
+        if let Err(error) = window.show() {
+            failures.push(format!("monitor {}: {}", i, error));
+            let _ = window.close();
+            continue;
         }
+
+        overlay_windows.push(label);
     }
+
+    if overlay_windows.is_empty() {
+        if failures.is_empty() {
+            return Err("Windows found no displays for the screen overlay".to_string());
+        }
+        return Err(format!(
+            "Could not show a screen overlay on any display: {}",
+            failures.join("; ")
+        ));
+    }
+
     Ok(())
 }
 
@@ -1222,6 +1463,14 @@ fn focus_main_window(window: tauri::Window) {
 }
 
 #[tauri::command]
+fn show_main_window(window: tauri::Window) {
+    if window.is_minimized().unwrap_or(false) {
+        let _ = window.unminimize();
+    }
+    let _ = window.show();
+}
+
+#[tauri::command]
 fn get_settings_path(app: tauri::AppHandle) -> Result<std::path::PathBuf, String> {
     let config_dir = app
         .path_resolver()
@@ -1275,9 +1524,53 @@ fn save_settings(app: tauri::AppHandle, mut settings: String) -> Result<(), Stri
         }
     }
     let path = get_settings_path(app.clone())?;
+    let previous_settings = std::fs::read_to_string(&path).ok();
     std::fs::write(path, &settings).map_err(|e| e.to_string())?;
+    let debug_logging_enabled = serde_json::from_str::<serde_json::Value>(&settings)
+        .ok()
+        .and_then(|json| json.get("debugLoggingEnabled").and_then(|value| value.as_bool()))
+        .unwrap_or(false);
+    if let Some(state) = app.try_state::<AppState>() {
+        set_debug_logging(&app, &state, debug_logging_enabled);
+        if debug_logging_enabled {
+            if let Some(previous) = previous_settings.as_deref() {
+                if let Some(summary) = summarize_settings_changes(previous, &settings) {
+                    let _ = append_debug_log(&app, &state, &summary);
+                }
+            }
+        }
+    }
     let _ = app.emit_all("settings-updated", settings);
     Ok(())
+}
+
+fn summarize_settings_changes(previous: &str, current: &str) -> Option<String> {
+    let previous = serde_json::from_str::<serde_json::Value>(previous).ok()?;
+    let current = serde_json::from_str::<serde_json::Value>(current).ok()?;
+    let previous = previous.as_object()?;
+    let current = current.as_object()?;
+    let mut changes = Vec::new();
+
+    for (key, value) in current {
+        if previous.get(key) != Some(value) {
+            changes.push(format!(
+                "{}={}",
+                key,
+                serde_json::to_string(value).unwrap_or_else(|_| "<unavailable>".to_string())
+            ));
+        }
+    }
+    for key in previous.keys() {
+        if !current.contains_key(key) {
+            changes.push(format!("{}=<removed>", key));
+        }
+    }
+
+    if changes.is_empty() {
+        None
+    } else {
+        Some(format!("Settings changed: {}", changes.join(", ")))
+    }
 }
 
 #[tauri::command]
@@ -1360,11 +1653,17 @@ fn close_settings(app: tauri::AppHandle) {
 
 #[tauri::command]
 fn quit_app(app: tauri::AppHandle) {
+    if let Some(state) = app.try_state::<AppState>() {
+        let _ = append_debug_log(&app, &state, "Application is shutting down");
+    }
     app.exit(0);
 }
 
 #[tauri::command]
 fn restart_app(app: tauri::AppHandle) {
+    if let Some(state) = app.try_state::<AppState>() {
+        let _ = append_debug_log(&app, &state, "Application is restarting");
+    }
     #[cfg(target_os = "windows")]
     {
         use winapi::um::handleapi::CloseHandle;
@@ -2145,7 +2444,10 @@ fn main() {
                 | EventType::Wheel { .. }
                 | EventType::ButtonPress { .. }
                 | EventType::ButtonRelease { .. } => "mouse",
-                _ => "keyboard",
+                EventType::KeyPress(_) => "keyboard",
+                // A release is the tail of a key action, not new activity. Ignoring it
+                // prevents focus transitions from extending the darken timer spuriously.
+                EventType::KeyRelease(_) => return,
             };
 
             let mut last = activity_clone.lock().unwrap();
@@ -2237,6 +2539,12 @@ fn main() {
         .manage(AppState {
             overlay_windows: Mutex::new(Vec::new()),
             last_activity,
+            debug_log: Mutex::new(DebugLogState {
+                enabled: false,
+                desktop_dir: None,
+                last_error: None,
+            }),
+            power_request: Mutex::new(None),
         })
         .invoke_handler(tauri::generate_handler![
             prevent_sleep,
@@ -2251,10 +2559,12 @@ fn main() {
             get_last_unlock_time,
             show_notification,
             log_to_file,
+            get_debug_log_status,
             set_autostart,
             check_autostart,
             hide_window,
             focus_main_window,
+            show_main_window,
             play_sys_sound,
             open_settings,
             close_settings,
@@ -2356,12 +2666,54 @@ fn main() {
                     api.prevent_close();
                 } else if window.label() == "main" {
                     // Quit app on main window close
+                    if let Some(state) = window.app_handle().try_state::<AppState>() {
+                        let app_handle = window.app_handle();
+                        let _ = append_debug_log(&app_handle, &state, "Main window closed; application is shutting down");
+                    }
                     std::process::exit(0);
                 }
             }
             _ => {}
         })
         .setup(|app| {
+            // Restore the debug logging preference before frontend windows begin polling.
+            let app_handle = app.handle();
+            if let Some(state) = app.try_state::<AppState>() {
+                if let Ok(settings_path) = get_settings_path(app_handle.clone()) {
+                    if let Ok(contents) = std::fs::read_to_string(settings_path) {
+                        if let Ok(settings) = serde_json::from_str::<serde_json::Value>(&contents) {
+                            let logging_enabled = settings
+                                .get("debugLoggingEnabled")
+                                .and_then(|value| value.as_bool())
+                                .unwrap_or(false);
+                            set_debug_logging(&app_handle, &state, logging_enabled);
+                            if logging_enabled {
+                                let _ = append_debug_log(&app_handle, &state, "Application started");
+                            }
+                        }
+                    }
+                }
+
+                // Screen-darken mode also needs an active display power request so Windows
+                // does not start its idle lock/screensaver countdown while the app is running.
+                match set_windows_power_request(&state, true) {
+                    Ok(()) => {
+                        let _ = append_debug_log(
+                            &app_handle,
+                            &state,
+                            "Windows idle lock and sleep prevention activated at startup",
+                        );
+                    }
+                    Err(error) => {
+                        let _ = append_debug_log(
+                            &app_handle,
+                            &state,
+                            &format!("Windows idle lock prevention failed at startup: {error}"),
+                        );
+                    }
+                }
+            }
+
             // Hide main window on startup if launched with --minimized flag
             let args: Vec<String> = std::env::args().collect();
             if args.iter().any(|a| a == "--minimized") {
@@ -2398,13 +2750,35 @@ fn main() {
             {
                 let app_handle = app.handle();
                 std::thread::spawn(move || {
-                    let mut was_locked = is_windows_workstation_locked();
+                    let mut was_locked = false;
+                    let mut last_detector_error: Option<String> = None;
                     loop {
                         std::thread::sleep(std::time::Duration::from_millis(300));
-                        let is_locked = is_windows_workstation_locked();
+                        let is_locked = match workstation_lock_state() {
+                            Ok(is_locked) => {
+                                last_detector_error = None;
+                                is_locked
+                            }
+                            Err(error) => {
+                                if last_detector_error.as_deref() != Some(error.as_str()) {
+                                    if let Some(state) = app_handle.try_state::<AppState>() {
+                                        let _ = append_debug_log(
+                                            &app_handle,
+                                            &state,
+                                            &format!("Lock status query failed; no lock transition inferred: {error}"),
+                                        );
+                                    }
+                                    last_detector_error = Some(error);
+                                }
+                                continue;
+                            }
+                        };
                         if is_locked && !was_locked {
                             was_locked = true;
                             let _ = app_handle.emit_all("workstation-locked", ());
+                            if let Some(state) = app_handle.try_state::<AppState>() {
+                                let _ = append_debug_log(&app_handle, &state, "Workstation lock detected");
+                            }
                         } else if !is_locked && was_locked {
                             was_locked = false;
                             let now = std::time::SystemTime::now()
@@ -2413,6 +2787,9 @@ fn main() {
                                 .unwrap_or(0);
                             LAST_UNLOCK_TIME.store(now, std::sync::atomic::Ordering::Relaxed);
                             let _ = app_handle.emit_all("workstation-unlocked", now);
+                            if let Some(state) = app_handle.try_state::<AppState>() {
+                                let _ = append_debug_log(&app_handle, &state, "Workstation unlock detected");
+                            }
                         }
                     }
                 });
