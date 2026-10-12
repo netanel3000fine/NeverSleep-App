@@ -260,26 +260,49 @@
             margin-top: 2px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-start;
+            gap: 8px;
         }
 
         .section-label-name {
             display: inline-flex;
             align-items: center;
             gap: 5px;
+            flex: 0 0 auto;
         }
 
-        .section-active-dot {
-            display: none;
-            width: 5px;
-            height: 5px;
+        .section-divider {
+            flex: 1 1 auto;
+            min-width: 8px;
+            height: 1px;
+            background: var(--surface-border);
+        }
+
+        .section-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            flex: 0 0 auto;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: none;
+            letter-spacing: normal;
+            white-space: nowrap;
+        }
+
+        .section-status-dot {
+            width: 6px;
+            height: 6px;
+            flex: 0 0 6px;
             border-radius: 50%;
             background: #22c55e;
             box-shadow: 0 0 5px rgba(34, 197, 94, 0.75);
         }
 
-        .section-active-dot.active {
-            display: inline-block;
+        .section-status-dot.inactive {
+            background: #ef4444;
+            box-shadow: 0 0 5px rgba(239, 68, 68, 0.75);
         }
 
         /* ===== SCHEDULE BOX ===== */
@@ -293,6 +316,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
+            flex: 0 0 auto;
         }
 
         .schedule-mode-name {
@@ -583,10 +607,14 @@
         <!-- Schedule Section -->
         <div class="schedule-section" id="scheduleSection">
             <div class="section-label">
-                <span class="section-label-name"><span data-i18n="tray_schedule">Schedule</span><span class="section-active-dot" id="scheduleActiveDot" aria-label="Active"></span></span>
+                <span class="section-label-name"><span data-i18n="tray_schedule">Schedule</span></span>
+                <span class="section-divider" aria-hidden="true"></span>
                 <div class="schedule-header-right">
-                    <span class="schedule-mode-name" id="scheduleModeName"></span>
-                    <span class="status-off-tag" id="scheduleOffTag" data-i18n="tray_off" style="display:none;">Off</span>
+                    <span class="section-status" id="scheduleStatus">
+                        <span class="section-status-dot inactive" id="scheduleStatusDot" aria-hidden="true"></span>
+                        <span class="schedule-mode-name" id="scheduleModeName" style="display:none;"></span>
+                        <span class="status-off-tag" id="scheduleOffTag" data-i18n="tray_off">Off</span>
+                    </span>
                     <span class="schedule-settings-icon" id="scheduleOpenBtn" title="Open Schedule Settings" data-i18n-title="tray_open_schedule_settings">⚙️</span>
                 </div>
             </div>
@@ -601,8 +629,12 @@
         <!-- Screen Darken Method -->
         <div class="darken-section" id="darkenSection">
             <div class="section-label" id="darkenSectionLabel">
-                <span class="section-label-name"><span data-i18n="darken_method_title">Darken Method</span><span class="section-active-dot" id="darkenActiveDot" aria-label="Active"></span></span>
-                <span class="status-off-tag" id="darkenOffTag" data-i18n="tray_inactive">Inactive</span>
+                <span class="section-label-name"><span data-i18n="darken_method_title">Darken Method</span></span>
+                <span class="section-divider" aria-hidden="true"></span>
+                <span class="section-status" id="darkenStatus">
+                    <span class="section-status-dot inactive" id="darkenActiveDot" aria-hidden="true"></span>
+                    <span class="status-off-tag" id="darkenOffTag" data-i18n="tray_inactive">Inactive</span>
+                </span>
             </div>
             <div class="select-row" id="darkenSelectRow" style="display:none;">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -846,7 +878,7 @@
             const box = document.getElementById('scheduleBox');
             const modeNameEl = document.getElementById('scheduleModeName');
             const offTagEl = document.getElementById('scheduleOffTag');
-            const activeDot = document.getElementById('scheduleActiveDot');
+            const statusDot = document.getElementById('scheduleStatusDot');
             const labelEl = document.getElementById('scheduleTimerLabel');
             const countdownEl = document.getElementById('scheduleCountdown');
 
@@ -858,7 +890,7 @@
             }
 
             const enabled = liveState && !!liveState.timeProfilesEnabled;
-            if (activeDot) activeDot.classList.toggle('active', !!enabled);
+            if (statusDot) statusDot.classList.toggle('inactive', !enabled);
             if (!enabled) {
                 if (box) box.style.display = 'none';
                 if (modeNameEl) { modeNameEl.textContent = ''; modeNameEl.style.display = 'none'; }
@@ -901,6 +933,7 @@
                     if (box) box.style.display = 'none';
                     if (modeNameEl) { modeNameEl.textContent = ''; modeNameEl.style.display = 'none'; }
                     if (offTagEl) offTagEl.style.display = 'inline-block';
+                    if (statusDot) statusDot.classList.add('inactive');
                     if (_scheduleTickInterval) {
                         clearInterval(_scheduleTickInterval);
                         _scheduleTickInterval = null;
@@ -908,6 +941,7 @@
                     return;
                 }
 
+                if (statusDot) statusDot.classList.remove('inactive');
                 if (mode === 'countdown') {
                     const target = current.countdownTargetTime || 0;
                     if (target > 0) {
@@ -947,18 +981,21 @@
         function updateDarkenUI(liveState) {
             const offTag = document.getElementById('darkenOffTag');
             const selectRow = document.getElementById('darkenSelectRow');
-            const activeDot = document.getElementById('darkenActiveDot');
+            const statusDot = document.getElementById('darkenActiveDot');
             if (!offTag || !selectRow) return;
 
             // When isScreenOn is true -> screen is kept on, so screen darken is OFF
             // When isScreenOn is false -> screen darken is ON
-            const isDarkenOff = liveState && (liveState.isScreenOn !== false);
-            if (activeDot) activeDot.classList.toggle('active', !isDarkenOff);
+            const isDarkenOff = !liveState || liveState.isScreenOn !== false;
+            if (statusDot) statusDot.classList.toggle('inactive', !!isDarkenOff);
+            offTag.textContent = isDarkenOff
+                ? trayText('tray_inactive', 'Inactive')
+                : trayText('tray_active', 'Active');
+            offTag.setAttribute('data-i18n', isDarkenOff ? 'tray_inactive' : 'tray_active');
+            offTag.style.display = 'inline-block';
             if (isDarkenOff) {
-                offTag.style.display = 'inline-block';
                 selectRow.style.display = 'none';
             } else {
-                offTag.style.display = 'none';
                 selectRow.style.display = 'flex';
             }
             // Sync the darken method select value
