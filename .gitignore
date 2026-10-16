@@ -15,3 +15,6 @@ stderr.txt
 
 # Binary releases (exceeds GitHub 100MB limit)
 releases/
+
+# Diagnostic logs
+*.log

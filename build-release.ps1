@@ -12,7 +12,8 @@ $filesToSync = @(
     "debug_logging.js",
     "overlay.html",
     "sleep.html",
-    "tray.html"
+    "tray.html",
+    "cleaning.html"
 )
 
 foreach ($file in $filesToSync) {

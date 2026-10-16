@@ -33,7 +33,7 @@ image = { version = "0.24", default-features = false, features = ["png", "jpeg"]
 
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["winbase", "winnt", "synchapi", "errhandlingapi", "winerror", "winuser", "dwmapi", "windef", "handleapi", "wingdi", "libloaderapi", "minwinbase", "sysinfoapi"] }
+winapi = { version = "0.3", features = ["winbase", "winnt", "synchapi", "errhandlingapi", "winerror", "winuser", "dwmapi", "windef", "handleapi", "wingdi", "libloaderapi", "minwinbase", "sysinfoapi", "processthreadsapi"] }
 window-vibrancy = "0.4"
 windows = { version = "0.52.0", features = ["Media_Control", "Foundation", "Foundation_Collections", "Media", "Win32_Foundation", "Win32_System_Power", "Win32_System_Threading"] }
 

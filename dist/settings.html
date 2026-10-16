@@ -296,6 +296,9 @@
             background: var(--surface-hover);
             border-color: rgba(var(--theme-color-rgb, 249, 115, 22), 0.38);
             box-shadow: 0 6px 22px rgba(0, 0, 0, 0.26);
+        }
+
+        .clickable-category-card.expanded {
             grid-template-rows: auto 1fr;
         }
 
@@ -326,7 +329,6 @@
             transition: opacity 0.32s ease, transform 0.4s ease;
         }
 
-        .clickable-category-card:hover .card-explainer-inner,
         .clickable-category-card.expanded .card-explainer-inner {
             opacity: 1;
             transform: translateY(0);
@@ -651,7 +653,43 @@
             padding-bottom: 0;
         }
 
-                /* ===== SECTION DIVIDER (single clean hairline) ===== */
+        /* ===== SETTINGS SUBCARD (thin border card container) ===== */
+        .settings-subcard {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 14px;
+            padding: 2px 14px;
+            margin: 4px 0 14px 0;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        }
+
+        body.white-mode .settings-subcard {
+            background: rgba(0, 0, 0, 0.025);
+            border-color: rgba(0, 0, 0, 0.08);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+        }
+
+        .settings-subcard .settings-item {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        body.white-mode .settings-subcard .settings-item {
+            border-bottom-color: rgba(0, 0, 0, 0.06);
+        }
+
+        .settings-subcard .settings-item:last-child {
+            border-bottom: none !important;
+            padding-bottom: 10px;
+        }
+
+        .settings-subcard .settings-item:first-child {
+            padding-top: 10px;
+        }
+
+        /* ===== SECTION DIVIDER (single clean hairline) ===== */
         .section-divider {
             height: 1px;
             border: none;
@@ -2426,20 +2464,29 @@
                     </div>
                 </div>
                 <div class="popup-body">
-                    <div class="settings-item">
-                        <div class="label-group"><span class="item-label" data-i18n="autostart">Start with Windows</span></div>
-                        <div class="toggle" id="autostartToggle"><div class="toggle-knob"></div></div>
-                    </div>
-                    <div class="settings-item" id="autostartMinimizedItem" style="transition: opacity 0.2s ease;">
-                        <div class="label-group">
-                            <span class="item-label" data-i18n="launch_minimized">Launch Minimized</span>
-                            <span class="item-sub" data-i18n="launch_minimized_sub">Start minimized to system tray</span>
+                    <div class="settings-subcard" id="startupSettingsCard">
+                        <div class="settings-item">
+                            <div class="label-group"><span class="item-label" data-i18n="autostart">Start with Windows</span></div>
+                            <div class="toggle" id="autostartToggle"><div class="toggle-knob"></div></div>
                         </div>
-                        <div class="toggle" id="autostartMinimizedToggle"><div class="toggle-knob"></div></div>
-                    </div>
-                    <div class="settings-item">
-                        <div class="label-group"><span class="item-label" data-i18n="pin_window">Pin window to front</span></div>
-                        <div class="toggle" id="pinToggle"><div class="toggle-knob"></div></div>
+                        <div class="settings-item" id="autostartMinimizedItem" style="transition: opacity 0.2s ease;">
+                            <div class="label-group">
+                                <span class="item-label" data-i18n="launch_minimized">Launch Minimized</span>
+                                <span class="item-sub" data-i18n="launch_minimized_sub">Start minimized to system tray</span>
+                            </div>
+                            <div class="toggle" id="autostartMinimizedToggle"><div class="toggle-knob"></div></div>
+                        </div>
+                        <div class="settings-item" id="trayQuickTogglesItem" style="display: none; transition: opacity 0.2s ease;">
+                            <div class="label-group">
+                                <span class="item-label" data-i18n="show_tray_quick_toggles">Show quick toggles in tray</span>
+                                <span class="item-sub" data-i18n="show_tray_quick_toggles_sub">Always On Top & Startup toggles in tray menu</span>
+                            </div>
+                            <div class="toggle" id="trayQuickTogglesToggle"><div class="toggle-knob"></div></div>
+                        </div>
+                        <div class="settings-item" style="border-bottom: none;">
+                            <div class="label-group"><span class="item-label" data-i18n="pin_window">Pin window to front</span></div>
+                            <div class="toggle" id="pinToggle"><div class="toggle-knob"></div></div>
+                        </div>
                     </div>
                     <div class="settings-item">
                         <div class="label-group">
@@ -3216,12 +3263,21 @@
             // Open nav buttons from main category cards
             // Hover-expand card explainer, staying expanded until another card is hovered
             const categoryCards = document.querySelectorAll('.clickable-category-card');
+            let pendingExpandTimer = null;
             categoryCards.forEach(card => {
                 card.addEventListener('mouseenter', () => {
-                    categoryCards.forEach(c => {
-                        if (c !== card) c.classList.remove('expanded');
-                    });
-                    card.classList.add('expanded');
+                    clearTimeout(pendingExpandTimer);
+                    pendingExpandTimer = setTimeout(() => {
+                        categoryCards.forEach(c => {
+                            if (c !== card) c.classList.remove('expanded');
+                        });
+                        card.classList.add('expanded');
+                        pendingExpandTimer = null;
+                    }, 800);
+                });
+                card.addEventListener('mouseleave', () => {
+                    clearTimeout(pendingExpandTimer);
+                    pendingExpandTimer = null;
                 });
             });
 
@@ -3504,6 +3560,7 @@
                     const el = document.getElementById('autostartToggle');
                     const minEl = document.getElementById('autostartMinimizedToggle');
                     const minItem = document.getElementById('autostartMinimizedItem');
+                    const trayTogglesItem = document.getElementById('trayQuickTogglesItem');
                     const enabled = typeof res === 'object' ? !!res.enabled : !!res;
                     const minimized = typeof res === 'object' ? !!res.minimized : !!settings.autostartMinimized;
                     if (el) {
@@ -3517,6 +3574,9 @@
                     if (minItem) {
                         minItem.style.opacity = enabled ? '1' : '0.4';
                         minItem.style.pointerEvents = enabled ? 'auto' : 'none';
+                    }
+                    if (trayTogglesItem) {
+                        trayTogglesItem.style.display = enabled ? 'flex' : 'none';
                     }
                 }).catch(() => {});
             } else {
@@ -3560,12 +3620,17 @@
 
             setupToggle('autostartToggle', 'autostart', false, (val) => {
                 const minItem = document.getElementById('autostartMinimizedItem');
+                const trayTogglesItem = document.getElementById('trayQuickTogglesItem');
                 if (minItem) {
                     minItem.style.opacity = val ? '1' : '0.4';
                     minItem.style.pointerEvents = val ? 'auto' : 'none';
                 }
+                if (trayTogglesItem) {
+                    trayTogglesItem.style.display = val ? 'flex' : 'none';
+                }
             });
             setupToggle('autostartMinimizedToggle', 'autostartMinimized', false);
+            setupToggle('trayQuickTogglesToggle', 'showTrayQuickToggles', true);
             setupToggle('pinToggle', 'pinned', false, (val) => {
                 if (window.__TAURI__) window.__TAURI__.invoke('set_pinned', { pinned: val });
             });
@@ -4574,7 +4639,8 @@
                 notificationsEnabled: getToggle('notificationsToggle'),
                 soundEnabled: getToggle('soundToggle'),
                 lockOnCountdown: getToggle('timeProfilesEnabledToggle') && getToggle('lockOnCountdownToggle'),
-                autostartMinimized: getToggle('autostartMinimizedToggle')
+                autostartMinimized: getToggle('autostartMinimizedToggle'),
+                showTrayQuickToggles: getToggle('trayQuickTogglesToggle')
             };
             settings = newSettings;
             const serializedSettings = JSON.stringify(newSettings);

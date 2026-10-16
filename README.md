@@ -31,176 +31,45 @@ Never Sleep a lightweight application that prevents your computer from going to 
 
 ## Key Features
 
-- ✅ **שמירה על המחשב ער** - מונע מהמחשב להיכנס למצב שינה
-- ⏱️ **טיימר להחשכת מסך** - החשכה אוטומטית לאחר זמן מוגדר
-- 🔌 **כיבוי אוטומטי** - כיבוי מתוזמן של האפליקציה
-- 🎨 **ערכות נושא צבעוניות** - התאמה אישית של צבע הממשק
-- 🔔 **התראות מערכת** - התראות על פעולות חשובות
-- 🚀 **הפעלה אוטומטית** - אופציה להפעלה עם הפעלת המחשב
+### 🇮🇱 תכונות מרכזיות
+- ☕ **שמירה על המחשב ער** - מונע מהמחשב להיכנס למצב שינה או שומר מסך
+- 🧹 **מצב ניקוי מקלדת (חדש!)** - נעילת מקלדת לצורך ניקוי בלי הקלדות מיותרות, שחרור ב-5 לחיצות Escape או כפתור ייעודי
+- 🎛️ **תפריט מגש מערכת מתקדם** - גישה מהירה להצמדת חלון, הפעלה עם המחשב ומצב ניקוי ישירות מהמגש
+- ⏱️ **טיימר להחשכת מסך חכמה** - החשכה הדרגתית או תמיכה ב-DDC/CI למסכים מרובים עם אנימציית פעימה
+- 📅 **מצב לוח זמנים** - הגדרת פרופילי שעות פעילות לפי ימים ושעות
+- 🎬 **זיהוי וידאו/מדיה** - השהייה אוטומטית כשווידאו פועל (לא מפריע להאזנה למוזיקה)
+- 🎨 **ערכות נושא וזכוכית נוזלית (Liquid Glass)** - התאמה אישית של צבעים ואפקטי זכוכית יוקרתיים
+- 🌍 **תמיכה מלאה בריבוי שפות** - עברית (RTL), אנגלית ורוסית
 
-
-
-
-
-- ✅ **Keep Computer Awake** - Prevents sleep/standby mode
-- ⏱️ **Screen Darken Timer** - Auto-dim after specified time  
-- 🔌 **Auto Shutdown** - Scheduled shutdown
-- 🎨 **Color Themes** - Customize interface colors
-- 🔔 **System Notifications** - Alerts for important actions
-- 🚀 **Auto-start** - Launch on system startup
-
-
-======================================
-
-
+### 🇬🇧 Core Highlights
+- ☕ **Keep Computer Awake** - Prevents sleep/standby mode via native Windows API
+- 🧹 **Keyboard Cleaning Mode (NEW)** - Locks keyboard input for safe cleaning; unlock via 5× Escape or on-screen button
+- 🎛️ **Supercharged System Tray** - Quick toggles for Pin, Autostart, and Cleaning Mode right from the tray flyout
+- ⏱️ **Smart Screen Darken** - Multi-monitor darkening with DDC/CI or overlay fallbacks and dynamic countdown pulse
+- 📅 **Schedule Mode** - Set custom active hours and time profiles per day
+- 🎬 **Media Auto-Pause** - Intelligently pauses sleep prevention during video playback (Spotify/music excluded)
+- 🎨 **Liquid Glass Aesthetics** - Premium glassmorphism themes with customizable accent colors
+- 🌍 **Full Localization** - English, Hebrew (native RTL), and Russian
 
 ---
 
-## Installation
-1. הורד את קובץ ההתקנה `Never Sleep_...._x64-setup.exe` 📦 [Releases](https://github.com/netanel3000fine/NeverSleep-App/releases)  
-2. הרץ את ההתקנה
-3. פתח את האפליקציה
+## 🛠️ Technologies
 
-
----
-<img width="320" height="124" alt="68747470733a2f2f692e6962622e636f2f71306d6463345a2f6765742d69742d6f6e2d6769746875622e706e67" src="https://github.com/user-attachments/assets/a8681235-4c97-46f2-acfc-26e294ea133d" />
-
-## Links
-
-📦 [Releases](https://github.com/netanel3000fine/NeverSleep-App/releases)  
-🐛 Issues & Feedback: Create an issue on GitHub
-##Technologies
-
-- **Tauri** - Cross-platform desktop framework
-- **Rust** - Backend logic and system integration  
-- **HTML/CSS/JavaScript** - Modern, responsive UI
-- **WinAPI** - Windows system calls for sleep prevention
+- **Tauri** - Lightweight, secure cross-platform desktop framework
+- **Rust** - High-performance backend logic, system tray, and low-level Win32 hooks
+- **HTML / CSS / JavaScript** - Fluid, responsive modern UI with zero heavy frontend dependencies
+- **WinAPI & UWP APIs** - Native power state management (`SetThreadExecutionState`) and Media Transport Controls
 
 ---
 
-## License
+## 📦 Installation & Download
+
+1. Download the latest installer `Never.Sleep_19.0.0_x64-setup.exe` from [Releases](https://github.com/netanel3000fine/NeverSleep-App/releases)
+2. Run the installer
+3. Enjoy an awake, pristine PC!
+
+---
+
+## 📄 License
 
 MIT License - חופשי לשימוש ושינוי / Free to use and modify
-# ☕ Never Sleep v13.0.0
-
-## 🌍 Multi-Language Support (NEW)
-
-Never Sleep now speaks your language! The app ships with full UI localization across all windows (main, settings, sleep):
-
-| Language | Flag | Status |
-|---|---|---|
-| English | 🇬🇧 | ✅ Full |
-| עברית (Hebrew) | 🇮🇱 | ✅ Full — RTL support |
-| Русский (Russian) | 🇷🇺 | ✅ Full |
-
-- All strings translated including category headers, tooltips, notifications, and status messages
-- Correct RTL text direction automatically applied for Hebrew
-- Language persists across restarts via saved settings
-- **Fixed:** Language switching now applies immediately to the running window without restart
-
----
-
-## 📅 Schedule Mode (NEW)
-
-Keep your PC awake **only when you need it** using Time Profiles:
-
-- Enable **Schedule Mode** in Settings → Schedule
-- Add **Time Profiles** (e.g., 09:00 → 17:00 for work hours)
-- Outside of those hours, sleep prevention automatically **pauses**
-- A live indicator dot pulses next to the currently active profile
-- The right panel shows a schedule overlay when sleep prevention is paused by a schedule
-- **"Next schedule" countdown** shows in the main window when the next profile is upcoming
-
----
-
-## 🎨 Three Visual Themes (NEW)
-
-Choose your style in Settings → Design → View Mode:
-
-| Theme | Description |
-|---|---|
-| **Classic** | Clean, minimal dark mode — lowest resource usage |
-| **Liquid Glass** | Premium frosted-glass effect with mouse-tracking shimmer and acrylic Windows blur |
-| **Coffee ☕** | Warm dark-brown aesthetic with coffee bean background and pulsing heartbeat animation |
-
-Each theme adapts the border color, backgrounds, glows, and hover effects throughout the entire app.
-
----
-
-## 🖼️ Custom App Icons (NEW)
-
-Personalize your taskbar and tray icon:
-
-- **6 icon choices** including 3D coffee cups, battery icons, and more
-- Icons are applied live to the taskbar button, title bar, system tray, and Windows shortcuts
-- Multi-resolution ICO files (16×16 → 256×256) are auto-generated from PNG sources
-- Hard apply mode also updates `.lnk` shortcuts on the Desktop and Start Menu
-- Icon preference is saved and restored on every app launch
-
----
-
-## 📺 Media Detection — Auto-Pause (NEW)
-
-Never Sleep can now detect when you're watching a video and **automatically pause** sleep prevention:
-
-- Uses the Windows **Global Media Transport Controls** API (same as the taskbar media widget)
-- Triggers only for video/browser content — **music from Spotify/Apple Music is excluded**
-- The status pill in the header shows "**Media**" when paused by media detection
-- A red "Paused — media playing" banner confirms the app is in auto-pause mode
-- Toggle on/off in Settings → System → **Disable during video**
-
----
-
-## 🔔 Notifications & Break Reminders (NEW)
-
-- **Break Reminder**: Set a recurring interval (e.g., every 1 hour) to receive a system notification prompting you to take a break
-- **Enable/disable** system notifications globally
-- **System sounds** toggle for audio feedback on important events
-- Notifications are suppressed when the Windows workstation is locked
-
----
-
-## 🪟 Window Vibrancy & DWM Border Colors
-
-- **Liquid Glass mode** applies Windows **Acrylic** blur effect to both the main and settings windows via `window-vibrancy`
-- The **window border color** (DWM accent) updates to match your chosen theme color in real time
-- Border color applies to both the main and settings windows simultaneously
-
----
-
-## 🪲 Bug Fixes & Performance Improvements
-
-| Fix | Details |
-|---|---|
-| 🐛 Language switching | Fixed: changing language in settings now immediately applies to the UI without needing a restart |
-| ⚡ High CPU from mouse tracking | Mouse move events now debounced to **500ms** — eliminated unnecessary lock contention on cursor movement |
-| 🔒 Single instance enforcement | Windows Mutex ensures only one instance of the app runs at a time |
-| 🧠 Activity tracking | Global keyboard & mouse listener now correctly distinguishes input type (`mouse` vs `keyboard`) |
-| 🖥️ Multi-monitor overlay | Screen darken overlays now correctly cover all monitors including non-primary ones |
-| 💾 Settings persistence | All settings saved to and restored from `%AppData%\never-sleep\settings.json` |
-| 🔄 Workstation lock detection | Notifications and certain operations now skip when the Windows session is locked |
-
----
-
-## 🏗️ Technical Highlights
-
-- Built with **Tauri** + **Rust** backend + **HTML/CSS/JS** frontend
-- Uses **WinAPI** (`SetThreadExecutionState`) for sleep prevention
-- Uses **Windows Media Transport Controls** (UWP API via `windows` crate) for media detection
-- Global input listener via `rdev` crate
-- Autostart via Windows Registry (`HKCU\...\Run`)
-- Window effects via `window-vibrancy` crate (Acrylic)
-
----
-
-## 📦 Download
-
-| File | Description |
-|---|---|
-| `Never Sleep_10.0.0_x64-setup.exe` | Windows installer (recommended) |
-
-**Requirements:** Windows 10 1903+ / Windows 11 · 64-bit · ~8 MB
-
----
-
-*Made with ☕ — Never Sleep keeps your PC awake so you don't have to worry.*

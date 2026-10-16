@@ -888,6 +888,17 @@
       cursor: help;
     }
 
+    .tooltip-target > *:not(.tooltip-overlay) {
+      transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .tooltip-target.has-tooltip > *:not(.tooltip-overlay),
+    .tooltip-target:has(.tooltip-overlay) > *:not(.tooltip-overlay) {
+      opacity: 0 !important;
+      transform: scale(0.96);
+      pointer-events: none;
+    }
+
     body:not(.classic-mode) .tooltip-target {
       -webkit-app-region: no-drag;
     }
@@ -1934,51 +1945,52 @@
       transform: translateY(-1px) scale(1.06);
     }
 
-    /* ── Tooltip overlay: glass popover ── */
+    /* ── Tooltip overlay: frosted dark glass popover ── */
     body.liquid-glass-mode .tooltip-overlay {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      backdrop-filter: blur(32px) saturate(160%) brightness(108%);
-      -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(108%);
+      background: rgba(14, 18, 28, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
       box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.32),
-        0 16px 48px rgba(0, 0, 0, 0.32);
-      color: rgba(255, 255, 255, 0.92);
-      font-weight: 700;
+        inset 0 1px 0 rgba(255, 255, 255, 0.24),
+        0 16px 48px rgba(0, 0, 0, 0.45);
+      color: rgba(255, 255, 255, 0.96);
+      font-weight: 600;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 2px 8px rgba(0, 0, 0, 0.4);
     }
 
-    /* ── Timer value: clean warm amber tabular numeral ── */
+    /* ── Timer value: clean warm amber tabular numeral with soft ambient shadow ── */
     body.liquid-glass-mode .timer-value {
       font-family: system-ui, -apple-system, 'SF Pro Display', 'Segoe UI', sans-serif !important;
       font-variant-numeric: tabular-nums;
       font-weight: 600;
       letter-spacing: -0.02em;
       color: #FF9F0A !important;
-      text-shadow: none !important;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 2px 8px rgba(0, 0, 0, 0.4) !important;
       filter: none !important;
     }
 
-    /* ── Status text ── */
+    /* ── Status text with soft ambient shadow ── */
     body.liquid-glass-mode .status-text,
     body.liquid-glass-mode .status-text span {
       color: rgba(255, 255, 255, 0.95) !important;
       font-weight: 600;
-      text-shadow: none !important;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 2px 8px rgba(0, 0, 0, 0.4) !important;
     }
 
-    /* ── Labels: clean system-ui ── */
+    /* ── Labels: clean system-ui with subtle ambient shadow ── */
     body.liquid-glass-mode .timer-label {
-      color: rgba(255, 255, 255, 0.65) !important;
+      color: rgba(255, 255, 255, 0.75) !important;
       font-weight: 500;
-      text-shadow: none !important;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.35) !important;
     }
 
     body.liquid-glass-mode .toggle-label,
     body.liquid-glass-mode .status,
     body.liquid-glass-mode .input-label {
-      color: rgba(255, 255, 255, 0.88);
+      color: rgba(255, 255, 255, 0.92);
       font-weight: 600;
-      text-shadow: none !important;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.35) !important;
     }
 
     /* ── Schedule cover: glass bubble clock badge ── */
@@ -2143,11 +2155,13 @@
       color: rgba(255, 255, 255, 0.92) !important;
       font-family: system-ui, -apple-system, 'SF Pro Display', 'Segoe UI', sans-serif !important;
       font-weight: 600 !important;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.35) !important;
     }
 
     body.liquid-glass-mode .pill-label {
       color: rgba(255, 255, 255, 0.88) !important;
       font-weight: 700 !important;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.35) !important;
     }
 
     body.liquid-glass-mode .logo-icon svg path[fill="white"],
@@ -2180,9 +2194,22 @@
 
     body.white-mode.liquid-glass-mode .toggle-label,
     body.white-mode.liquid-glass-mode .status,
+    body.white-mode.liquid-glass-mode .input-label,
+    body.white-mode.liquid-glass-mode .timer-value,
+    body.white-mode.liquid-glass-mode .timer-label,
+    body.white-mode.liquid-glass-mode .status-text,
+    body.white-mode.liquid-glass-mode .status-text span,
+    body.white-mode.liquid-glass-mode .logo-text,
+    body.white-mode.liquid-glass-mode .pill-label,
+    body.white-mode.liquid-glass-mode .schedule-cover-title,
+    body.white-mode.liquid-glass-mode .schedule-cover-sub {
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+    }
+
+    body.white-mode.liquid-glass-mode .toggle-label,
+    body.white-mode.liquid-glass-mode .status,
     body.white-mode.liquid-glass-mode .input-label {
       color: rgba(0, 0, 0, 0.80) !important;
-      text-shadow: none !important;
     }
 
     body.white-mode.liquid-glass-mode .timer-label {
@@ -2535,6 +2562,21 @@
 
     #darkenTimer {
       transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    #darkenTimer.countdown-pulse {
+      animation: countdownPulse 720ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes countdownPulse {
+      0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 0 rgba(var(--theme-color-rgb), 0));
+      }
+      55% {
+        transform: scale(var(--countdown-pulse-scale));
+        filter: drop-shadow(0 0 var(--countdown-pulse-glow) rgba(var(--theme-color-rgb), 0.9));
+      }
     }
 
     #darkenTimer.hide-for-activity {
@@ -6105,6 +6147,7 @@
     let overlayRetryDelayMs = 1000;
     let initCheck = true;
     let lastAct = 0;
+    let lastCountdownPulseSecond = null;
     let lastLoggedKeyboardActivityAt = 0;
     let lastBreak = 0;
     let uptime = 0;
@@ -6122,6 +6165,33 @@
     let lastActivityIconAt = 0;
     let lastInactivityStart = Date.now();
     let wasMainVisible = true;
+
+    function resetCountdownPulse() {
+      const darkenTimerEl = document.getElementById('darkenTimer');
+      if (darkenTimerEl) {
+        darkenTimerEl.classList.remove('countdown-pulse');
+        darkenTimerEl.style.removeProperty('--countdown-pulse-scale');
+        darkenTimerEl.style.removeProperty('--countdown-pulse-glow');
+      }
+      lastCountdownPulseSecond = null;
+    }
+
+    function updateCountdownPulse(remainingSeconds) {
+      const darkenTimerEl = document.getElementById('darkenTimer');
+      if (!darkenTimerEl || !focusOnCountdown || isScreenOn || screenDarkened || remainingSeconds <= 0 || remainingSeconds > 10) {
+        resetCountdownPulse();
+        return;
+      }
+      if (remainingSeconds === lastCountdownPulseSecond) return;
+
+      lastCountdownPulseSecond = remainingSeconds;
+      const progress = (10 - remainingSeconds) / 9;
+      darkenTimerEl.classList.remove('countdown-pulse');
+      darkenTimerEl.style.setProperty('--countdown-pulse-scale', (1.15 + progress * 0.21).toFixed(3));
+      darkenTimerEl.style.setProperty('--countdown-pulse-glow', `${Math.round(12 + progress * 16)}px`);
+      void darkenTimerEl.offsetWidth;
+      darkenTimerEl.classList.add('countdown-pulse');
+    }
 
     // ===== COUNTDOWN TIMER STATE =====
     let countdownDurationMins = 60;
@@ -6225,6 +6295,7 @@
 
       const darkTotal = (darkenHours * 3600) + (darkenMinutes * 60);
       if (isScreenOn) {
+        resetCountdownPulse();
         if (darkenTimerContainer) darkenTimerContainer.style.display = 'none';
         if (mouseIcon) mouseIcon.classList.remove('show');
         if (kbdIcon) kbdIcon.classList.remove('show');
@@ -6247,6 +6318,7 @@
         const remDark = Math.max(0, Math.floor((darkenTargetTime - Date.now()) / 1000));
         if (darkenLabelEl) darkenLabelEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].time_to_darken : 'Time to darken';
         if (darkenTimerEl) darkenTimerEl.textContent = formatTime(remDark);
+        updateCountdownPulse(remDark);
       }
 
       const status = getProfileStatus();
@@ -6291,8 +6363,19 @@
         const r = await window.__TAURI__.invoke('get_last_activity');
         const t = r[0];
         const type = r[1] || 'mouse';
-        if (t !== lastAct) {
+        if (initCheck) {
           lastAct = t;
+          initCheck = false;
+          window.__neverSleepDebugLog?.(`Initialized activity baseline; timestamp=${t}; type=${type}`);
+          return;
+        }
+        if (t !== lastAct) {
+          const previousActivity = lastAct;
+          lastAct = t;
+          if (screenDarkened || Date.now() >= darkenTargetTime - 10000) {
+            window.__neverSleepDebugLog?.(`Activity timestamp changed; previous=${previousActivity}; current=${t}; type=${type}; overlayActive=${screenDarkened}`);
+          }
+          resetCountdownPulse();
 
           const mouseIcon = document.getElementById('mouseIcon');
           const kbdIcon = document.getElementById('kbdIcon');
@@ -6706,17 +6789,21 @@
         return false;
       }
       screenDarkened = true;
+      resetCountdownPulse();
+      window.__neverSleepDebugLog?.(`Screen overlay created; method=${darkenMethod}`);
       overlayRetryCount = 0;
       overlayRetryAt = 0;
       overlayRetryDelayMs = 1000;
       return true;
     }
 
-    // Overlay Tooltips - Fixed Target Parent
+    // Overlay Tooltips - Fixed Target Parent with Cross-fade
     function showOverlay(targetId, html) {
       const target = document.getElementById(targetId);
       if (!target) return;
       hideOverlay(targetId);
+
+      target.classList.add('has-tooltip');
 
       const overlay = document.createElement('div');
       overlay.className = 'tooltip-overlay';
@@ -6752,6 +6839,8 @@
       target.appendChild(overlay);
     }
     function hideOverlay(targetId) {
+      const target = document.getElementById(targetId);
+      if (target) target.classList.remove('has-tooltip');
       const el = document.getElementById('tooltip_' + targetId);
       if (el) el.remove();
     }

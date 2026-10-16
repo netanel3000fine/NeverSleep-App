@@ -23,6 +23,9 @@ static WIN32_DARKEN_HWND: std::sync::atomic::AtomicIsize = std::sync::atomic::At
 #[cfg(target_os = "windows")]
 static PREV_BRIGHTNESS: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI32::new(-1);
 
+// Global: unix-ms timestamp when the tray window was last shown (for the 600ms grace period)
+static TRAY_SHOWN_AT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
 
 struct AppState {
     overlay_windows: Mutex<Vec<String>>,
@@ -688,6 +691,334 @@ async fn close_screen_overlay(
     let _ = app.emit_all("darken-overlay-closed", ());
 
     close_result
+}
+
+// ===== KEYBOARD CLEANING MODE =====
+
+static CLEANING_ACTIVE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+static CLEANING_ESCAPE_COUNT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+static CLEANING_LAST_ESCAPE_MS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static CLEANING_HOOK_THREAD_ID: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+static CLEANING_APP_HANDLE: std::sync::OnceLock<tauri::AppHandle> = std::sync::OnceLock::new();
+static CLEANING_WINDOWS: Mutex<Vec<String>> = Mutex::new(Vec::new());
+// Raw Win32 HWND handles for secondary monitor black-screen windows (stored as usize for Send safety)
+static CLEANING_WIN32_HWNDS: Mutex<Vec<usize>> = Mutex::new(Vec::new());
+
+#[cfg(target_os = "windows")]
+unsafe extern "system" fn low_level_keyboard_proc(
+    code: std::os::raw::c_int,
+    w_param: winapi::shared::minwindef::WPARAM,
+    l_param: winapi::shared::minwindef::LPARAM,
+) -> winapi::shared::minwindef::LRESULT {
+    use winapi::um::winuser::{CallNextHookEx, KBDLLHOOKSTRUCT, VK_ESCAPE, WM_KEYDOWN, WM_SYSKEYDOWN};
+
+    if code >= 0 && CLEANING_ACTIVE.load(Ordering::SeqCst) {
+        let kbd = &*(l_param as *const KBDLLHOOKSTRUCT);
+
+        if kbd.vkCode == VK_ESCAPE as u32 {
+            if w_param == WM_KEYDOWN as usize || w_param == WM_SYSKEYDOWN as usize {
+                let now_ms = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_millis() as u64)
+                    .unwrap_or(0);
+                let last_ms = CLEANING_LAST_ESCAPE_MS.load(Ordering::SeqCst);
+
+                let next_count = if now_ms.saturating_sub(last_ms) > 3000 {
+                    1
+                } else {
+                    CLEANING_ESCAPE_COUNT.load(Ordering::SeqCst) + 1
+                };
+
+                CLEANING_ESCAPE_COUNT.store(next_count, Ordering::SeqCst);
+                CLEANING_LAST_ESCAPE_MS.store(now_ms, Ordering::SeqCst);
+
+                if let Some(app) = CLEANING_APP_HANDLE.get() {
+                    let _ = app.emit_all(
+                        "cleaning-escape-progress",
+                        serde_json::json!({ "count": next_count }),
+                    );
+                    if next_count >= 5 {
+                        let app_clone = app.clone();
+                        std::thread::spawn(move || {
+                            let _ = stop_cleaning_mode_internal(&app_clone);
+                        });
+                    }
+                }
+            }
+            return 1;
+        }
+
+        // Swallowing all other keystrokes
+        return 1;
+    }
+
+    CallNextHookEx(std::ptr::null_mut(), code, w_param, l_param)
+}
+
+#[cfg(target_os = "windows")]
+fn start_keyboard_hook() {
+    if CLEANING_ACTIVE.load(Ordering::SeqCst) {
+        return;
+    }
+    CLEANING_ACTIVE.store(true, Ordering::SeqCst);
+    CLEANING_ESCAPE_COUNT.store(0, Ordering::SeqCst);
+    CLEANING_LAST_ESCAPE_MS.store(0, Ordering::SeqCst);
+
+    std::thread::spawn(|| {
+        use winapi::um::processthreadsapi::GetCurrentThreadId;
+        use winapi::um::winuser::{
+            DispatchMessageW, GetMessageW, SetWindowsHookExW,
+            TranslateMessage, UnhookWindowsHookEx, MSG, WH_KEYBOARD_LL,
+        };
+
+        unsafe {
+            let thread_id = GetCurrentThreadId();
+            CLEANING_HOOK_THREAD_ID.store(thread_id, Ordering::SeqCst);
+
+            let hook = SetWindowsHookExW(
+                WH_KEYBOARD_LL,
+                Some(low_level_keyboard_proc),
+                std::ptr::null_mut(),
+                0,
+            );
+
+            if hook.is_null() {
+                eprintln!("Failed to install WH_KEYBOARD_LL hook");
+                CLEANING_ACTIVE.store(false, Ordering::SeqCst);
+                return;
+            }
+
+            let mut msg: MSG = std::mem::zeroed();
+            while GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) > 0 {
+                TranslateMessage(&msg);
+                DispatchMessageW(&msg);
+            }
+
+            UnhookWindowsHookEx(hook);
+            CLEANING_HOOK_THREAD_ID.store(0, Ordering::SeqCst);
+        }
+    });
+}
+
+#[cfg(target_os = "windows")]
+fn stop_keyboard_hook() {
+    CLEANING_ACTIVE.store(false, Ordering::SeqCst);
+    let thread_id = CLEANING_HOOK_THREAD_ID.swap(0, Ordering::SeqCst);
+    if thread_id != 0 {
+        use winapi::um::winuser::{PostThreadMessageW, WM_QUIT};
+        unsafe {
+            let _ = PostThreadMessageW(thread_id, WM_QUIT, 0, 0);
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn create_black_win32_windows(rects: Vec<(i32, i32, i32, i32)>) {
+    // Spawn a dedicated Win32 thread that owns the black-screen windows
+    std::thread::spawn(move || unsafe {
+        use winapi::shared::windef::HWND;
+        use winapi::um::libloaderapi::GetModuleHandleW;
+        use winapi::um::winuser::{
+            CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW,
+            RegisterClassExW, SetWindowPos,
+            ShowWindow, TranslateMessage, MSG, SW_SHOW,
+            SWP_NOACTIVATE, WNDCLASSEXW, WS_EX_NOACTIVATE, WS_EX_TOPMOST,
+            WS_POPUP, WS_VISIBLE, WM_USER,
+        };
+        use winapi::shared::minwindef::UINT;
+
+        const WM_CLOSE_BLACK: UINT = WM_USER + 42;
+
+        let class_name: Vec<u16> = "NeverSleepCleaningBlack\0"
+            .encode_utf16()
+            .collect();
+
+        let hinstance = GetModuleHandleW(std::ptr::null());
+
+        let wc = WNDCLASSEXW {
+            cbSize: std::mem::size_of::<WNDCLASSEXW>() as u32,
+            style: 0,
+            lpfnWndProc: Some(DefWindowProcW),
+            cbClsExtra: 0,
+            cbWndExtra: 0,
+            hInstance: hinstance,
+            hIcon: std::ptr::null_mut(),
+            hCursor: std::ptr::null_mut(),
+            hbrBackground: winapi::um::winuser::GetSysColorBrush(0), // COLOR_SCROLLBAR=0, gives black
+            lpszMenuName: std::ptr::null(),
+            lpszClassName: class_name.as_ptr(),
+            hIconSm: std::ptr::null_mut(),
+        };
+        // Ignore error if class already registered
+        let _ = RegisterClassExW(&wc);
+
+        let mut hwnds: Vec<HWND> = Vec::new();
+        for (x, y, w, h) in &rects {
+            let hwnd = CreateWindowExW(
+                WS_EX_TOPMOST | WS_EX_NOACTIVATE,
+                class_name.as_ptr(),
+                std::ptr::null(),
+                WS_POPUP | WS_VISIBLE,
+                *x, *y, *w, *h,
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                hinstance,
+                std::ptr::null_mut(),
+            );
+            if !hwnd.is_null() {
+                // Paint it black by setting background brush color
+                use winapi::um::wingdi::{CreateSolidBrush, RGB};
+                use winapi::um::winuser::{SetClassLongPtrW, GCLP_HBRBACKGROUND};
+                let black_brush = CreateSolidBrush(RGB(0, 0, 0));
+                SetClassLongPtrW(hwnd, GCLP_HBRBACKGROUND, black_brush as isize);
+                use winapi::um::winuser::InvalidateRect;
+                InvalidateRect(hwnd, std::ptr::null(), 1);
+                SetWindowPos(
+                    hwnd,
+                    winapi::um::winuser::HWND_TOPMOST,
+                    *x, *y, *w, *h,
+                    SWP_NOACTIVATE,
+                );
+                ShowWindow(hwnd, SW_SHOW);
+                // Store as usize for thread-safety
+                CLEANING_WIN32_HWNDS.lock().unwrap().push(hwnd as usize);
+                hwnds.push(hwnd);
+            }
+        }
+
+        // Message pump — stays alive until WM_CLOSE_BLACK
+        let mut msg: MSG = std::mem::zeroed();
+        loop {
+            if !CLEANING_ACTIVE.load(Ordering::SeqCst) {
+                break;
+            }
+            if GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) <= 0 {
+                break;
+            }
+            if msg.message == WM_CLOSE_BLACK {
+                break;
+            }
+            TranslateMessage(&msg);
+            DispatchMessageW(&msg);
+        }
+
+        // Destroy all black windows
+        for hwnd in hwnds {
+            use winapi::um::winuser::DestroyWindow;
+            DestroyWindow(hwnd);
+        }
+        CLEANING_WIN32_HWNDS.lock().unwrap().clear();
+    });
+}
+
+#[cfg(not(target_os = "windows"))]
+fn create_black_win32_windows(_rects: Vec<(i32, i32, i32, i32)>) {}
+
+#[cfg(target_os = "windows")]
+fn close_black_win32_windows() {
+    // CLEANING_ACTIVE is already set to false by stop_keyboard_hook().
+    // The Win32 message pump loop checks this flag and will exit on its next wake.
+    // Post WM_NULL to each black window so their GetMessageW call wakes up immediately.
+    let hwnds = CLEANING_WIN32_HWNDS.lock().unwrap().clone();
+    for hwnd_usize in hwnds {
+        unsafe {
+            use winapi::um::winuser::{PostMessageW, WM_NULL};
+            let hwnd = hwnd_usize as winapi::shared::windef::HWND;
+            PostMessageW(hwnd, WM_NULL, 0, 0);
+        }
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn close_black_win32_windows() {}
+
+fn stop_cleaning_mode_internal(app: &tauri::AppHandle) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    stop_keyboard_hook();
+
+    // Wake and destroy secondary monitor Win32 black windows
+    close_black_win32_windows();
+
+    let mut wins = CLEANING_WINDOWS.lock().unwrap();
+    for label in wins.iter() {
+        if let Some(win) = app.get_window(label) {
+            let _ = win.close();
+        }
+    }
+    wins.clear();
+    let _ = app.emit_all("cleaning-mode-stopped", ());
+    Ok(())
+}
+
+#[tauri::command]
+async fn start_cleaning_mode(app: tauri::AppHandle) -> Result<(), String> {
+    let _ = CLEANING_APP_HANDLE.set(app.clone());
+
+    // Close any previous cleaning windows
+    {
+        let mut wins = CLEANING_WINDOWS.lock().unwrap();
+        for label in wins.iter() {
+            if let Some(win) = app.get_window(label) {
+                let _ = win.close();
+            }
+        }
+        wins.clear();
+    }
+
+    let main_window = app.get_window("main").ok_or("Main window not found")?;
+    let monitors = main_window.available_monitors().map_err(|e| e.to_string())?;
+
+    let mut wins = CLEANING_WINDOWS.lock().unwrap();
+
+    // Primary monitor (index 0): full cleaning.html WebView2 window
+    // Secondary monitors: pure Win32 black windows (no WebView2 = no hook interference)
+    let mut secondary_rects: Vec<(i32, i32, i32, i32)> = Vec::new();
+
+    for (i, monitor) in monitors.iter().enumerate() {
+        if i == 0 {
+            let label = "cleaning_overlay_0".to_string();
+            let window = tauri::WindowBuilder::new(
+                &app,
+                &label,
+                tauri::WindowUrl::App("cleaning.html?primary=1".into()),
+            )
+            .title("Keyboard Locked for Cleaning")
+            .decorations(false)
+            .always_on_top(true)
+            .resizable(false)
+            .fullscreen(true)
+            .visible(false)
+            .build()
+            .map_err(|e| format!("Failed to create cleaning window: {}", e))?;
+
+            let _ = window.maximize();
+            let _ = window.set_position(tauri::Position::Physical(monitor.position().clone()));
+            let _ = window.set_size(tauri::Size::Physical(monitor.size().clone()));
+            let _ = window.show();
+            let _ = window.set_focus();
+            wins.push(label);
+        } else {
+            let pos = monitor.position();
+            let size = monitor.size();
+            secondary_rects.push((pos.x, pos.y, size.width as i32, size.height as i32));
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    start_keyboard_hook();
+
+    // Spawn pure Win32 black windows for secondary monitors (after hook is active)
+    if !secondary_rects.is_empty() {
+        create_black_win32_windows(secondary_rects);
+    }
+
+    let _ = app.emit_all("cleaning-mode-started", ());
+    Ok(())
+}
+
+#[tauri::command]
+async fn stop_cleaning_mode(app: tauri::AppHandle) -> Result<(), String> {
+    stop_cleaning_mode_internal(&app)
 }
 
 // ===== BRIGHTNESS METHOD (via PowerShell WMI) =====
@@ -2225,31 +2556,63 @@ fn set_border_color(app: tauri::AppHandle, color: String) {
     }
 }
 
+/// Clips a window to a rounded rectangle using SetWindowRgn.
+/// This makes DWM acrylic visually respect the CSS border-radius.
+/// radius_px: logical pixels (will be scaled to physical pixels).
+#[cfg(target_os = "windows")]
+#[allow(dead_code)]
+unsafe fn apply_rounded_window_region(hwnd: winapi::shared::windef::HWND, width_px: i32, height_px: i32, radius_px: i32) {
+    use winapi::um::wingdi::CreateRoundRectRgn;
+    use winapi::um::winuser::SetWindowRgn;
+    let rgn = CreateRoundRectRgn(0, 0, width_px, height_px, radius_px * 2, radius_px * 2);
+    // SetWindowRgn takes ownership of the region; no need to DeleteObject after
+    SetWindowRgn(hwnd, rgn, 1 /* bRedraw = TRUE */);
+}
+
+#[cfg(target_os = "windows")]
+unsafe fn clear_window_region(hwnd: winapi::shared::windef::HWND) {
+    use winapi::um::winuser::SetWindowRgn;
+    SetWindowRgn(hwnd, std::ptr::null_mut(), 1);
+}
+
 #[tauri::command]
 fn set_window_effect(app: tauri::AppHandle, effect: String) {
     #[cfg(target_os = "windows")]
     {
-        use window_vibrancy::{apply_acrylic, clear_acrylic};
+        use window_vibrancy::clear_acrylic;
+        use tauri::Manager;
 
-        let labels = ["main", "settings", "tray"];
-        for label in labels {
-            if let Some(window) = app.get_window(label) {
-                // DWM Acrylic requires the window to be resizable on Windows
-                let _ = window.set_resizable(true);
-                match effect.as_str() {
-                    "acrylic" => {
-                        // RGBA tint: dark (18,18,24) at ~59% opacity (150/255) for frosted glass
-                        let _ = apply_acrylic(&window, Some((18, 18, 24, 150)));
-                    }
-                    "none" => {
-                        let _ = clear_acrylic(&window);
-                    }
-                    _ => {}
-                }
+        let _ = effect; // All windows use high-fidelity CSS glassmorphism, avoiding Windows 11 DWM titlebar/frame glitches
+
+        if let Some(main_win) = app.get_window("main") {
+            let _ = clear_acrylic(&main_win);
+            let _ = main_win.set_decorations(false);
+            let _ = main_win.set_resizable(false);
+            if let Ok(hwnd_raw) = main_win.hwnd() {
+                let hwnd = hwnd_raw.0 as winapi::shared::windef::HWND;
+                unsafe { clear_window_region(hwnd); }
+            }
+        }
+        if let Some(settings_win) = app.get_window("settings") {
+            let _ = clear_acrylic(&settings_win);
+            let _ = settings_win.set_resizable(false);
+            if let Ok(hwnd_raw) = settings_win.hwnd() {
+                let hwnd = hwnd_raw.0 as winapi::shared::windef::HWND;
+                unsafe { clear_window_region(hwnd); }
+            }
+        }
+        if let Some(tray_win) = app.get_window("tray") {
+            let _ = clear_acrylic(&tray_win);
+            let _ = tray_win.set_decorations(false);
+            let _ = tray_win.set_resizable(false);
+            if let Ok(hwnd_raw) = tray_win.hwnd() {
+                let hwnd = hwnd_raw.0 as winapi::shared::windef::HWND;
+                unsafe { clear_window_region(hwnd); }
             }
         }
     }
 }
+
 
 #[tauri::command]
 fn set_window_size(app: tauri::AppHandle, width: u32, height: u32) {
@@ -2292,6 +2655,7 @@ fn set_window_height(app: tauri::AppHandle, height: u32) {
         // This keeps the window "resizable" (for Acrylic) but fixed in size (for UX)
         let _ = window.set_min_size(Some(size));
         let _ = window.set_max_size(Some(size));
+        let _ = window.set_decorations(false);
     }
 }
 
@@ -2405,6 +2769,7 @@ fn resize_tray_window(app: tauri::AppHandle, height: f64) {
         let _ = tray_win.set_position(tauri::LogicalPosition::new(current_x, new_y.max(8.0).min(screen_h - target_h - 8.0)));
     }
 }
+
 
 fn clear_webview_http_cache() {
     #[cfg(target_os = "windows")]
@@ -2635,9 +3000,11 @@ fn main() {
             check_control_my_monitor,
             is_classic_only,
             toggle_app_disabled,
-            resize_tray_window
+            resize_tray_window,
+            start_cleaning_mode,
+            stop_cleaning_mode
         ])
-        .system_tray(SystemTray::new())
+        .system_tray(SystemTray::new().with_tooltip("Never Sleep"))
         .on_system_tray_event(|app, event| match event {
             SystemTrayEvent::LeftClick { .. } => {
                 // Left-click: focus the main window
@@ -2697,6 +3064,12 @@ fn main() {
                     let _ = tray_win.set_position(tauri::LogicalPosition::new(x, y));
                     let _ = tray_win.show();
                     let _ = tray_win.set_focus();
+                    // Record when the tray became visible (for the 600ms focus-loss grace period)
+                    let now_ms = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map(|d| d.as_millis() as u64)
+                        .unwrap_or(0);
+                    TRAY_SHOWN_AT.store(now_ms, Ordering::SeqCst);
                     // Notify the tray window to sync its state
                     let _ = tray_win.emit("tray-opened", ());
                 }
@@ -2706,7 +3079,9 @@ fn main() {
         .on_window_event(|event| match event.event() {
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 let window = event.window();
-                if window.label() == "settings" || window.label() == "tray" {
+                if window.label().starts_with("cleaning_overlay_") {
+                    let _ = stop_cleaning_mode_internal(&window.app_handle());
+                } else if window.label() == "settings" || window.label() == "tray" {
                     // Hide instead of close to keep state
                     window.hide().unwrap();
                     api.prevent_close();
@@ -2717,6 +3092,22 @@ fn main() {
                         let _ = append_debug_log(&app_handle, &state, "Main window closed; application is shutting down");
                     }
                     std::process::exit(0);
+                }
+            }
+            tauri::WindowEvent::Focused(false) => {
+                let window = event.window();
+                // Only auto-dismiss the tray flyout, not other windows
+                if window.label() == "tray" {
+                    let shown_at = TRAY_SHOWN_AT.load(Ordering::SeqCst);
+                    let now_ms = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map(|d| d.as_millis() as u64)
+                        .unwrap_or(0);
+                    // 600ms grace period: ignore spurious blur right after opening
+                    // (Windows Explorer needs time to settle focus on show)
+                    if shown_at > 0 && now_ms.saturating_sub(shown_at) >= 600 {
+                        let _ = window.hide();
+                    }
                 }
             }
             _ => {}

@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Screen Overlay</title>
+  <script src="debug_logging.js"></script>
   <style>
     * {
       margin: 0;
@@ -26,24 +27,39 @@
 
 <body>
   <script>
-    // Close overlay on any mouse movement or keyboard input
     let hasInput = false;
+    let accumulatedMouseMovement = 0;
+    let loggedIgnoredInitialMovement = false;
 
-    async function closeOverlay() {
-      if (!hasInput && window.__TAURI__) {
-        hasInput = true;
+    async function closeOverlay(inputType) {
+      if (hasInput) return;
+      hasInput = true;
+      window.__neverSleepDebugLog?.(`Screen overlay dismissed by ${inputType} input`);
+      if (window.__TAURI__) {
         try {
-          await window.__TAURI__.invoke('record_input_activity', { inputType: 'mouse' });
-        } catch (e) {}
-        window.__TAURI__.invoke('close_screen_overlay').catch(() => {});
+          await window.__TAURI__.invoke('record_input_activity', { inputType });
+        } catch (error) {
+          window.__neverSleepDebugLog?.(`Could not record overlay wake activity: ${error}`);
+        }
+        window.__TAURI__.invoke('close_screen_overlay').catch(error => {
+          window.__neverSleepDebugLog?.(`Could not close screen overlay after ${inputType} input: ${error}`);
+        });
       }
     }
 
-    document.addEventListener('mousemove', closeOverlay);
-    document.addEventListener('mousedown', closeOverlay);
-    document.addEventListener('keydown', closeOverlay);
-    document.addEventListener('keypress', closeOverlay);
-    document.addEventListener('touchstart', closeOverlay);
+    document.addEventListener('mousemove', event => {
+      accumulatedMouseMovement += Math.hypot(event.movementX || 0, event.movementY || 0);
+      if (accumulatedMouseMovement > 8) {
+        closeOverlay('mouse');
+      } else if (!loggedIgnoredInitialMovement) {
+        loggedIgnoredInitialMovement = true;
+        window.__neverSleepDebugLog?.(`Ignored initial overlay mouse movement; accumulated=${accumulatedMouseMovement.toFixed(1)}px`);
+      }
+    });
+    document.addEventListener('mousedown', () => closeOverlay('mouse'));
+    document.addEventListener('keydown', () => closeOverlay('keyboard'));
+    document.addEventListener('keypress', () => closeOverlay('keyboard'));
+    document.addEventListener('touchstart', () => closeOverlay('mouse'));
 
     // Force focus
     window.onload = () => {
