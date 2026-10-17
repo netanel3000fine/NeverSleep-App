@@ -64,7 +64,7 @@ if ($LASTEXITCODE -eq 0) {
 
     # Copy fresh exe directly (no installer)
     Copy-Item "src-tauri\target\release\Never Sleep.exe" "$env:LOCALAPPDATA\Never Sleep\Never Sleep.exe" -Force
-    Get-ChildItem "src-tauri\target\release\bundle\nsis\*.exe" | Select-Object -First 1 | ForEach-Object {
+    Get-ChildItem "src-tauri\target\release\bundle\nsis\*.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | ForEach-Object {
         Copy-Item $_.FullName "$env:USERPROFILE\Desktop\$($_.Name)" -Force
     }
 

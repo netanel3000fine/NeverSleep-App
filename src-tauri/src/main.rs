@@ -26,6 +26,16 @@ static PREV_BRIGHTNESS: std::sync::atomic::AtomicI32 = std::sync::atomic::Atomic
 // Global: unix-ms timestamp when the tray window was last shown (for the 600ms grace period)
 static TRAY_SHOWN_AT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
+// Extension trait to prevent crashes from poisoned mutexes
+trait SafeLock<T> {
+    fn safe_lock(&self) -> std::sync::MutexGuard<'_, T>;
+}
+
+impl<T> SafeLock<T> for Mutex<T> {
+    fn safe_lock(&self) -> std::sync::MutexGuard<'_, T> {
+        self.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+}
 
 struct AppState {
     overlay_windows: Mutex<Vec<String>>,
@@ -320,7 +330,7 @@ fn get_windows_last_input_time() -> Option<u64> {
 
 #[tauri::command]
 fn get_last_activity(state: tauri::State<'_, AppState>) -> Result<(u64, String), String> {
-    let mut activity = state.last_activity.lock().unwrap();
+    let mut activity = state.last_activity.safe_lock();
     #[cfg(target_os = "windows")]
     if let Some(win_input_time) = get_windows_last_input_time() {
         if win_input_time > activity.0.saturating_add(50) {
@@ -347,7 +357,7 @@ fn record_input_activity(
         .try_into()
         .unwrap_or(0);
 
-    let mut last = state.last_activity.lock().unwrap();
+    let mut last = state.last_activity.safe_lock();
     *last = (now, normalized_type.to_string());
     Ok(())
 }
@@ -471,7 +481,7 @@ fn create_overlay_window(
     url: &str,
     title: &str,
 ) -> Result<(), String> {
-    let mut overlay_windows = state.overlay_windows.lock().unwrap();
+    let mut overlay_windows = state.overlay_windows.safe_lock();
     // Close existing if any
     for label in overlay_windows.iter() {
         if let Some(window) = app.get_window(label) {
@@ -550,7 +560,7 @@ fn create_laptop_overlay_window(
     let monitors = main_window
         .available_monitors()
         .map_err(|e| format!("Failed to get monitors: {}", e))?;
-    let mut overlay_windows = state.overlay_windows.lock().unwrap();
+    let mut overlay_windows = state.overlay_windows.safe_lock();
 
     for (i, monitor) in monitors.iter().enumerate() {
         let position = monitor.position();
@@ -647,10 +657,10 @@ async fn close_screen_overlay(
         "gamma" => close_darken_gamma(),
         "ddcci" | "ddcci_laptop_overlay" => {
             let close_result = {
-                let mut overlay_windows = state.overlay_windows.lock().unwrap();
+                let mut overlay_windows = state.overlay_windows.safe_lock();
                 for label in overlay_windows.iter() {
                     if let Some(window) = app.get_window(label) {
-                        window.close().map_err(|e| e.to_string())?;
+                        let _ = window.close();
                     }
                 }
                 overlay_windows.clear();
@@ -667,10 +677,10 @@ async fn close_screen_overlay(
         "controlmymonitor" => execute_control_my_monitor(custom_path.as_deref(), "1"),
         "brightness" => close_darken_brightness(),
         _ => {
-            let mut overlay_windows = state.overlay_windows.lock().unwrap();
+            let mut overlay_windows = state.overlay_windows.safe_lock();
             for label in overlay_windows.iter() {
                 if let Some(window) = app.get_window(label) {
-                    window.close().ok();
+                    let _ = window.close();
                 }
             }
             overlay_windows.clear();
@@ -685,7 +695,7 @@ async fn close_screen_overlay(
         .try_into()
         .unwrap_or(0);
     {
-        let mut last = state.last_activity.lock().unwrap();
+        let mut last = state.last_activity.safe_lock();
         *last = (now, "mouse".to_string());
     }
     let _ = app.emit_all("darken-overlay-closed", ());
@@ -881,7 +891,7 @@ fn create_black_win32_windows(rects: Vec<(i32, i32, i32, i32)>) {
                 );
                 ShowWindow(hwnd, SW_SHOW);
                 // Store as usize for thread-safety
-                CLEANING_WIN32_HWNDS.lock().unwrap().push(hwnd as usize);
+                CLEANING_WIN32_HWNDS.safe_lock().push(hwnd as usize);
                 hwnds.push(hwnd);
             }
         }
@@ -907,7 +917,7 @@ fn create_black_win32_windows(rects: Vec<(i32, i32, i32, i32)>) {
             use winapi::um::winuser::DestroyWindow;
             DestroyWindow(hwnd);
         }
-        CLEANING_WIN32_HWNDS.lock().unwrap().clear();
+        CLEANING_WIN32_HWNDS.safe_lock().clear();
     });
 }
 
@@ -919,7 +929,7 @@ fn close_black_win32_windows() {
     // CLEANING_ACTIVE is already set to false by stop_keyboard_hook().
     // The Win32 message pump loop checks this flag and will exit on its next wake.
     // Post WM_NULL to each black window so their GetMessageW call wakes up immediately.
-    let hwnds = CLEANING_WIN32_HWNDS.lock().unwrap().clone();
+    let hwnds = CLEANING_WIN32_HWNDS.safe_lock().clone();
     for hwnd_usize in hwnds {
         unsafe {
             use winapi::um::winuser::{PostMessageW, WM_NULL};
@@ -939,7 +949,7 @@ fn stop_cleaning_mode_internal(app: &tauri::AppHandle) -> Result<(), String> {
     // Wake and destroy secondary monitor Win32 black windows
     close_black_win32_windows();
 
-    let mut wins = CLEANING_WINDOWS.lock().unwrap();
+    let mut wins = CLEANING_WINDOWS.safe_lock();
     for label in wins.iter() {
         if let Some(win) = app.get_window(label) {
             let _ = win.close();
@@ -956,7 +966,7 @@ async fn start_cleaning_mode(app: tauri::AppHandle) -> Result<(), String> {
 
     // Close any previous cleaning windows
     {
-        let mut wins = CLEANING_WINDOWS.lock().unwrap();
+        let mut wins = CLEANING_WINDOWS.safe_lock();
         for label in wins.iter() {
             if let Some(win) = app.get_window(label) {
                 let _ = win.close();
@@ -1351,6 +1361,7 @@ fn close_darken_gamma() -> Result<(), String> {
 #[cfg(target_os = "windows")]
 #[allow(non_snake_case)]
 #[repr(C)]
+#[derive(Clone, Copy)]
 struct PHYSICAL_MONITOR {
     hPhysicalMonitor: *mut std::ffi::c_void,
     szPhysicalMonitorDescription: [u16; 128],
@@ -1403,8 +1414,7 @@ fn ddcci_incompatible_monitors() -> Result<Vec<IncompatibleMonitorInfo>, String>
         ) {
             let mut count = 0u32;
             if p_get_count(h_monitor, &mut count) != 0 && count > 0 {
-                let mut physical_mons = Vec::<PHYSICAL_MONITOR>::with_capacity(count as usize);
-                physical_mons.set_len(count as usize);
+                let mut physical_mons = vec![PHYSICAL_MONITOR { hPhysicalMonitor: std::ptr::null_mut(), szPhysicalMonitorDescription: [0; 128] }; count as usize];
                 if p_get_mons(h_monitor, count, physical_mons.as_mut_ptr()) != 0 {
                     for mon in &physical_mons {
                         let mut vcp_type = 0u8;
@@ -1561,8 +1571,7 @@ fn send_ddcci_vcp_power(power_value: u32) -> Result<(), String> {
             let ctx = &mut *(lparam as *mut MonitorContext);
             let mut count = 0u32;
             if (ctx.p_get_count)(h_monitor, &mut count) != 0 && count > 0 {
-                let mut physical_mons = Vec::<PHYSICAL_MONITOR>::with_capacity(count as usize);
-                physical_mons.set_len(count as usize);
+                let mut physical_mons = vec![PHYSICAL_MONITOR { hPhysicalMonitor: std::ptr::null_mut(), szPhysicalMonitorDescription: [0; 128] }; count as usize];
                 if (ctx.p_get_mons)(h_monitor, count, physical_mons.as_mut_ptr()) != 0 {
                     for mon in &physical_mons {
                         let mut vcp_type = 0u8;
@@ -2786,6 +2795,43 @@ fn clear_webview_http_cache() {
 }
 
 fn main() {
+    // Install global crash / panic logger to write details to NeverSleep-crash.log on Desktop
+    std::panic::set_hook(Box::new(|panic_info| {
+        let payload = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+            (*s).to_string()
+        } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
+            s.clone()
+        } else {
+            "Unknown panic payload".to_string()
+        };
+        let location = panic_info
+            .location()
+            .map(|l| format!("{}:{}:{}", l.file(), l.line(), l.column()))
+            .unwrap_or_else(|| "unknown location".to_string());
+
+        let timestamp = {
+            #[cfg(target_os = "windows")]
+            { local_timestamp().1 }
+            #[cfg(not(target_os = "windows"))]
+            { utc_timestamp().1 }
+        };
+
+        let message = format!(
+            "[{}] CRITICAL APPLICATION PANIC at {}\nMessage: {}\n\n",
+            timestamp, location, payload
+        );
+
+        eprintln!("{}", message);
+
+        if let Some(desktop) = dirs_next::desktop_dir() {
+            let crash_path = desktop.join("NeverSleep-crash.log");
+            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&crash_path) {
+                use std::io::Write;
+                let _ = writeln!(f, "{}", message);
+            }
+        }
+    }));
+
     clear_webview_http_cache();
 
     // Single Instance Check using WinAPI Mutex
@@ -2833,7 +2879,7 @@ fn main() {
             if is_mouse_move {
                 let now_raw = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
-                    .unwrap()
+                    .unwrap_or_default()
                     .as_millis()
                     .try_into()
                     .unwrap_or(0u64);
@@ -2845,7 +2891,7 @@ fn main() {
 
             let now: u64 = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_default()
                 .as_millis()
                 .try_into()
                 .unwrap_or(0);
@@ -2861,7 +2907,7 @@ fn main() {
                 EventType::KeyRelease(_) => return,
             };
 
-            let mut last = activity_clone.lock().unwrap();
+            let mut last = activity_clone.safe_lock();
             *last = (now, input_type.to_string());
         }) {
             eprintln!("Error listening to input events: {:?}", error);
@@ -3007,13 +3053,14 @@ fn main() {
         .system_tray(SystemTray::new().with_tooltip("Never Sleep"))
         .on_system_tray_event(|app, event| match event {
             SystemTrayEvent::LeftClick { .. } => {
-                // Left-click: focus the main window
-                let window = app.get_window("main").unwrap();
-                if window.is_minimized().unwrap_or(false) {
-                    window.unminimize().unwrap();
+                // Left-click: focus the main window safely
+                if let Some(window) = app.get_window("main") {
+                    if window.is_minimized().unwrap_or(false) {
+                        let _ = window.unminimize();
+                    }
+                    let _ = window.show();
+                    let _ = window.set_focus();
                 }
-                window.show().unwrap();
-                window.set_focus().unwrap();
             }
             SystemTrayEvent::RightClick { position, size, .. } => {
                 // Right-click: show custom glassmorphic tray flyout above the cursor
@@ -3083,7 +3130,7 @@ fn main() {
                     let _ = stop_cleaning_mode_internal(&window.app_handle());
                 } else if window.label() == "settings" || window.label() == "tray" {
                     // Hide instead of close to keep state
-                    window.hide().unwrap();
+                    let _ = window.hide();
                     api.prevent_close();
                 } else if window.label() == "main" {
                     // Quit app on main window close
