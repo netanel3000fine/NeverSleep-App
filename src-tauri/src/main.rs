@@ -4,13 +4,13 @@
 )]
 
 use rdev::{listen, Event as RdevEvent, EventType};
+use std::sync::atomic::{AtomicPtr, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{
     CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
     SystemTraySubmenu,
 };
-use std::sync::atomic::{AtomicPtr, Ordering};
 
 #[cfg(target_os = "windows")]
 static MUTEX_HANDLE: AtomicPtr<std::ffi::c_void> = AtomicPtr::new(std::ptr::null_mut());
@@ -53,7 +53,11 @@ struct DebugLogState {
 }
 
 #[tauri::command]
-fn log_to_file(app: tauri::AppHandle, state: tauri::State<'_, AppState>, msg: String) -> Result<(), String> {
+fn log_to_file(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+    msg: String,
+) -> Result<(), String> {
     append_debug_log(&app, &state, &msg)
 }
 
@@ -71,7 +75,8 @@ fn utc_timestamp() -> (String, String) {
     let z = days + 719_468;
     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
     let day_of_era = z - era * 146_097;
-    let year_of_era = (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+    let year_of_era =
+        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
     let mut year = year_of_era + era * 400;
     let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
     let month_part = (5 * day_of_year + 2) / 153;
@@ -84,7 +89,10 @@ fn utc_timestamp() -> (String, String) {
     let millisecond = milliseconds % 1_000;
     (
         format!("{:04}-{:02}-{:02}", year, month, day),
-        format!("{:04}-{:02}-{:02} {:02}:{:02}:{:02}.{:03} UTC", year, month, day, hour, minute, second, millisecond),
+        format!(
+            "{:04}-{:02}-{:02} {:02}:{:02}:{:02}.{:03} UTC",
+            year, month, day, hour, minute, second, millisecond
+        ),
     )
 }
 
@@ -109,7 +117,10 @@ fn local_timestamp() -> (String, String) {
 }
 
 fn write_debug_log_line(logger: &mut DebugLogState, message: &str) -> Result<(), String> {
-    let desktop = logger.desktop_dir.as_ref().ok_or_else(|| "Could not locate the Desktop folder".to_string())?;
+    let desktop = logger
+        .desktop_dir
+        .as_ref()
+        .ok_or_else(|| "Could not locate the Desktop folder".to_string())?;
     let (date, timestamp) = local_timestamp();
     let path = desktop.join(format!("NeverSleep-debug-{}.log", date));
     let mut file = std::fs::OpenOptions::new()
@@ -128,7 +139,10 @@ fn publish_debug_log_status(app: &tauri::AppHandle, status: String) {
 }
 
 fn append_debug_log(app: &tauri::AppHandle, state: &AppState, message: &str) -> Result<(), String> {
-    let mut logger = state.debug_log.lock().map_err(|_| "Debug logger lock is unavailable".to_string())?;
+    let mut logger = state
+        .debug_log
+        .lock()
+        .map_err(|_| "Debug logger lock is unavailable".to_string())?;
     if !logger.enabled {
         return Ok(());
     }
@@ -139,9 +153,17 @@ fn append_debug_log(app: &tauri::AppHandle, state: &AppState, message: &str) -> 
     } else {
         logger.last_error = None;
     }
-    let status = logger.last_error.clone().map(|error| format!("Error: {}", error)).unwrap_or_else(|| {
-        logger.desktop_dir.as_ref().map(|path| format!("Logging to {}", path.display())).unwrap_or_else(|| "Debug logging is enabled".to_string())
-    });
+    let status = logger
+        .last_error
+        .clone()
+        .map(|error| format!("Error: {}", error))
+        .unwrap_or_else(|| {
+            logger
+                .desktop_dir
+                .as_ref()
+                .map(|path| format!("Logging to {}", path.display()))
+                .unwrap_or_else(|| "Debug logging is enabled".to_string())
+        });
     drop(logger);
     if result.is_err() || previous_error.is_some() {
         publish_debug_log_status(app, status);
@@ -170,13 +192,21 @@ fn set_debug_logging(app: &tauri::AppHandle, state: &AppState, enabled: bool) ->
         logger.enabled = false;
         logger.last_error = final_write.err();
     }
-    let status = logger.last_error.clone().map(|error| format!("Error: {}", error)).unwrap_or_else(|| {
-        if logger.enabled {
-            logger.desktop_dir.as_ref().map(|path| format!("Logging to {}", path.display())).unwrap_or_else(|| "Debug logging is enabled".to_string())
-        } else {
-            "Debug logging is off".to_string()
-        }
-    });
+    let status = logger
+        .last_error
+        .clone()
+        .map(|error| format!("Error: {}", error))
+        .unwrap_or_else(|| {
+            if logger.enabled {
+                logger
+                    .desktop_dir
+                    .as_ref()
+                    .map(|path| format!("Logging to {}", path.display()))
+                    .unwrap_or_else(|| "Debug logging is enabled".to_string())
+            } else {
+                "Debug logging is off".to_string()
+            }
+        });
     drop(logger);
     publish_debug_log_status(app, status.clone());
     status
@@ -188,13 +218,21 @@ fn get_debug_log_status(state: tauri::State<'_, AppState>) -> String {
         Ok(logger) => logger,
         Err(_) => return "Error: Debug logger lock is unavailable".to_string(),
     };
-    logger.last_error.clone().map(|error| format!("Error: {}", error)).unwrap_or_else(|| {
-        if logger.enabled {
-            logger.desktop_dir.as_ref().map(|path| format!("Logging to {}", path.display())).unwrap_or_else(|| "Debug logging is enabled".to_string())
-        } else {
-            "Debug logging is off".to_string()
-        }
-    })
+    logger
+        .last_error
+        .clone()
+        .map(|error| format!("Error: {}", error))
+        .unwrap_or_else(|| {
+            if logger.enabled {
+                logger
+                    .desktop_dir
+                    .as_ref()
+                    .map(|path| format!("Logging to {}", path.display()))
+                    .unwrap_or_else(|| "Debug logging is enabled".to_string())
+            } else {
+                "Debug logging is off".to_string()
+            }
+        })
 }
 
 #[tauri::command]
@@ -219,15 +257,15 @@ fn allow_sleep(state: tauri::State<'_, AppState>) -> Result<(), String> {
 
 #[cfg(target_os = "windows")]
 fn set_windows_power_request(state: &AppState, enabled: bool) -> Result<(), String> {
+    use windows::core::PWSTR;
     use windows::Win32::Foundation::{CloseHandle, HANDLE};
     use windows::Win32::System::Power::{
         PowerClearRequest, PowerCreateRequest, PowerRequestDisplayRequired,
         PowerRequestSystemRequired, PowerSetRequest,
     };
     use windows::Win32::System::Threading::{
-        REASON_CONTEXT, REASON_CONTEXT_0, POWER_REQUEST_CONTEXT_SIMPLE_STRING,
+        POWER_REQUEST_CONTEXT_SIMPLE_STRING, REASON_CONTEXT, REASON_CONTEXT_0,
     };
-    use windows::core::PWSTR;
 
     let mut request_slot = state
         .power_request
@@ -272,8 +310,10 @@ fn set_windows_power_request(state: &AppState, enabled: bool) -> Result<(), Stri
         let display_result = unsafe { PowerClearRequest(handle, PowerRequestDisplayRequired) };
         let system_result = unsafe { PowerClearRequest(handle, PowerRequestSystemRequired) };
         let close_result = unsafe { CloseHandle(handle) };
-        display_result.map_err(|error| format!("Could not release display power request: {error}"))?;
-        system_result.map_err(|error| format!("Could not release system power request: {error}"))?;
+        display_result
+            .map_err(|error| format!("Could not release display power request: {error}"))?;
+        system_result
+            .map_err(|error| format!("Could not release system power request: {error}"))?;
         close_result.map_err(|error| format!("Could not close Windows power request: {error}"))?;
     }
 
@@ -307,8 +347,8 @@ fn force_sleep(_app: tauri::AppHandle, _state: tauri::State<'_, AppState>) -> Re
 
 #[cfg(target_os = "windows")]
 fn get_windows_last_input_time() -> Option<u64> {
-    use winapi::um::winuser::{GetLastInputInfo, LASTINPUTINFO};
     use winapi::um::sysinfoapi::GetTickCount;
+    use winapi::um::winuser::{GetLastInputInfo, LASTINPUTINFO};
     unsafe {
         let mut lii = LASTINPUTINFO {
             cbSize: std::mem::size_of::<LASTINPUTINFO>() as u32,
@@ -371,7 +411,10 @@ fn workstation_lock_state() -> Result<bool, String> {
     unsafe {
         let desktop = OpenInputDesktop(0, 0, DESKTOP_READOBJECTS);
         if desktop.is_null() {
-            return Err(format!("OpenInputDesktop failed: {}", std::io::Error::last_os_error()));
+            return Err(format!(
+                "OpenInputDesktop failed: {}",
+                std::io::Error::last_os_error()
+            ));
         }
 
         let mut name = [0u16; 256];
@@ -397,7 +440,9 @@ fn workstation_lock_state() -> Result<bool, String> {
             return Err("GetUserObjectInformationW returned an empty desktop name".into());
         }
         if needed as usize > name.len() * std::mem::size_of::<u16>() {
-            return Err("GetUserObjectInformationW returned a desktop name larger than the buffer".into());
+            return Err(
+                "GetUserObjectInformationW returned a desktop name larger than the buffer".into(),
+            );
         }
 
         let len = (needed as usize / std::mem::size_of::<u16>()).saturating_sub(1);
@@ -584,19 +629,16 @@ fn create_laptop_overlay_window(
             let _ = existing.close();
         }
 
-        let window = tauri::WindowBuilder::new(
-            app,
-            &label,
-            tauri::WindowUrl::App("overlay.html".into()),
-        )
-        .title("Laptop Screen Overlay")
-        .decorations(false)
-        .always_on_top(true)
-        .resizable(true)
-        .fullscreen(true)
-        .visible(false)
-        .build()
-        .map_err(|e| format!("Failed to create laptop overlay: {}", e))?;
+        let window =
+            tauri::WindowBuilder::new(app, &label, tauri::WindowUrl::App("overlay.html".into()))
+                .title("Laptop Screen Overlay")
+                .decorations(false)
+                .always_on_top(true)
+                .resizable(true)
+                .fullscreen(true)
+                .visible(false)
+                .build()
+                .map_err(|e| format!("Failed to create laptop overlay: {}", e))?;
 
         let _ = window.maximize();
         let _ = window.set_position(tauri::Position::Physical(position.clone()));
@@ -720,7 +762,9 @@ unsafe extern "system" fn low_level_keyboard_proc(
     w_param: winapi::shared::minwindef::WPARAM,
     l_param: winapi::shared::minwindef::LPARAM,
 ) -> winapi::shared::minwindef::LRESULT {
-    use winapi::um::winuser::{CallNextHookEx, KBDLLHOOKSTRUCT, VK_ESCAPE, WM_KEYDOWN, WM_SYSKEYDOWN};
+    use winapi::um::winuser::{
+        CallNextHookEx, KBDLLHOOKSTRUCT, VK_ESCAPE, WM_KEYDOWN, WM_SYSKEYDOWN,
+    };
 
     if code >= 0 && CLEANING_ACTIVE.load(Ordering::SeqCst) {
         let kbd = &*(l_param as *const KBDLLHOOKSTRUCT);
@@ -777,8 +821,8 @@ fn start_keyboard_hook() {
     std::thread::spawn(|| {
         use winapi::um::processthreadsapi::GetCurrentThreadId;
         use winapi::um::winuser::{
-            DispatchMessageW, GetMessageW, SetWindowsHookExW,
-            TranslateMessage, UnhookWindowsHookEx, MSG, WH_KEYBOARD_LL,
+            DispatchMessageW, GetMessageW, SetWindowsHookExW, TranslateMessage,
+            UnhookWindowsHookEx, MSG, WH_KEYBOARD_LL,
         };
 
         unsafe {
@@ -826,22 +870,18 @@ fn stop_keyboard_hook() {
 fn create_black_win32_windows(rects: Vec<(i32, i32, i32, i32)>) {
     // Spawn a dedicated Win32 thread that owns the black-screen windows
     std::thread::spawn(move || unsafe {
+        use winapi::shared::minwindef::UINT;
         use winapi::shared::windef::HWND;
         use winapi::um::libloaderapi::GetModuleHandleW;
         use winapi::um::winuser::{
-            CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW,
-            RegisterClassExW, SetWindowPos,
-            ShowWindow, TranslateMessage, MSG, SW_SHOW,
-            SWP_NOACTIVATE, WNDCLASSEXW, WS_EX_NOACTIVATE, WS_EX_TOPMOST,
-            WS_POPUP, WS_VISIBLE, WM_USER,
+            CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, RegisterClassExW,
+            SetWindowPos, ShowWindow, TranslateMessage, MSG, SWP_NOACTIVATE, SW_SHOW, WM_USER,
+            WNDCLASSEXW, WS_EX_NOACTIVATE, WS_EX_TOPMOST, WS_POPUP, WS_VISIBLE,
         };
-        use winapi::shared::minwindef::UINT;
 
         const WM_CLOSE_BLACK: UINT = WM_USER + 42;
 
-        let class_name: Vec<u16> = "NeverSleepCleaningBlack\0"
-            .encode_utf16()
-            .collect();
+        let class_name: Vec<u16> = "NeverSleepCleaningBlack\0".encode_utf16().collect();
 
         let hinstance = GetModuleHandleW(std::ptr::null());
 
@@ -869,7 +909,10 @@ fn create_black_win32_windows(rects: Vec<(i32, i32, i32, i32)>) {
                 class_name.as_ptr(),
                 std::ptr::null(),
                 WS_POPUP | WS_VISIBLE,
-                *x, *y, *w, *h,
+                *x,
+                *y,
+                *w,
+                *h,
                 std::ptr::null_mut(),
                 std::ptr::null_mut(),
                 hinstance,
@@ -886,7 +929,10 @@ fn create_black_win32_windows(rects: Vec<(i32, i32, i32, i32)>) {
                 SetWindowPos(
                     hwnd,
                     winapi::um::winuser::HWND_TOPMOST,
-                    *x, *y, *w, *h,
+                    *x,
+                    *y,
+                    *w,
+                    *h,
                     SWP_NOACTIVATE,
                 );
                 ShowWindow(hwnd, SW_SHOW);
@@ -976,7 +1022,9 @@ async fn start_cleaning_mode(app: tauri::AppHandle) -> Result<(), String> {
     }
 
     let main_window = app.get_window("main").ok_or("Main window not found")?;
-    let monitors = main_window.available_monitors().map_err(|e| e.to_string())?;
+    let monitors = main_window
+        .available_monitors()
+        .map_err(|e| e.to_string())?;
 
     let mut wins = CLEANING_WINDOWS.lock().unwrap();
 
@@ -1121,18 +1169,16 @@ fn create_darken_win32() -> Result<(), String> {
 
         std::thread::spawn(move || {
             use std::ptr;
-            use winapi::shared::windef::{HWND, HGDIOBJ, HBRUSH};
-            use winapi::um::winuser::{
-                CreateWindowExW, ShowWindow, UpdateWindow, DefWindowProcW,
-                GetSystemMetrics, RegisterClassW, GetMessageW, TranslateMessage,
-                DispatchMessageW, PostQuitMessage, DestroyWindow, SetWindowPos,
-                SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN, SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN,
-                SW_SHOW, WNDCLASSW, WS_EX_TOPMOST, WS_EX_TOOLWINDOW,
-                WS_POPUP, CS_HREDRAW, CS_VREDRAW, WM_CLOSE, WM_DESTROY,
-                WM_ERASEBKGND,
-            };
+            use winapi::shared::minwindef::{HINSTANCE, LPARAM, LRESULT, UINT, WPARAM};
+            use winapi::shared::windef::{HBRUSH, HGDIOBJ, HWND};
             use winapi::um::libloaderapi::GetModuleHandleW;
-            use winapi::shared::minwindef::{HINSTANCE, LRESULT, WPARAM, LPARAM, UINT};
+            use winapi::um::winuser::{
+                CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetMessageW,
+                GetSystemMetrics, PostQuitMessage, RegisterClassW, SetWindowPos, ShowWindow,
+                TranslateMessage, UpdateWindow, CS_HREDRAW, CS_VREDRAW, SM_CXVIRTUALSCREEN,
+                SM_CYVIRTUALSCREEN, SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN, SW_SHOW, WM_CLOSE,
+                WM_DESTROY, WM_ERASEBKGND, WNDCLASSW, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
+            };
 
             #[link(name = "gdi32")]
             extern "system" {
@@ -1154,8 +1200,8 @@ fn create_darken_win32() -> Result<(), String> {
                 match msg {
                     WM_NCHITTEST => -1, // HTTRANSPARENT: let mouse pass through
                     WM_ERASEBKGND => {
-                        use winapi::um::winuser::{FillRect, GetClientRect};
                         use winapi::shared::windef::RECT;
+                        use winapi::um::winuser::{FillRect, GetClientRect};
                         let hdc = wparam as winapi::shared::windef::HDC;
                         let mut rc: RECT = std::mem::zeroed();
                         GetClientRect(hwnd, &mut rc);
@@ -1214,7 +1260,10 @@ fn create_darken_win32() -> Result<(), String> {
                     class_name.as_ptr(),
                     title.as_ptr(),
                     WS_POPUP | winapi::um::winuser::WS_VISIBLE,
-                    x, y, w, h,
+                    x,
+                    y,
+                    w,
+                    h,
                     ptr::null_mut(),
                     ptr::null_mut(),
                     h_instance,
@@ -1273,12 +1322,13 @@ fn close_darken_win32() -> Result<(), String> {
 // ===== DESKTOP COLOR ENGINE (Windows Magnification API) =====
 
 #[cfg(target_os = "windows")]
-static COLOR_ENGINE_ACTIVE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+static COLOR_ENGINE_ACTIVE: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
 
 fn create_darken_gamma() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
-        use winapi::um::libloaderapi::{LoadLibraryA, GetProcAddress};
+        use winapi::um::libloaderapi::{GetProcAddress, LoadLibraryA};
         unsafe {
             let lib = LoadLibraryA(b"Magnification.dll\0".as_ptr() as *const i8);
             if lib.is_null() {
@@ -1286,10 +1336,12 @@ fn create_darken_gamma() -> Result<(), String> {
             }
 
             type MagInitFn = unsafe extern "system" fn() -> winapi::shared::minwindef::BOOL;
-            type MagSetEffectFn = unsafe extern "system" fn(*const f32) -> winapi::shared::minwindef::BOOL;
+            type MagSetEffectFn =
+                unsafe extern "system" fn(*const f32) -> winapi::shared::minwindef::BOOL;
 
             let init_proc = GetProcAddress(lib, b"MagInitialize\0".as_ptr() as *const i8);
-            let set_effect_proc = GetProcAddress(lib, b"MagSetFullscreenColorEffect\0".as_ptr() as *const i8);
+            let set_effect_proc =
+                GetProcAddress(lib, b"MagSetFullscreenColorEffect\0".as_ptr() as *const i8);
 
             if init_proc.is_null() || set_effect_proc.is_null() {
                 return Err("Failed to locate Magnification API entry points".to_string());
@@ -1324,14 +1376,16 @@ fn close_darken_gamma() -> Result<(), String> {
             return Ok(());
         }
 
-        use winapi::um::libloaderapi::{LoadLibraryA, GetProcAddress};
+        use winapi::um::libloaderapi::{GetProcAddress, LoadLibraryA};
         unsafe {
             let lib = LoadLibraryA(b"Magnification.dll\0".as_ptr() as *const i8);
             if !lib.is_null() {
-                type MagSetEffectFn = unsafe extern "system" fn(*const f32) -> winapi::shared::minwindef::BOOL;
+                type MagSetEffectFn =
+                    unsafe extern "system" fn(*const f32) -> winapi::shared::minwindef::BOOL;
                 type MagUninitFn = unsafe extern "system" fn() -> winapi::shared::minwindef::BOOL;
 
-                let set_effect_proc = GetProcAddress(lib, b"MagSetFullscreenColorEffect\0".as_ptr() as *const i8);
+                let set_effect_proc =
+                    GetProcAddress(lib, b"MagSetFullscreenColorEffect\0".as_ptr() as *const i8);
                 let uninit_proc = GetProcAddress(lib, b"MagUninitialize\0".as_ptr() as *const i8);
 
                 if !set_effect_proc.is_null() {
@@ -1381,12 +1435,14 @@ struct IncompatibleMonitorInfo {
 fn ddcci_incompatible_monitors() -> Result<Vec<IncompatibleMonitorInfo>, String> {
     use winapi::shared::minwindef::{BOOL, LPARAM, TRUE};
     use winapi::shared::windef::{HDC, HMONITOR, LPRECT};
+    use winapi::um::libloaderapi::{FreeLibrary, GetProcAddress, LoadLibraryA};
     use winapi::um::winuser::{EnumDisplayMonitors, GetMonitorInfoW, MONITORINFOEXW};
-    use winapi::um::libloaderapi::{LoadLibraryA, GetProcAddress, FreeLibrary};
 
     type FnGetNumberOfPhysicalMonitors = unsafe extern "system" fn(HMONITOR, *mut u32) -> BOOL;
-    type FnGetPhysicalMonitors = unsafe extern "system" fn(HMONITOR, u32, *mut PHYSICAL_MONITOR) -> BOOL;
-    type FnGetVCPFeature = unsafe extern "system" fn(*mut std::ffi::c_void, u8, *mut u8, *mut u32, *mut u32) -> BOOL;
+    type FnGetPhysicalMonitors =
+        unsafe extern "system" fn(HMONITOR, u32, *mut PHYSICAL_MONITOR) -> BOOL;
+    type FnGetVCPFeature =
+        unsafe extern "system" fn(*mut std::ffi::c_void, u8, *mut u8, *mut u32, *mut u32) -> BOOL;
     type FnDestroyPhysicalMonitors = unsafe extern "system" fn(u32, *mut PHYSICAL_MONITOR) -> BOOL;
 
     struct MonitorContext {
@@ -1414,7 +1470,13 @@ fn ddcci_incompatible_monitors() -> Result<Vec<IncompatibleMonitorInfo>, String>
         ) {
             let mut count = 0u32;
             if p_get_count(h_monitor, &mut count) != 0 && count > 0 {
-                let mut physical_mons = vec![PHYSICAL_MONITOR { hPhysicalMonitor: std::ptr::null_mut(), szPhysicalMonitorDescription: [0; 128] }; count as usize];
+                let mut physical_mons = vec![
+                    PHYSICAL_MONITOR {
+                        hPhysicalMonitor: std::ptr::null_mut(),
+                        szPhysicalMonitorDescription: [0; 128]
+                    };
+                    count as usize
+                ];
                 if p_get_mons(h_monitor, count, physical_mons.as_mut_ptr()) != 0 {
                     for mon in &physical_mons {
                         let mut vcp_type = 0u8;
@@ -1426,7 +1488,8 @@ fn ddcci_incompatible_monitors() -> Result<Vec<IncompatibleMonitorInfo>, String>
                             &mut vcp_type,
                             &mut current_value,
                             &mut maximum_value,
-                        ) != 0 {
+                        ) != 0
+                        {
                             has_d6_support = true;
                             break;
                         }
@@ -1440,7 +1503,11 @@ fn ddcci_incompatible_monitors() -> Result<Vec<IncompatibleMonitorInfo>, String>
             let mut info: MONITORINFOEXW = std::mem::zeroed();
             info.cbSize = std::mem::size_of::<MONITORINFOEXW>() as u32;
             if GetMonitorInfoW(h_monitor, &mut info as *mut _ as *mut _) != 0 {
-                let len = info.szDevice.iter().position(|&c| c == 0).unwrap_or(info.szDevice.len());
+                let len = info
+                    .szDevice
+                    .iter()
+                    .position(|&c| c == 0)
+                    .unwrap_or(info.szDevice.len());
                 let dev_name = String::from_utf16_lossy(&info.szDevice[..len]);
                 context.incompatible.push(IncompatibleMonitorInfo {
                     device_name: dev_name,
@@ -1463,9 +1530,18 @@ fn ddcci_incompatible_monitors() -> Result<Vec<IncompatibleMonitorInfo>, String>
         let mut p_destroy = None;
 
         if !dxva2.is_null() {
-            let p1 = GetProcAddress(dxva2, "GetNumberOfPhysicalMonitorsFromHMONITOR\0".as_ptr() as *const i8);
-            let p2 = GetProcAddress(dxva2, "GetPhysicalMonitorsFromHMONITOR\0".as_ptr() as *const i8);
-            let p3 = GetProcAddress(dxva2, "GetVCPFeatureAndVCPFeatureReply\0".as_ptr() as *const i8);
+            let p1 = GetProcAddress(
+                dxva2,
+                "GetNumberOfPhysicalMonitorsFromHMONITOR\0".as_ptr() as *const i8,
+            );
+            let p2 = GetProcAddress(
+                dxva2,
+                "GetPhysicalMonitorsFromHMONITOR\0".as_ptr() as *const i8,
+            );
+            let p3 = GetProcAddress(
+                dxva2,
+                "GetVCPFeatureAndVCPFeatureReply\0".as_ptr() as *const i8,
+            );
             let p4 = GetProcAddress(dxva2, "DestroyPhysicalMonitors\0".as_ptr() as *const i8);
 
             if !p1.is_null() && !p2.is_null() && !p3.is_null() && !p4.is_null() {
@@ -1489,8 +1565,11 @@ fn ddcci_incompatible_monitors() -> Result<Vec<IncompatibleMonitorInfo>, String>
             std::ptr::null_mut(),
             Some(monitor_enum_proc),
             &mut context as *mut _ as LPARAM,
-        ) == 0 {
-            if !dxva2.is_null() { FreeLibrary(dxva2); }
+        ) == 0
+        {
+            if !dxva2.is_null() {
+                FreeLibrary(dxva2);
+            }
             return Err("Windows could not enumerate displays".to_string());
         }
 
@@ -1505,14 +1584,23 @@ fn ddcci_incompatible_monitors() -> Result<Vec<IncompatibleMonitorInfo>, String>
 #[cfg(target_os = "windows")]
 #[allow(non_snake_case)]
 fn send_ddcci_vcp_power(power_value: u32) -> Result<(), String> {
-    use winapi::um::libloaderapi::{LoadLibraryA, GetProcAddress, FreeLibrary};
-    use winapi::um::winuser::EnumDisplayMonitors;
-    use winapi::shared::windef::{HMONITOR, HDC, LPRECT};
     use winapi::shared::minwindef::{BOOL, LPARAM, TRUE};
+    use winapi::shared::windef::{HDC, HMONITOR, LPRECT};
+    use winapi::um::libloaderapi::{FreeLibrary, GetProcAddress, LoadLibraryA};
+    use winapi::um::winuser::EnumDisplayMonitors;
 
-    type FnGetNumberOfPhysicalMonitors = unsafe extern "system" fn(hMonitor: HMONITOR, pdw: *mut u32) -> BOOL;
-    type FnGetPhysicalMonitors = unsafe extern "system" fn(hMonitor: HMONITOR, count: u32, pArray: *mut PHYSICAL_MONITOR) -> BOOL;
-    type FnSetVCPFeature = unsafe extern "system" fn(hMonitor: *mut std::ffi::c_void, vcp_code: u8, new_val: u32) -> BOOL;
+    type FnGetNumberOfPhysicalMonitors =
+        unsafe extern "system" fn(hMonitor: HMONITOR, pdw: *mut u32) -> BOOL;
+    type FnGetPhysicalMonitors = unsafe extern "system" fn(
+        hMonitor: HMONITOR,
+        count: u32,
+        pArray: *mut PHYSICAL_MONITOR,
+    ) -> BOOL;
+    type FnSetVCPFeature = unsafe extern "system" fn(
+        hMonitor: *mut std::ffi::c_void,
+        vcp_code: u8,
+        new_val: u32,
+    ) -> BOOL;
     type FnGetVCPFeature = unsafe extern "system" fn(
         hMonitor: *mut std::ffi::c_void,
         vcp_code: u8,
@@ -1520,7 +1608,8 @@ fn send_ddcci_vcp_power(power_value: u32) -> Result<(), String> {
         current_value: *mut u32,
         maximum_value: *mut u32,
     ) -> BOOL;
-    type FnDestroyPhysicalMonitors = unsafe extern "system" fn(count: u32, pArray: *mut PHYSICAL_MONITOR) -> BOOL;
+    type FnDestroyPhysicalMonitors =
+        unsafe extern "system" fn(count: u32, pArray: *mut PHYSICAL_MONITOR) -> BOOL;
 
     unsafe {
         let dxva2 = LoadLibraryA("dxva2.dll\0".as_ptr() as *const i8);
@@ -1528,11 +1617,21 @@ fn send_ddcci_vcp_power(power_value: u32) -> Result<(), String> {
             return Err("dxva2.dll not available on this system".to_string());
         }
 
-        let p_get_count_raw = GetProcAddress(dxva2, "GetNumberOfPhysicalMonitorsFromHMONITOR\0".as_ptr() as *const i8);
-        let p_get_mons_raw = GetProcAddress(dxva2, "GetPhysicalMonitorsFromHMONITOR\0".as_ptr() as *const i8);
+        let p_get_count_raw = GetProcAddress(
+            dxva2,
+            "GetNumberOfPhysicalMonitorsFromHMONITOR\0".as_ptr() as *const i8,
+        );
+        let p_get_mons_raw = GetProcAddress(
+            dxva2,
+            "GetPhysicalMonitorsFromHMONITOR\0".as_ptr() as *const i8,
+        );
         let p_set_vcp_raw = GetProcAddress(dxva2, "SetVCPFeature\0".as_ptr() as *const i8);
-        let p_get_vcp_raw = GetProcAddress(dxva2, "GetVCPFeatureAndVCPFeatureReply\0".as_ptr() as *const i8);
-        let p_destroy_raw = GetProcAddress(dxva2, "DestroyPhysicalMonitors\0".as_ptr() as *const i8);
+        let p_get_vcp_raw = GetProcAddress(
+            dxva2,
+            "GetVCPFeatureAndVCPFeatureReply\0".as_ptr() as *const i8,
+        );
+        let p_destroy_raw =
+            GetProcAddress(dxva2, "DestroyPhysicalMonitors\0".as_ptr() as *const i8);
 
         if p_get_count_raw.is_null()
             || p_get_mons_raw.is_null()
@@ -1571,7 +1670,13 @@ fn send_ddcci_vcp_power(power_value: u32) -> Result<(), String> {
             let ctx = &mut *(lparam as *mut MonitorContext);
             let mut count = 0u32;
             if (ctx.p_get_count)(h_monitor, &mut count) != 0 && count > 0 {
-                let mut physical_mons = vec![PHYSICAL_MONITOR { hPhysicalMonitor: std::ptr::null_mut(), szPhysicalMonitorDescription: [0; 128] }; count as usize];
+                let mut physical_mons = vec![
+                    PHYSICAL_MONITOR {
+                        hPhysicalMonitor: std::ptr::null_mut(),
+                        szPhysicalMonitorDescription: [0; 128]
+                    };
+                    count as usize
+                ];
                 if (ctx.p_get_mons)(h_monitor, count, physical_mons.as_mut_ptr()) != 0 {
                     for mon in &physical_mons {
                         let mut vcp_type = 0u8;
@@ -1644,11 +1749,9 @@ fn send_ddcci_vcp_power(power_value: u32) -> Result<(), String> {
 
             let all_monitors_succeeded = ctx.physical_monitor_count > 0
                 && ctx.success_count == ctx.physical_monitor_count
-                && (power_value != 1
-                    || ctx.verified_on_count == ctx.physical_monitor_count);
+                && (power_value != 1 || ctx.verified_on_count == ctx.physical_monitor_count);
 
-            if all_monitors_succeeded
-            {
+            if all_monitors_succeeded {
                 break;
             }
 
@@ -1724,7 +1827,9 @@ fn find_control_my_monitor(custom_path: Option<&str>) -> Option<std::path::PathB
 
     // 3. LocalAppData NirSoft
     if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
-        let p = std::path::PathBuf::from(local_app_data).join("NirSoft").join("ControlMyMonitor.exe");
+        let p = std::path::PathBuf::from(local_app_data)
+            .join("NirSoft")
+            .join("ControlMyMonitor.exe");
         if p.is_file() {
             return Some(p);
         }
@@ -1899,7 +2004,10 @@ fn save_settings(app: tauri::AppHandle, mut settings: String) -> Result<(), Stri
     if is_classic_only() {
         if let Ok(mut json) = serde_json::from_str::<serde_json::Value>(&settings) {
             if let Some(obj) = json.as_object_mut() {
-                obj.insert("viewMode".to_string(), serde_json::Value::String("classic".to_string()));
+                obj.insert(
+                    "viewMode".to_string(),
+                    serde_json::Value::String("classic".to_string()),
+                );
                 if let Ok(updated) = serde_json::to_string(&json) {
                     settings = updated;
                 }
@@ -1911,7 +2019,10 @@ fn save_settings(app: tauri::AppHandle, mut settings: String) -> Result<(), Stri
     std::fs::write(path, &settings).map_err(|e| e.to_string())?;
     let debug_logging_enabled = serde_json::from_str::<serde_json::Value>(&settings)
         .ok()
-        .and_then(|json| json.get("debugLoggingEnabled").and_then(|value| value.as_bool()))
+        .and_then(|json| {
+            json.get("debugLoggingEnabled")
+                .and_then(|value| value.as_bool())
+        })
         .unwrap_or(false);
     if let Some(state) = app.try_state::<AppState>() {
         set_debug_logging(&app, &state, debug_logging_enabled);
@@ -1964,7 +2075,10 @@ fn load_settings(app: tauri::AppHandle) -> Result<String, String> {
         if is_classic_only() {
             if let Ok(mut json) = serde_json::from_str::<serde_json::Value>(&content) {
                 if let Some(obj) = json.as_object_mut() {
-                    obj.insert("viewMode".to_string(), serde_json::Value::String("classic".to_string()));
+                    obj.insert(
+                        "viewMode".to_string(),
+                        serde_json::Value::String("classic".to_string()),
+                    );
                     if let Ok(updated) = serde_json::to_string(&json) {
                         return Ok(updated);
                     }
@@ -1998,9 +2112,13 @@ fn open_settings(app: tauri::AppHandle, section: Option<String>) {
     };
 
     if let Some(window) = app.get_window("settings") {
-        let _ = window.eval("if (window.refreshSettingsFromStorage) window.refreshSettingsFromStorage();");
+        let _ = window
+            .eval("if (window.refreshSettingsFromStorage) window.refreshSettingsFromStorage();");
         if let Some(sec) = &section {
-            let _ = window.eval(&format!("if (window.showOnlySection) window.showOnlySection('{}');", sec));
+            let _ = window.eval(&format!(
+                "if (window.showOnlySection) window.showOnlySection('{}');",
+                sec
+            ));
         } else {
             let _ = window.eval("if (window.showAllSections) window.showAllSections();");
         }
@@ -2013,17 +2131,13 @@ fn open_settings(app: tauri::AppHandle, section: Option<String>) {
         let _ = window.set_always_on_top(false);
     } else {
         // Fallback: This should rarely happen with static window, but if it was somehow destroyed
-        let _ = tauri::WindowBuilder::new(
-            &app,
-            "settings",
-            tauri::WindowUrl::App(url_str.into()),
-        )
-        .title("Settings - Never Sleep")
-        .inner_size(500.0, 600.0)
-        .resizable(false)
-        .transparent(true)
-        .decorations(true)
-        .build();
+        let _ = tauri::WindowBuilder::new(&app, "settings", tauri::WindowUrl::App(url_str.into()))
+            .title("Settings - Never Sleep")
+            .inner_size(500.0, 600.0)
+            .resizable(false)
+            .transparent(true)
+            .decorations(true)
+            .build();
     }
 }
 
@@ -2064,16 +2178,26 @@ fn restart_app(app: tauri::AppHandle) {
     app.restart();
 }
 
-
 #[cfg(target_os = "windows")]
 fn embedded_icon_bytes(filename: &str) -> Result<&'static [u8], String> {
     match filename {
         "IMG_6276.png" => Ok(include_bytes!("../../dist/IMG_6276.png") as &[u8]),
-        "Stylish 3D Coffee Cup Icon with Steam Effect - Woopicx.png" => Ok(include_bytes!("../../dist/Stylish 3D Coffee Cup Icon with Steam Effect - Woopicx.png") as &[u8]),
-        "Stylish 3D Coffee Cup Icon with Steam and Isometric Design.png" => Ok(include_bytes!("../../dist/Stylish 3D Coffee Cup Icon with Steam and Isometric Design.png") as &[u8]),
-        "Stylized Coffee Machine Icon with White Cup - Woopicx.png" => Ok(include_bytes!("../../dist/Stylized Coffee Machine Icon with White Cup - Woopicx.png") as &[u8]),
-        "A visually striking illustration.png" => Ok(include_bytes!("../../dist/A visually striking illustration.png") as &[u8]),
-        "3D Battery Icon with Lightning Bolt in Isometric View.png" => Ok(include_bytes!("../../dist/3D Battery Icon with Lightning Bolt in Isometric View.png") as &[u8]),
+        "Stylish 3D Coffee Cup Icon with Steam Effect - Woopicx.png" => Ok(include_bytes!(
+            "../../dist/Stylish 3D Coffee Cup Icon with Steam Effect - Woopicx.png"
+        ) as &[u8]),
+        "Stylish 3D Coffee Cup Icon with Steam and Isometric Design.png" => Ok(include_bytes!(
+            "../../dist/Stylish 3D Coffee Cup Icon with Steam and Isometric Design.png"
+        )
+            as &[u8]),
+        "Stylized Coffee Machine Icon with White Cup - Woopicx.png" => Ok(include_bytes!(
+            "../../dist/Stylized Coffee Machine Icon with White Cup - Woopicx.png"
+        ) as &[u8]),
+        "A visually striking illustration.png" => {
+            Ok(include_bytes!("../../dist/A visually striking illustration.png") as &[u8])
+        }
+        "3D Battery Icon with Lightning Bolt in Isometric View.png" => Ok(include_bytes!(
+            "../../dist/3D Battery Icon with Lightning Bolt in Isometric View.png"
+        ) as &[u8]),
         _ => Err(format!("Unknown icon name: {}", filename)),
     }
 }
@@ -2085,23 +2209,16 @@ fn load_normalized_icon_image(filename: &str) -> Result<image::RgbaImage, String
 
     let image = img.to_rgba8();
 
-    let resized = image::imageops::resize(
-        &image,
-        256,
-        256,
-        image::imageops::FilterType::Lanczos3,
-    );
+    let resized = image::imageops::resize(&image, 256, 256, image::imageops::FilterType::Lanczos3);
 
     Ok(resized)
 }
 
-
-
 #[cfg(target_os = "windows")]
 fn create_multi_res_ico(filename: &str) -> Result<Vec<u8>, String> {
     let raw_bytes = embedded_icon_bytes(filename)?;
-    let base_img = image::load_from_memory(raw_bytes)
-        .map_err(|e| format!("Failed to decode image: {}", e))?;
+    let base_img =
+        image::load_from_memory(raw_bytes).map_err(|e| format!("Failed to decode image: {}", e))?;
 
     let rgba_base = base_img.to_rgba8();
 
@@ -2109,12 +2226,8 @@ fn create_multi_res_ico(filename: &str) -> Result<Vec<u8>, String> {
     let mut png_images = Vec::new();
 
     for &sz in &sizes {
-        let resized = image::imageops::resize(
-            &rgba_base,
-            sz,
-            sz,
-            image::imageops::FilterType::Lanczos3,
-        );
+        let resized =
+            image::imageops::resize(&rgba_base, sz, sz, image::imageops::FilterType::Lanczos3);
         let mut png_bytes = Vec::new();
         image::DynamicImage::ImageRgba8(resized)
             .write_to(
@@ -2160,7 +2273,10 @@ fn create_multi_res_ico(filename: &str) -> Result<Vec<u8>, String> {
 }
 
 #[cfg(target_os = "windows")]
-fn write_current_icon_file(app: &tauri::AppHandle, filename: &str) -> Result<std::path::PathBuf, String> {
+fn write_current_icon_file(
+    app: &tauri::AppHandle,
+    filename: &str,
+) -> Result<std::path::PathBuf, String> {
     use std::hash::{Hash, Hasher};
 
     let icon_dir = app
@@ -2178,9 +2294,11 @@ fn write_current_icon_file(app: &tauri::AppHandle, filename: &str) -> Result<std
     Ok(icon_path)
 }
 
-
 #[cfg(target_os = "windows")]
-fn apply_native_window_icons(app: &tauri::AppHandle, icon_path: &std::path::Path) -> Result<(), String> {
+fn apply_native_window_icons(
+    app: &tauri::AppHandle,
+    icon_path: &std::path::Path,
+) -> Result<(), String> {
     use std::os::windows::ffi::OsStrExt;
     use winapi::shared::minwindef::{LPARAM, WPARAM};
     use winapi::um::winuser::{
@@ -2259,18 +2377,21 @@ fn set_app_icon(app: tauri::AppHandle, filename: String) -> Result<(), String> {
 
         // Apply to main window (sets both taskbar button icon and title-bar icon)
         if let Some(window) = app.get_window("main") {
-            window.set_icon(icon.clone())
+            window
+                .set_icon(icon.clone())
                 .map_err(|e| format!("Failed to set main window icon: {}", e))?;
         }
 
         // Also apply to settings window if open
         if let Some(window) = app.get_window("settings") {
-            window.set_icon(icon.clone())
+            window
+                .set_icon(icon.clone())
                 .map_err(|e| format!("Failed to set settings window icon: {}", e))?;
         }
 
         // Update system tray icon
-        app.tray_handle().set_icon(icon)
+        app.tray_handle()
+            .set_icon(icon)
             .map_err(|e| format!("Failed to set tray icon: {}", e))?;
 
         let icon_path = write_current_icon_file(&app, &filename)?;
@@ -2349,12 +2470,17 @@ try {{
   'REFRESH_FAILED|' + $_.Exception.Message
 }}
 "#,
-            escaped_icon_path,
-            escaped_exe_path
+            escaped_icon_path, escaped_exe_path
         );
 
         let output = Command::new("powershell")
-            .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &script])
+            .args([
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                &script,
+            ])
             .creation_flags(0x08000000) // CREATE_NO_WINDOW
             .output()
             .map_err(|e| e.to_string())?;
@@ -2415,7 +2541,8 @@ async fn check_for_update(current_version: String) -> Result<serde_json::Value, 
             .user_agent("NeverSleep-Updater/1.0")
             .build()
             .map_err(|e| e.to_string())?;
-        let resp = client.get(api_url)
+        let resp = client
+            .get(api_url)
             .header("Accept", "application/vnd.github+json")
             .send()
             .map_err(|e| e.to_string())?;
@@ -2424,12 +2551,20 @@ async fn check_for_update(current_version: String) -> Result<serde_json::Value, 
     .join()
     .map_err(|_| "Thread panicked".to_string())??;
 
-    let releases: serde_json::Value = serde_json::from_str(&json_text)
-        .map_err(|e| format!("JSON parse error: {}", e))?;
+    let releases: serde_json::Value =
+        serde_json::from_str(&json_text).map_err(|e| format!("JSON parse error: {}", e))?;
 
     fn parse_ver(s: &str) -> (u32, u32, u32) {
-        let p: Vec<u32> = s.trim_start_matches('v').split('.').filter_map(|x| x.parse().ok()).collect();
-        if p.len() == 3 { (p[0], p[1], p[2]) } else { (0, 0, 0) }
+        let p: Vec<u32> = s
+            .trim_start_matches('v')
+            .split('.')
+            .filter_map(|x| x.parse().ok())
+            .collect();
+        if p.len() == 3 {
+            (p[0], p[1], p[2])
+        } else {
+            (0, 0, 0)
+        }
     }
     fn ver_str(v: (u32, u32, u32)) -> String {
         format!("{}.{}.{}", v.0, v.1, v.2)
@@ -2451,7 +2586,10 @@ async fn check_for_update(current_version: String) -> Result<serde_json::Value, 
                     // Match: Never.Sleep_14.3.0_x64-setup.exe  or  Never Sleep_14.3.0_x64-setup.exe
                     if name.contains("x64-setup") && name.ends_with(".exe") && !url.is_empty() {
                         // Extract version from filename: any 3-part number group
-                        let parts: Vec<&str> = name.split(|c: char| !c.is_alphanumeric() && c != '.').filter(|s| !s.is_empty()).collect();
+                        let parts: Vec<&str> = name
+                            .split(|c: char| !c.is_alphanumeric() && c != '.')
+                            .filter(|s| !s.is_empty())
+                            .collect();
                         for part in &parts {
                             let v = parse_ver(part);
                             if v != (0, 0, 0) && is_newer(v, best_ver) {
@@ -2570,7 +2708,12 @@ fn set_border_color(app: tauri::AppHandle, color: String) {
 /// radius_px: logical pixels (will be scaled to physical pixels).
 #[cfg(target_os = "windows")]
 #[allow(dead_code)]
-unsafe fn apply_rounded_window_region(hwnd: winapi::shared::windef::HWND, width_px: i32, height_px: i32, radius_px: i32) {
+unsafe fn apply_rounded_window_region(
+    hwnd: winapi::shared::windef::HWND,
+    width_px: i32,
+    height_px: i32,
+    radius_px: i32,
+) {
     use winapi::um::wingdi::CreateRoundRectRgn;
     use winapi::um::winuser::SetWindowRgn;
     let rgn = CreateRoundRectRgn(0, 0, width_px, height_px, radius_px * 2, radius_px * 2);
@@ -2588,8 +2731,8 @@ unsafe fn clear_window_region(hwnd: winapi::shared::windef::HWND) {
 fn set_window_effect(app: tauri::AppHandle, effect: String) {
     #[cfg(target_os = "windows")]
     {
-        use window_vibrancy::clear_acrylic;
         use tauri::Manager;
+        use window_vibrancy::clear_acrylic;
 
         let _ = effect; // All windows use high-fidelity CSS glassmorphism, avoiding Windows 11 DWM titlebar/frame glitches
 
@@ -2599,7 +2742,9 @@ fn set_window_effect(app: tauri::AppHandle, effect: String) {
             let _ = main_win.set_resizable(false);
             if let Ok(hwnd_raw) = main_win.hwnd() {
                 let hwnd = hwnd_raw.0 as winapi::shared::windef::HWND;
-                unsafe { clear_window_region(hwnd); }
+                unsafe {
+                    clear_window_region(hwnd);
+                }
             }
         }
         if let Some(settings_win) = app.get_window("settings") {
@@ -2607,7 +2752,9 @@ fn set_window_effect(app: tauri::AppHandle, effect: String) {
             let _ = settings_win.set_resizable(false);
             if let Ok(hwnd_raw) = settings_win.hwnd() {
                 let hwnd = hwnd_raw.0 as winapi::shared::windef::HWND;
-                unsafe { clear_window_region(hwnd); }
+                unsafe {
+                    clear_window_region(hwnd);
+                }
             }
         }
         if let Some(tray_win) = app.get_window("tray") {
@@ -2616,12 +2763,13 @@ fn set_window_effect(app: tauri::AppHandle, effect: String) {
             let _ = tray_win.set_resizable(false);
             if let Ok(hwnd_raw) = tray_win.hwnd() {
                 let hwnd = hwnd_raw.0 as winapi::shared::windef::HWND;
-                unsafe { clear_window_region(hwnd); }
+                unsafe {
+                    clear_window_region(hwnd);
+                }
             }
         }
     }
 }
-
 
 #[tauri::command]
 fn set_window_size(app: tauri::AppHandle, width: u32, height: u32) {
@@ -2676,14 +2824,19 @@ fn set_decorations(app: tauri::AppHandle, decorations: bool) {
 }
 
 #[cfg(target_os = "windows")]
-fn get_media_manager() -> Option<&'static windows::Media::Control::GlobalSystemMediaTransportControlsSessionManager> {
-    static MEDIA_MANAGER: std::sync::OnceLock<Option<windows::Media::Control::GlobalSystemMediaTransportControlsSessionManager>> = std::sync::OnceLock::new();
-    MEDIA_MANAGER.get_or_init(|| {
-        use windows::Media::Control::GlobalSystemMediaTransportControlsSessionManager;
-        GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
-            .ok()
-            .and_then(|op| op.get().ok())
-    }).as_ref()
+fn get_media_manager(
+) -> Option<&'static windows::Media::Control::GlobalSystemMediaTransportControlsSessionManager> {
+    static MEDIA_MANAGER: std::sync::OnceLock<
+        Option<windows::Media::Control::GlobalSystemMediaTransportControlsSessionManager>,
+    > = std::sync::OnceLock::new();
+    MEDIA_MANAGER
+        .get_or_init(|| {
+            use windows::Media::Control::GlobalSystemMediaTransportControlsSessionManager;
+            GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+                .ok()
+                .and_then(|op| op.get().ok())
+        })
+        .as_ref()
 }
 
 #[tauri::command]
@@ -2697,10 +2850,21 @@ async fn is_media_playing() -> bool {
             if let Ok(sessions) = manager.GetSessions() {
                 if let Ok(count) = sessions.Size() {
                     for index in 0..count {
-                        let session = match sessions.GetAt(index) { Ok(value) => value, Err(_) => continue };
-                        let info = match session.GetPlaybackInfo() { Ok(value) => value, Err(_) => continue };
-                        let status = match info.PlaybackStatus() { Ok(value) => value, Err(_) => continue };
-                        if status != GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing {
+                        let session = match sessions.GetAt(index) {
+                            Ok(value) => value,
+                            Err(_) => continue,
+                        };
+                        let info = match session.GetPlaybackInfo() {
+                            Ok(value) => value,
+                            Err(_) => continue,
+                        };
+                        let status = match info.PlaybackStatus() {
+                            Ok(value) => value,
+                            Err(_) => continue,
+                        };
+                        if status
+                            != GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing
+                        {
                             continue;
                         }
 
@@ -2759,7 +2923,8 @@ fn resize_tray_window(app: tauri::AppHandle, height: f64) {
         } else {
             1.0
         };
-        let (_screen_w, screen_h) = if let Some(monitor) = tray_win.primary_monitor().ok().flatten() {
+        let (_screen_w, screen_h) = if let Some(monitor) = tray_win.primary_monitor().ok().flatten()
+        {
             let s = monitor.size();
             (s.width as f64 / sf, s.height as f64 / sf)
         } else {
@@ -2774,11 +2939,16 @@ fn resize_tray_window(app: tauri::AppHandle, height: f64) {
         let target_h = height.max(150.0).min(500.0);
         let new_y = current_y + (current_h - target_h);
 
-        let _ = tray_win.set_size(tauri::Size::Logical(tauri::LogicalSize { width: 320.0, height: target_h }));
-        let _ = tray_win.set_position(tauri::LogicalPosition::new(current_x, new_y.max(8.0).min(screen_h - target_h - 8.0)));
+        let _ = tray_win.set_size(tauri::Size::Logical(tauri::LogicalSize {
+            width: 320.0,
+            height: target_h,
+        }));
+        let _ = tray_win.set_position(tauri::LogicalPosition::new(
+            current_x,
+            new_y.max(8.0).min(screen_h - target_h - 8.0),
+        ));
     }
 }
-
 
 fn clear_webview_http_cache() {
     #[cfg(target_os = "windows")]
@@ -2811,9 +2981,13 @@ fn main() {
 
         let timestamp = {
             #[cfg(target_os = "windows")]
-            { local_timestamp().1 }
+            {
+                local_timestamp().1
+            }
             #[cfg(not(target_os = "windows"))]
-            { utc_timestamp().1 }
+            {
+                utc_timestamp().1
+            }
         };
 
         let message = format!(
@@ -2825,7 +2999,11 @@ fn main() {
 
         if let Some(desktop) = dirs_next::desktop_dir() {
             let crash_path = desktop.join("NeverSleep-crash.log");
-            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&crash_path) {
+            if let Ok(mut f) = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&crash_path)
+            {
                 use std::io::Write;
                 let _ = writeln!(f, "{}", message);
             }
@@ -2915,17 +3093,25 @@ fn main() {
     });
 
     // System Tray Menu Construction
-    let status_header = CustomMenuItem::new("status_header".to_string(), "⚡ Never Sleep: Active").disabled();
+    let status_header =
+        CustomMenuItem::new("status_header".to_string(), "⚡ Never Sleep: Active").disabled();
     let disable_app = CustomMenuItem::new("disable_app".to_string(), "Disable App");
-    let keep_awake = CustomMenuItem::new("keep_awake".to_string(), "Keep Screen Awake Mode").selected();
+    let keep_awake =
+        CustomMenuItem::new("keep_awake".to_string(), "Keep Screen Awake Mode").selected();
 
-    let darken_overlay = CustomMenuItem::new("darken_overlay".to_string(), "🪟 Overlay Window").selected();
-    let darken_displaysleep = CustomMenuItem::new("darken_displaysleep".to_string(), "🔌 Display Sleep (Standby)");
+    let darken_overlay =
+        CustomMenuItem::new("darken_overlay".to_string(), "🪟 Overlay Window").selected();
+    let darken_displaysleep = CustomMenuItem::new(
+        "darken_displaysleep".to_string(),
+        "🔌 Display Sleep (Standby)",
+    );
     let darken_win32 = CustomMenuItem::new("darken_win32".to_string(), "🔲 Win32 Black Window");
     let darken_gamma = CustomMenuItem::new("darken_gamma".to_string(), "💡 Gamma Ramp Blackout");
-    let darken_ddcci = CustomMenuItem::new("darken_ddcci".to_string(), "🖥️ Hardware DDC/CI (Native)");
+    let darken_ddcci =
+        CustomMenuItem::new("darken_ddcci".to_string(), "🖥️ Hardware DDC/CI (Native)");
     let darken_cmm = CustomMenuItem::new("darken_cmm".to_string(), "🛠️ ControlMyMonitor (NirSoft)");
-    let darken_brightness = CustomMenuItem::new("darken_brightness".to_string(), "🔅 Screen Brightness");
+    let darken_brightness =
+        CustomMenuItem::new("darken_brightness".to_string(), "🔅 Screen Brightness");
 
     let darken_menu = SystemTrayMenu::new()
         .add_item(darken_overlay)
@@ -2943,7 +3129,8 @@ fn main() {
     let timer_1h = CustomMenuItem::new("timer_1h".to_string(), "⏱️ 1 Hour");
     let timer_2h = CustomMenuItem::new("timer_2h".to_string(), "⏱️ 2 Hours");
     let timer_4h = CustomMenuItem::new("timer_4h".to_string(), "⏱️ 4 Hours");
-    let timer_cancel = CustomMenuItem::new("timer_cancel".to_string(), "♾️ Always On (Cancel Timer)").selected();
+    let timer_cancel =
+        CustomMenuItem::new("timer_cancel".to_string(), "♾️ Always On (Cancel Timer)").selected();
 
     let duration_menu = SystemTrayMenu::new()
         .add_item(timer_15m)
@@ -2956,10 +3143,13 @@ fn main() {
 
     let duration_submenu = SystemTraySubmenu::new("⏱️ Disable After Duration", duration_menu);
 
-    let feat_media = CustomMenuItem::new("feat_media".to_string(), "Media Detection Auto-Keep-Awake");
-    let feat_notifications = CustomMenuItem::new("feat_notifications".to_string(), "App Notifications");
+    let feat_media =
+        CustomMenuItem::new("feat_media".to_string(), "Media Detection Auto-Keep-Awake");
+    let feat_notifications =
+        CustomMenuItem::new("feat_notifications".to_string(), "App Notifications");
     let feat_pinned = CustomMenuItem::new("feat_pinned".to_string(), "Always on Top (Pinned)");
-    let feat_autostart = CustomMenuItem::new("feat_autostart".to_string(), "Run at Windows Startup");
+    let feat_autostart =
+        CustomMenuItem::new("feat_autostart".to_string(), "Run at Windows Startup");
 
     let features_menu = SystemTrayMenu::new()
         .add_item(feat_media)
