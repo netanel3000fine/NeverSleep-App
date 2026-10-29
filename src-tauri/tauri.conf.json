@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "Never Sleep",
-    "version": "19.0.0"
+    "version": "19.5.0"
   },
   "tauri": {
     "allowlist": {
@@ -108,6 +108,7 @@
         "maxHeight": 260,
         "maxWidth": 500,
         "label": "main",
+        "visible": false,
         "transparent": true,
         "decorations": false
       },

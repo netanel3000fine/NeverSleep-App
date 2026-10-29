@@ -1,6 +1,6 @@
 {
   "name": "never-sleep-tauri",
-  "version": "19.0.0",
+  "version": "19.5.0",
   "description": "מונע שינה למחשב",
   "scripts": {
     "tauri": "tauri",

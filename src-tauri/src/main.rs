@@ -4,7 +4,7 @@
 )]
 
 use rdev::{listen, Event as RdevEvent, EventType};
-use std::sync::atomic::{AtomicPtr, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicPtr, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{
@@ -14,6 +14,8 @@ use tauri::{
 
 #[cfg(target_os = "windows")]
 static MUTEX_HANDLE: AtomicPtr<std::ffi::c_void> = AtomicPtr::new(std::ptr::null_mut());
+
+static MAIN_WINDOW_PINNED: AtomicBool = AtomicBool::new(false);
 
 // Global HWND storage for the Win32 darken window (isize is the raw HWND value)
 #[cfg(target_os = "windows")]
@@ -253,6 +255,30 @@ fn allow_sleep(state: tauri::State<'_, AppState>) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+#[tauri::command]
+fn get_ac_power_status() -> Option<bool> {
+    #[cfg(target_os = "windows")]
+    {
+        use winapi::um::winbase::{GetSystemPowerStatus, SYSTEM_POWER_STATUS};
+
+        let mut status: SYSTEM_POWER_STATUS = unsafe { std::mem::zeroed() };
+        if unsafe { GetSystemPowerStatus(&mut status) } == 0 {
+            return None;
+        }
+
+        return match status.ACLineStatus {
+            0 => Some(false),
+            1 => Some(true),
+            _ => None,
+        };
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        None
+    }
 }
 
 #[cfg(target_os = "windows")]
@@ -810,24 +836,29 @@ unsafe extern "system" fn low_level_keyboard_proc(
 }
 
 #[cfg(target_os = "windows")]
-fn start_keyboard_hook() {
+fn start_keyboard_hook() -> Result<(), String> {
     if CLEANING_ACTIVE.load(Ordering::SeqCst) {
-        return;
+        return Ok(());
     }
     CLEANING_ACTIVE.store(true, Ordering::SeqCst);
     CLEANING_ESCAPE_COUNT.store(0, Ordering::SeqCst);
     CLEANING_LAST_ESCAPE_MS.store(0, Ordering::SeqCst);
 
-    std::thread::spawn(|| {
+    let (ready_tx, ready_rx) = std::sync::mpsc::sync_channel::<Result<(), String>>(1);
+    std::thread::spawn(move || {
+        use winapi::um::errhandlingapi::GetLastError;
         use winapi::um::processthreadsapi::GetCurrentThreadId;
         use winapi::um::winuser::{
-            DispatchMessageW, GetMessageW, SetWindowsHookExW, TranslateMessage,
-            UnhookWindowsHookEx, MSG, WH_KEYBOARD_LL,
+            DispatchMessageW, GetMessageW, PeekMessageW, SetWindowsHookExW, TranslateMessage,
+            UnhookWindowsHookEx, MSG, PM_NOREMOVE, WH_KEYBOARD_LL,
         };
 
         unsafe {
             let thread_id = GetCurrentThreadId();
             CLEANING_HOOK_THREAD_ID.store(thread_id, Ordering::SeqCst);
+            let mut msg: MSG = std::mem::zeroed();
+            // Ensure the thread message queue exists before the caller can request shutdown.
+            let _ = PeekMessageW(&mut msg, std::ptr::null_mut(), 0, 0, PM_NOREMOVE);
 
             let hook = SetWindowsHookExW(
                 WH_KEYBOARD_LL,
@@ -837,12 +868,23 @@ fn start_keyboard_hook() {
             );
 
             if hook.is_null() {
-                eprintln!("Failed to install WH_KEYBOARD_LL hook");
+                let error_code = GetLastError();
+                let _ = ready_tx.send(Err(format!(
+                    "Failed to install the Windows keyboard hook (error {}).",
+                    error_code
+                )));
                 CLEANING_ACTIVE.store(false, Ordering::SeqCst);
+                CLEANING_HOOK_THREAD_ID.store(0, Ordering::SeqCst);
                 return;
             }
 
-            let mut msg: MSG = std::mem::zeroed();
+            if ready_tx.send(Ok(())).is_err() {
+                CLEANING_ACTIVE.store(false, Ordering::SeqCst);
+                UnhookWindowsHookEx(hook);
+                CLEANING_HOOK_THREAD_ID.store(0, Ordering::SeqCst);
+                return;
+            }
+
             while GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) > 0 {
                 TranslateMessage(&msg);
                 DispatchMessageW(&msg);
@@ -852,6 +894,15 @@ fn start_keyboard_hook() {
             CLEANING_HOOK_THREAD_ID.store(0, Ordering::SeqCst);
         }
     });
+
+    match ready_rx.recv_timeout(std::time::Duration::from_secs(3)) {
+        Ok(Ok(())) => Ok(()),
+        Ok(Err(error)) => Err(error),
+        Err(_) => {
+            stop_keyboard_hook();
+            Err("Timed out while installing the Windows keyboard hook.".to_string())
+        }
+    }
 }
 
 #[cfg(target_os = "windows")]
@@ -1052,6 +1103,13 @@ async fn start_cleaning_mode(app: tauri::AppHandle) -> Result<(), String> {
             let _ = window.maximize();
             let _ = window.set_position(tauri::Position::Physical(monitor.position().clone()));
             let _ = window.set_size(tauri::Size::Physical(monitor.size().clone()));
+
+            #[cfg(target_os = "windows")]
+            if let Err(error) = start_keyboard_hook() {
+                let _ = window.close();
+                return Err(error);
+            }
+
             let _ = window.show();
             let _ = window.set_focus();
             wins.push(label);
@@ -1061,9 +1119,6 @@ async fn start_cleaning_mode(app: tauri::AppHandle) -> Result<(), String> {
             secondary_rects.push((pos.x, pos.y, size.width as i32, size.height as i32));
         }
     }
-
-    #[cfg(target_os = "windows")]
-    start_keyboard_hook();
 
     // Spawn pure Win32 black windows for secondary monitors (after hook is active)
     if !secondary_rects.is_empty() {
@@ -1938,24 +1993,36 @@ fn minimize_window(window: tauri::Window) {
     let _ = window.minimize();
 }
 
-#[tauri::command]
-fn focus_main_window(window: tauri::Window) {
+fn restore_main_window(window: &tauri::Window, take_focus: bool) {
     if window.is_minimized().unwrap_or(false) {
         let _ = window.unminimize();
     }
     let _ = window.show();
-    let _ = window.set_focus();
-    // Force focus hack
-    let _ = window.set_always_on_top(true);
-    let _ = window.set_always_on_top(false);
+
+    let pinned = MAIN_WINDOW_PINNED.load(Ordering::SeqCst);
+    if take_focus {
+        if !pinned {
+            // Preserve the existing Windows focus workaround only while unpinned.
+            let _ = window.set_always_on_top(true);
+            let _ = window.set_focus();
+            let _ = window.set_always_on_top(false);
+        } else {
+            let _ = window.set_focus();
+        }
+    }
+
+    // Reapply after show/unminimize so native window restoration cannot lose the saved state.
+    let _ = window.set_always_on_top(pinned);
+}
+
+#[tauri::command]
+fn focus_main_window(window: tauri::Window) {
+    restore_main_window(&window, true);
 }
 
 #[tauri::command]
 fn show_main_window(window: tauri::Window) {
-    if window.is_minimized().unwrap_or(false) {
-        let _ = window.unminimize();
-    }
-    let _ = window.show();
+    restore_main_window(&window, false);
 }
 
 #[tauri::command]
@@ -2647,6 +2714,7 @@ fn open_url(app: tauri::AppHandle, url: String) -> Result<(), String> {
 
 #[tauri::command]
 fn set_pinned(app: tauri::AppHandle, pinned: bool) {
+    MAIN_WINDOW_PINNED.store(pinned, Ordering::SeqCst);
     if let Some(window) = app.get_window("main") {
         let _ = window.set_always_on_top(pinned);
     }
@@ -2771,6 +2839,27 @@ fn set_window_effect(app: tauri::AppHandle, effect: String) {
     }
 }
 
+fn position_main_window_top_center(window: &tauri::Window, logical_width: Option<f64>) {
+    let Some(monitor) = window.primary_monitor().ok().flatten() else {
+        return;
+    };
+    let scale_factor = monitor.scale_factor();
+    let width_px = logical_width
+        .map(|width| (width * scale_factor).round() as i32)
+        .or_else(|| window.outer_size().ok().map(|size| size.width as i32));
+    let Some(width_px) = width_px else {
+        return;
+    };
+
+    let monitor_position = monitor.position();
+    let monitor_size = monitor.size();
+    let x = monitor_position.x + ((monitor_size.width as i32 - width_px) / 2);
+    let y = monitor_position.y + (16.0 * scale_factor).round() as i32;
+    let _ = window.set_position(tauri::Position::Physical(
+        tauri::PhysicalPosition::new(x, y),
+    ));
+}
+
 #[tauri::command]
 fn set_window_size(app: tauri::AppHandle, width: u32, height: u32) {
     if let Some(window) = app.get_window("main") {
@@ -2788,6 +2877,7 @@ fn set_window_size(app: tauri::AppHandle, width: u32, height: u32) {
         // Ensure transparent border-radius works on Windows
         // Need to remove decorations to allow the CSS border-radius to curve the edges physically
         let _ = window.set_decorations(false);
+        position_main_window_top_center(&window, Some(width as f64));
     }
 }
 
@@ -3196,6 +3286,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             prevent_sleep,
             allow_sleep,
+            get_ac_power_status,
             force_sleep,
             create_screen_overlay,
             close_screen_overlay,
@@ -3245,11 +3336,7 @@ fn main() {
             SystemTrayEvent::LeftClick { .. } => {
                 // Left-click: focus the main window safely
                 if let Some(window) = app.get_window("main") {
-                    if window.is_minimized().unwrap_or(false) {
-                        let _ = window.unminimize();
-                    }
-                    let _ = window.show();
-                    let _ = window.set_focus();
+                    restore_main_window(&window, true);
                 }
             }
             SystemTrayEvent::RightClick { position, size, .. } => {
@@ -3347,15 +3434,39 @@ fn main() {
                     }
                 }
             }
+            tauri::WindowEvent::Focused(true) => {
+                let window = event.window();
+                if window.label() == "main" && MAIN_WINDOW_PINNED.load(Ordering::SeqCst) {
+                    // Windows can drop topmost state while restoring a minimized window.
+                    let _ = window.set_always_on_top(true);
+                }
+            }
+            tauri::WindowEvent::Resized(_) => {
+                let window = event.window();
+                if window.label() == "main" && !window.is_minimized().unwrap_or(false) {
+                    let pinned = MAIN_WINDOW_PINNED.load(Ordering::SeqCst);
+                    let _ = window.set_always_on_top(pinned);
+                }
+            }
             _ => {}
         })
         .setup(|app| {
+            // Position the main window before showing it to avoid the default top-left placement.
+            let args: Vec<String> = std::env::args().collect();
+            let launch_minimized = args.iter().any(|arg| arg == "--minimized");
+
             // Restore the debug logging preference before frontend windows begin polling.
             let app_handle = app.handle();
             if let Some(state) = app.try_state::<AppState>() {
                 if let Ok(settings_path) = get_settings_path(app_handle.clone()) {
                     if let Ok(contents) = std::fs::read_to_string(settings_path) {
                         if let Ok(settings) = serde_json::from_str::<serde_json::Value>(&contents) {
+                            let pinned = settings
+                                .get("pinned")
+                                .and_then(|value| value.as_bool())
+                                .unwrap_or(false);
+                            MAIN_WINDOW_PINNED.store(pinned, Ordering::SeqCst);
+
                             let logging_enabled = settings
                                 .get("debugLoggingEnabled")
                                 .and_then(|value| value.as_bool())
@@ -3388,11 +3499,14 @@ fn main() {
                 }
             }
 
-            // Hide main window on startup if launched with --minimized flag
-            let args: Vec<String> = std::env::args().collect();
-            if args.iter().any(|a| a == "--minimized") {
-                if let Some(window) = app.get_window("main") {
+            if let Some(window) = app.get_window("main") {
+                position_main_window_top_center(&window, None);
+                let pinned = MAIN_WINDOW_PINNED.load(Ordering::SeqCst);
+                let _ = window.set_always_on_top(pinned);
+                if launch_minimized {
                     let _ = window.hide();
+                } else {
+                    let _ = window.show();
                 }
             }
 

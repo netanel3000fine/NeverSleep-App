@@ -324,9 +324,6 @@
       position: relative;
       width: 10px;
       height: 10px;
-      background: #000000;
-      border-radius: 50%;
-      box-shadow: 0 0 5px 1px rgba(255, 255, 255, 0.7), inset 0 0 2px #000000;
       margin: 0 4px;
       display: none;
       flex-shrink: 0;
@@ -338,40 +335,58 @@
       display: inline-block;
     }
 
-    /* Black Hole Accretion Disk Ring (thin, pure white, subtle glow) */
-    .status-darken-dot::before {
+    .status-darken-dot.show::before {
       content: '';
       position: absolute;
       top: 50%;
       left: 50%;
-      width: 17px;
-      height: 5px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
-      border: 1px solid #ffffff;
-      box-shadow: 0 0 2px rgba(255, 255, 255, 0.7);
-      pointer-events: none;
-      transform-origin: center center;
-      animation: blackHoleRing 3.5s ease-in-out infinite;
-      z-index: 2;
+      background: #22c55e;
+      box-shadow: 0 0 12px 2px rgba(34, 197, 94, 0.92), 0 0 16px 3px rgba(34, 197, 94, 0.42);
+      transform: translate(-50%, -50%);
+      animation: green-dot-cycle 6.8s ease-in-out infinite;
     }
 
-    @keyframes blackHoleRing {
+    @keyframes black-hole-cycle {
       0%, 100% {
-        transform: translate(-50%, -50%) rotate(-26deg) scaleY(0.42);
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0);
       }
-      50% {
-        transform: translate(-50%, -50%) rotate(-16deg) scaleY(0.50);
+      5.9%, 50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+      55.9% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0);
       }
     }
 
-    body.white-mode .status-darken-dot {
-      box-shadow: 0 0 5px 1px rgba(0, 0, 0, 0.35), inset 0 0 2px #000000;
+    @keyframes green-dot-cycle {
+      0%, 100% { opacity: 1; }
+      5.9%, 50% { opacity: 0; }
+      55.9% { opacity: 1; }
     }
 
-    body.white-mode .status-darken-dot::before {
-      border: 1px solid #ffffff;
-      box-shadow: 0 0 2px rgba(0, 0, 0, 0.5), 0 0 2px rgba(255, 255, 255, 0.8);
+    /* Reference-shaped black hole mark: lensed arcs, inner orbit, and tilted disk */
+    .status-darken-dot .bh-system {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 24px;
+      height: 14px;
+      transform: translate(-50%, -50%);
+      overflow: visible;
+      pointer-events: none;
+      filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.72)) drop-shadow(0 0 4px rgba(255, 255, 255, 0.3));
     }
+
+    .status-darken-dot.show .bh-system {
+      animation: black-hole-cycle 6.8s ease-in-out infinite;
+    }
+
 
 
 
@@ -5704,7 +5719,9 @@
             <path
               d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z" />
           </svg>
-          <div class="status-darken-dot" id="darkenDot"></div>
+          <div class="status-darken-dot" id="darkenDot">
+            <img class="bh-system" src="black-hole-mark.png" alt="" aria-hidden="true">
+          </div>
           <span id="statusText" data-tauri-drag-region data-i18n="status_active">Active</span>
         </div>
         <!-- Settings Button -->
@@ -6148,6 +6165,12 @@
 
     let disableOnVideo = false;
     let disabledByMedia = false;
+    let disabledByBattery = false;
+    let disableOnBattery = false;
+    let manuallyDisabled = false;
+    let appPauseStartedAt = 0;
+    let durationTimerRemainingDuringPause = null;
+    let darkenTimerRemainingDuringPause = null;
     let mediaPlayingLastSeenAt = 0;
 
     // Config
@@ -6337,11 +6360,13 @@
         if (darkenTimerContainer) darkenTimerContainer.style.display = 'none';
         if (mouseIcon) mouseIcon.classList.remove('show');
         if (kbdIcon) kbdIcon.classList.remove('show');
-        if (statusTextEl) statusTextEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].status_active : 'Active';
+        if (statusTextEl) statusTextEl.textContent = appDisabled
+          ? (translations[window.currentLang] && translations[window.currentLang].status_disabled ? translations[window.currentLang].status_disabled : 'Disabled')
+          : (translations[window.currentLang] ? translations[window.currentLang].status_active : 'Active');
         if (greenDot) greenDot.classList.add('show');
         if (darkenDot) darkenDot.classList.remove('show');
         if (mainStatusEl) {
-          const paused = appDisabled || (profileControlledAwake && isSleeping);
+          const paused = appDisabled || disabledByBattery || (profileControlledAwake && isSleeping);
           mainStatusEl.innerHTML = paused
             ? (translations[window.currentLang] ? translations[window.currentLang].sleep_active_sub : 'Your PC is not kept awake right now')
             : (translations[window.currentLang] ? translations[window.currentLang].pc_awake : 'Your PC is<br><span>awake now</span>');
@@ -6353,7 +6378,7 @@
         if (statusTextEl) statusTextEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].status_darken : 'Darken<br>Mode';
         if (greenDot) greenDot.classList.remove('show');
         if (darkenDot) darkenDot.classList.add('show');
-        const remDark = Math.max(0, Math.floor((darkenTargetTime - Date.now()) / 1000));
+        const remDark = getDarkenRemainingSeconds();
         if (darkenLabelEl) darkenLabelEl.innerHTML = translations[window.currentLang] ? translations[window.currentLang].time_to_darken : 'Time to darken';
         if (darkenTimerEl) darkenTimerEl.textContent = formatTime(remDark);
         updateCountdownPulse(remDark);
@@ -6393,6 +6418,42 @@
 
       updateSleepNextProfile();
       syncTrayState();
+    }
+
+    // Keep numeric countdowns rendering even if a native power/media check takes
+    // longer than the main behavior loop. This is presentation-only; the main loop
+    // still owns darkening, input handling, and pause behavior.
+    function refreshTimerReadouts() {
+      const darkenTimerEl = document.getElementById('darkenTimer');
+      if (darkenTimerEl) {
+        if (isScreenOn) {
+          darkenTimerEl.textContent = formatTime((darkenHours * 3600) + (darkenMinutes * 60));
+        } else {
+          const remaining = getDarkenRemainingSeconds();
+          darkenTimerEl.textContent = formatTime(remaining);
+          updateCountdownPulse(remaining);
+        }
+      }
+
+      const shutdownTimerEl = document.getElementById('shutdownTimer');
+      if (scheduleActionMode === 'countdown' && timeProfilesEnabled) {
+        if (shutdownTimerEl) {
+          const remaining = Math.max(0, Math.floor((countdownTargetTime - Date.now()) / 1000));
+          shutdownTimerEl.textContent = formatTime(remaining);
+        }
+      } else {
+        const status = getProfileStatus();
+        if (shutdownTimerEl) shutdownTimerEl.textContent = status ? formatTime(status.remainingSeconds) : '00:00:00';
+      }
+    }
+    setInterval(refreshTimerReadouts, 1000);
+
+    function getDarkenRemainingSeconds() {
+      if (appDisabled && darkenTimerRemainingDuringPause !== null) {
+        return Math.max(0, Math.floor(darkenTimerRemainingDuringPause / 1000));
+      }
+      if (darkenTargetTime <= 0) resetDarkenTimer();
+      return Math.max(0, Math.floor((darkenTargetTime - Date.now()) / 1000));
     }
 
     async function checkAct() {
@@ -6711,6 +6772,7 @@
 
     function loadSet(customSettings) {
       try {
+        const previousDarkenDuration = (darkenHours * 3600) + (darkenMinutes * 60);
         const s = customSettings || JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
         loadTogglesState(s);
         window.currentLang = s.language || 'en';
@@ -6750,7 +6812,8 @@
 
         darkenHours = s.darkenHours === undefined ? 0 : s.darkenHours;
         darkenMinutes = s.darkenMinutes === undefined ? 10 : s.darkenMinutes;
-
+        const loadedDarkenDuration = (darkenHours * 3600) + (darkenMinutes * 60);
+        if (!isScreenOn && loadedDarkenDuration !== previousDarkenDuration) resetDarkenTimer();
 
         breakH = s.breakHours === undefined ? 1 : s.breakHours;
         breakM = s.breakMinutes === undefined ? 0 : s.breakMinutes;
@@ -6758,6 +6821,9 @@
         notificationsEnabled = s.notificationsEnabled === undefined ? true : s.notificationsEnabled;
         soundEnabled = s.soundEnabled === undefined ? false : s.soundEnabled;
         disableOnVideo = s.disableOnVideo === true;
+        disableOnBattery = s.disableOnBattery === true;
+        if (!disableOnBattery && disabledByBattery) setAppDisabled(false, 'battery');
+        else if (disableOnBattery) checkBatteryPowerStatus();
         focusOnCountdown = s.focusOnCountdown === undefined ? false : s.focusOnCountdown;
         minimizeOnDarken = s.minimizeOnDarken === undefined ? false : s.minimizeOnDarken;
         const wasLockOnCountdown = lockOnCountdown;
@@ -6778,11 +6844,9 @@
           if (c.type === 'recalculateProfiles') {
             if (profileControlledAwake) resetShutdownTimer();
           } else if (c.type === 'setAppDisabled') {
-            disabledByMedia = false;
-            setAppDisabled(!!c.value);
+            setAppDisabled(!!c.value, 'manual');
           } else if (c.type === 'toggleAppDisabled') {
-            disabledByMedia = false;
-            setAppDisabled(!appDisabled);
+            setAppDisabled(!manuallyDisabled, 'manual');
           }
         }
         syncTrayState();
@@ -7052,7 +7116,7 @@
     }
 
     function applyScheduleState(options = {}) {
-      if (appDisabled) {
+      if (appDisabled || disabledByBattery) {
         profileControlledAwake = hasEnabledTimeProfiles();
         autoShutdown = profileControlledAwake;
         return;
@@ -7147,25 +7211,34 @@
       if (disableOnVideo && window.__TAURI__) {
         try {
           const isPlaying = await window.__TAURI__.invoke('is_media_playing');
-          if (isPlaying && !appDisabled) {
+          if (isPlaying && !disabledByMedia) {
              mediaPlayingLastSeenAt = Date.now();
-             disabledByMedia = true;
-             setAppDisabled(true);
+             setAppDisabled(true, 'media');
           } else if (isPlaying && disabledByMedia) {
              mediaPlayingLastSeenAt = Date.now();
           } else if (!isPlaying && disabledByMedia && appDisabled && Date.now() - mediaPlayingLastSeenAt >= 5000) {
-             disabledByMedia = false;
-             setAppDisabled(false);
+             setAppDisabled(false, 'media');
           }
         } catch (e) { }
-      } else if (disabledByMedia && appDisabled) {
+      } else if (disabledByMedia) {
         // Turning the media-pause feature off must also release its pause state.
-        disabledByMedia = false;
-        setAppDisabled(false);
+        setAppDisabled(false, 'media');
       }
 
-      // If app is disabled, skip all behaviour
-      if (appDisabled) return;
+      // Poll Windows AC status while enabled. Unknown status leaves the current
+      // battery pause unchanged. loadSet also calls this for an immediate startup check.
+      if (disableOnBattery) {
+        await checkBatteryPowerStatus();
+      } else if (disabledByBattery) {
+        setAppDisabled(false, 'battery');
+      }
+
+      // Any active pause reason freezes the darken countdown as well as app work.
+      if (appDisabled) {
+        if (window.__TAURI__) window.__TAURI__.invoke('allow_sleep').catch(() => { });
+        updateUI();
+        return;
+      }
 
       uptime++; // Approx
 
@@ -7279,26 +7352,67 @@
       }
     }, 1000);
 
+    async function checkBatteryPowerStatus() {
+      if (!disableOnBattery || !window.__TAURI__) return;
+      try {
+        const onAcPower = await window.__TAURI__.invoke('get_ac_power_status');
+        if (typeof onAcPower === 'boolean') {
+          const shouldPauseForBattery = !onAcPower;
+          // Only process actual power transitions. Reapplying an unchanged
+          // enabled state runs schedule setup, which can reset the darken timer.
+          if (shouldPauseForBattery !== disabledByBattery) {
+            setAppDisabled(shouldPauseForBattery, 'battery');
+          }
+        }
+      } catch (e) { }
+    }
+
     // ── Disable toggle logic ──
-    function setAppDisabled(disabled) {
+    function setAppDisabled(disabled, reason = 'manual') {
+      const currentReasonState = reason === 'battery'
+        ? disabledByBattery
+        : reason === 'media'
+          ? disabledByMedia
+          : manuallyDisabled;
+      if (currentReasonState === disabled) return;
+
+      const wasPaused = appDisabled;
       const previousDisabled = appDisabled;
-      appDisabled = disabled;
-      if (previousDisabled !== disabled) {
-        window.__neverSleepDebugLog?.(`App disabled state changed: ${previousDisabled} -> ${disabled}; reason=${disabledByMedia ? 'media playback' : 'user or schedule'}`);
+      const previousBatteryPause = disabledByBattery;
+      if (reason === 'battery') {
+        disabledByBattery = disabled;
+      } else if (reason === 'media') {
+        disabledByMedia = disabled;
+      } else {
+        manuallyDisabled = disabled;
       }
-      document.body.classList.toggle('app-disabled', disabled);
+
+      appDisabled = manuallyDisabled || disabledByMedia || disabledByBattery;
+      const isPaused = appDisabled;
+      if (previousBatteryPause !== disabledByBattery) {
+        window.__neverSleepDebugLog?.(`Battery pause state changed: ${previousBatteryPause} -> ${disabledByBattery}`);
+      }
+      if (previousDisabled !== appDisabled) {
+        const reasonLabel = disabledByBattery ? 'battery power' : disabledByMedia ? 'media playback' : 'manual';
+        window.__neverSleepDebugLog?.(`App disabled state changed: ${previousDisabled} -> ${appDisabled}; reason=${reasonLabel}`);
+      }
+      document.body.classList.toggle('app-disabled', appDisabled);
       const dot = document.getElementById('pillDot');
       const label = document.getElementById('pillLabel');
-      if (dot) dot.style.background = disabled ? '#ef4444' : '';
-      const isMediaDisable = disabled && disabledByMedia;
+      if (dot) dot.style.background = isPaused ? '#ef4444' : '';
+      const isBatteryOnlyPause = disabledByBattery && !manuallyDisabled && !disabledByMedia;
+      const isMediaDisable = disabledByMedia;
+      const displayDisabled = appDisabled;
       const disabledLabel = isMediaDisable
         ? (translations[window.currentLang] && translations[window.currentLang].pill_disabled_media ? translations[window.currentLang].pill_disabled_media : 'Media')
         : (translations[window.currentLang] && translations[window.currentLang].pill_disabled ? translations[window.currentLang].pill_disabled : 'Disabled');
       const activeLabel = translations[window.currentLang] && translations[window.currentLang].pill_active ? translations[window.currentLang].pill_active : 'Active';
-      if (label) label.textContent = disabled ? disabledLabel : activeLabel;
+      if (label) label.textContent = isBatteryOnlyPause
+        ? (translations[window.currentLang] && translations[window.currentLang].pill_disabled_battery ? translations[window.currentLang].pill_disabled_battery : 'Battery')
+        : displayDisabled ? disabledLabel : activeLabel;
       const bannerSpan = document.querySelector('#disabledBanner span[data-i18n]') || document.querySelector('#disabledBanner span[data-i18n-dynamic]');
       if (bannerSpan) {
-        if (disabled && isMediaDisable) {
+        if (appDisabled && isMediaDisable) {
           bannerSpan.removeAttribute('data-i18n');
           bannerSpan.setAttribute('data-i18n-dynamic', 'app_disabled_banner_media');
           bannerSpan.textContent = translations[window.currentLang] && translations[window.currentLang].app_disabled_banner_media
@@ -7312,15 +7426,42 @@
             : 'App is disabled';
         }
       }
-      if (disabled) {
+      if (!wasPaused && isPaused) {
+        appPauseStartedAt = Date.now();
+        if (!isScreenOn) {
+          darkenTimerRemainingDuringPause = Math.max(0, darkenTargetTime - appPauseStartedAt);
+        }
+        if (durationTimerId) {
+          durationTimerRemainingDuringPause = Math.max(0, durationTimerEndTime - appPauseStartedAt);
+          clearTimeout(durationTimerId);
+          durationTimerId = null;
+        }
+      }
+
+      if (isPaused) {
         // Stop sleep prevention - let OS sleep naturally
         if (window.__TAURI__) window.__TAURI__.invoke('allow_sleep').catch(() => { });
-        // Freeze timer targets so they don't drift
-        darkenTargetTime = Date.now() + 99999 * 1000;
-        shutdownTargetTime = Date.now() + 99999 * 1000;
-        const sleepOverlay = document.getElementById('sleepOverlay');
-        if (sleepOverlay) sleepOverlay.classList.remove('show');
+        if (appDisabled) {
+          const sleepOverlay = document.getElementById('sleepOverlay');
+          if (sleepOverlay) sleepOverlay.classList.remove('show');
+        }
+        if (appDisabled && (previousBatteryPause !== disabledByBattery || previousDisabled !== appDisabled)) updateUI();
       } else {
+        if (wasPaused && appPauseStartedAt) {
+          const pausedFor = Date.now() - appPauseStartedAt;
+          // Start a full darken interval after the last pause reason clears.
+          // Shifting the old deadline can leave the countdown expired/stale after
+          // overlapping media and battery pauses.
+          if (!isScreenOn) resetDarkenTimer();
+          darkenTimerRemainingDuringPause = null;
+          if (shutdownTargetTime > 0) shutdownTargetTime += pausedFor;
+          if (countdownTargetTime > 0) countdownTargetTime += pausedFor;
+          appPauseStartedAt = 0;
+          if (durationTimerRemainingDuringPause !== null) {
+            resumeDurationTimer(durationTimerRemainingDuringPause);
+            durationTimerRemainingDuringPause = null;
+          }
+        }
         applyScheduleState({ focus: false });
         if (!isSleeping && window.__TAURI__) window.__TAURI__.invoke('prevent_sleep').catch(() => { });
         updateUI();
@@ -7341,28 +7482,44 @@
       if (!mins) {
         activeDurationMins = null;
         durationTimerEndTime = 0;
+        durationTimerRemainingDuringPause = null;
         syncTrayState();
         return;
       }
       activeDurationMins = mins;
-      durationTimerEndTime = Date.now() + mins * 60 * 1000;
+      if (appDisabled || disabledByBattery) {
+        durationTimerRemainingDuringPause = mins * 60 * 1000;
+        durationTimerEndTime = Date.now() + durationTimerRemainingDuringPause;
+      } else {
+        scheduleDurationTimer(mins * 60 * 1000);
+      }
       syncTrayState();
+    }
 
+    function scheduleDurationTimer(remainingMs) {
+      durationTimerEndTime = Date.now() + remainingMs;
       durationTimerId = setTimeout(() => {
         activeDurationMins = null;
         durationTimerId = null;
         durationTimerEndTime = 0;
         setAppDisabled(true);
         syncTrayState();
-      }, mins * 60 * 1000);
+      }, remainingMs);
+    }
+
+    function resumeDurationTimer(remainingMs) {
+      if (activeDurationMins !== null && remainingMs >= 0) {
+        scheduleDurationTimer(remainingMs);
+      }
     }
 
     function syncTrayState() {
       if (!window.__TAURI__) return;
-      const isScheduleActive = profileControlledAwake && !appDisabled;
+      const effectiveDisabled = appDisabled;
+      const isScheduleActive = profileControlledAwake && !effectiveDisabled;
       let statusText = '⚡ Never Sleep: Active';
-      if (appDisabled) {
-        statusText = '💤 Never Sleep: Disabled';
+      if (effectiveDisabled) {
+        statusText = disabledByBattery ? '💤 Never Sleep: Paused (Battery Power)' : '💤 Never Sleep: Disabled';
       } else if (isScheduleActive) {
         statusText = '🕒 Never Sleep: Schedule Active';
       } else if (!isScreenOn) {
@@ -7397,7 +7554,7 @@
 
       // Broadcast live runtime state so tray flyout can sync when it opens
       localStorage.setItem('neverSleepLiveState', JSON.stringify({
-        appDisabled: !!appDisabled,
+        appDisabled: !!effectiveDisabled,
         isScreenOn: !!isScreenOn,
         timeProfilesEnabled: !!timeProfilesEnabled,
         scheduleActionMode: scheduleActionMode || 'keep_awake',
@@ -7405,7 +7562,8 @@
         scheduleRemainingSec: schedRemainingSec,
         scheduleIsActive: schedIsActive,
         countdownTargetTime: typeof countdownTargetTime !== 'undefined' ? countdownTargetTime : 0,
-        isMediaDisabled: !!(appDisabled && disabledByMedia),
+        isMediaDisabled: !!(effectiveDisabled && disabledByMedia),
+        isBatteryDisabled: !!(effectiveDisabled && disabledByBattery),
         ts: Date.now()
       }));
       window.__TAURI__.invoke('check_autostart').then((autostart) => {
@@ -7416,7 +7574,7 @@
 
         window.__TAURI__.invoke('update_tray_menu_state', {
           statusText: statusText,
-          disabled: !!appDisabled,
+          disabled: !!effectiveDisabled,
           keepAwake: !!isScreenOn,
           scheduleModeActive: !!isScheduleActive,
           activeDurationMins: activeDurationMins,
@@ -7450,19 +7608,21 @@
         if (!action) return;
 
         if (action === 'disable_app') {
-          disabledByMedia = false;
-          setAppDisabled(!appDisabled);
+          setAppDisabled(false, 'media');
+          setAppDisabled(!manuallyDisabled, 'manual');
         } else if (action === 'keep_awake') {
-          if (appDisabled) {
-            setAppDisabled(false);
+          if (disabledByBattery || disabledByMedia) {
+            // Automatic pauses cannot be overridden by the tray power toggle.
+            return;
           }
+          if (appDisabled) setAppDisabled(false, 'manual');
           isScreenOn = !isScreenOn;
           window.__neverSleepDebugLog?.(`Keep-awake state changed from tray: screenOn=${isScreenOn}`);
           saveTogglesState();
           if (isScreenOn) {
             const darkenTimerContainer = document.getElementById('darkenTimerContainer');
             if (darkenTimerContainer) darkenTimerContainer.style.display = 'none';
-            if (window.__TAURI__) window.__TAURI__.invoke('prevent_sleep').catch(() => {});
+            if (!appDisabled && !disabledByBattery && window.__TAURI__) window.__TAURI__.invoke('prevent_sleep').catch(() => {});
             minimizeTriggered = false;
           } else {
             resetDarkenTimer();
@@ -7536,8 +7696,8 @@
 
     document.getElementById('disableTogglePill').onclick = function (e) {
       e.stopPropagation();
-      disabledByMedia = false; // Reset media tracking if user manually intervenes
-      setAppDisabled(!appDisabled);
+      setAppDisabled(false, 'media'); // Reset media tracking if user manually intervenes
+      setAppDisabled(!manuallyDisabled, 'manual');
     };
 
     document.getElementById('activateToggle').onclick = async function () {
@@ -7548,7 +7708,7 @@
         if (darkenTimerContainer) darkenTimerContainer.style.display = 'none';
         if (mouseIcon) mouseIcon.classList.remove('show');
         if (kbdIcon) kbdIcon.classList.remove('show');
-        if (window.__TAURI__) await window.__TAURI__.invoke('prevent_sleep');
+        if (!appDisabled && !disabledByBattery && window.__TAURI__) await window.__TAURI__.invoke('prevent_sleep');
         minimizeTriggered = false;
       }
       else {
@@ -8092,7 +8252,7 @@
     let lastLocalMouseMoveReport = 0;
     document.addEventListener('mousemove', (e) => {
       const now = Date.now();
-      if (!isScreenOn && !isSleeping && (now - lastLocalMouseMoveReport > 1000)) {
+      if (!isScreenOn && !isSleeping && !appDisabled && (now - lastLocalMouseMoveReport > 1000)) {
         lastLocalMouseMoveReport = now;
         if (window.__TAURI__) {
           window.__TAURI__.invoke('record_input_activity', { inputType: 'mouse' }).catch(() => {});

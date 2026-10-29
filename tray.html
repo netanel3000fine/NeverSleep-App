@@ -212,7 +212,7 @@
             color: var(--text-primary);
         }
 
-        .status-subtitle .status-media-text {
+        .status-subtitle .status-reason-text {
             display: block;
             font-size: 10px;
             font-weight: 500;
@@ -847,6 +847,7 @@
         let settings = {};
         let isAppDisabled = false;
         let isMediaDisabled = false;
+        let isBatteryDisabled = false;
         let _scheduleTickInterval = null;
         let _lastTrayHeight = null;
         let trayLanguage = 'en';
@@ -856,6 +857,26 @@
         function trayText(key, fallback) {
             const dictionary = translations[trayLanguage] || translations.en;
             return dictionary?.[key] || fallback;
+        }
+
+        function renderPausedStatus(subtitle, label) {
+            const match = label.match(/^([^(]+)\s*\(([^)]+)\)$/);
+            if (!match) {
+                subtitle.textContent = label;
+                return;
+            }
+
+            subtitle.textContent = '';
+            const mainSpan = document.createElement('span');
+            mainSpan.className = 'status-main-text';
+            mainSpan.textContent = match[1].trim();
+
+            const reasonSpan = document.createElement('span');
+            reasonSpan.className = 'status-reason-text';
+            reasonSpan.textContent = `(${match[2].trim()})`;
+
+            subtitle.appendChild(mainSpan);
+            subtitle.appendChild(reasonSpan);
         }
 
         async function syncAutostartToggle() {
@@ -967,6 +988,7 @@
                 if (typeof liveState.appDisabled === 'boolean') {
                     isAppDisabled = liveState.appDisabled;
                     isMediaDisabled = !!liveState.isMediaDisabled;
+                    isBatteryDisabled = !!liveState.isBatteryDisabled;
                 }
             } catch(e) {}
 
@@ -1004,37 +1026,25 @@
             const sub = document.getElementById('statusSubtitle');
             const powerToggle = document.getElementById('powerToggle');
 
-            const mediaPlaybackDisablesToggle = isAppDisabled && isMediaDisabled;
+            const automaticPauseDisablesToggle = isAppDisabled && (isMediaDisabled || isBatteryDisabled);
             if (powerToggle) {
-                powerToggle.classList.toggle('media-disabled', mediaPlaybackDisablesToggle);
-                powerToggle.setAttribute('aria-disabled', String(mediaPlaybackDisablesToggle));
+                powerToggle.classList.toggle('media-disabled', automaticPauseDisablesToggle);
+                powerToggle.setAttribute('aria-disabled', String(automaticPauseDisablesToggle));
                 powerToggle.setAttribute('aria-checked', String(!isAppDisabled));
-                powerToggle.title = mediaPlaybackDisablesToggle
-                    ? trayText('tray_paused_media', 'Paused (Media Playing)')
+                powerToggle.title = automaticPauseDisablesToggle
+                    ? (isBatteryDisabled
+                        ? trayText('tray_paused_battery', 'Paused (Battery Power)')
+                        : trayText('tray_paused_media', 'Paused (Media Playing)'))
                     : trayText('tray_toggle_sleep_prevention', 'Toggle Sleep Prevention');
             }
 
             if (isAppDisabled) {
                 if (dot) { dot.className = 'status-dot disabled'; }
                 if (sub) {
-                    if (isMediaDisabled) {
-                        const rawPausedMedia = trayText('tray_paused_media', 'Paused (Media Playing)');
-                        const match = rawPausedMedia.match(/^([^(]+)\s*\(([^)]+)\)$/);
-                        if (match) {
-                            sub.textContent = '';
-                            const mainSpan = document.createElement('span');
-                            mainSpan.className = 'status-main-text';
-                            mainSpan.textContent = match[1].trim();
-
-                            const mediaSpan = document.createElement('span');
-                            mediaSpan.className = 'status-media-text';
-                            mediaSpan.textContent = `(${match[2].trim()})`;
-
-                            sub.appendChild(mainSpan);
-                            sub.appendChild(mediaSpan);
-                        } else {
-                            sub.textContent = rawPausedMedia;
-                        }
+                    if (isBatteryDisabled) {
+                        renderPausedStatus(sub, trayText('tray_paused_battery', 'Paused (Battery Power)'));
+                    } else if (isMediaDisabled) {
+                        renderPausedStatus(sub, trayText('tray_paused_media', 'Paused (Media Playing)'));
                     } else {
                         sub.textContent = trayText('pill_disabled', 'Disabled');
                     }
@@ -1051,7 +1061,7 @@
         // Power Toggle Click — toggle via Tauri command (which emit_all to main window)
         const powerToggle = document.getElementById('powerToggle');
         async function toggleSleepPrevention() {
-            if (isAppDisabled && isMediaDisabled) return;
+            if (isAppDisabled && (isMediaDisabled || isBatteryDisabled)) return;
             if (window.__TAURI__) {
                 // The main window handles the emitted tray-action and owns the state change.
                 try {

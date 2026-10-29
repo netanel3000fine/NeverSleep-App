@@ -2342,7 +2342,7 @@
         <div class="settings-content">
 
             <!-- 1. Category Card: System -->
-            <div class="category-block clickable-category-card" id="openSystemPopup">
+            <div class="category-block clickable-category-card expanded" id="openSystemPopup">
                 <div class="category-card-header">
                     <div class="category-icon-title-group">
                         <span class="category-card-icon">
@@ -2476,24 +2476,33 @@
                             </div>
                             <div class="toggle" id="autostartMinimizedToggle"><div class="toggle-knob"></div></div>
                         </div>
-                        <div class="settings-item" id="trayQuickTogglesItem" style="display: none; transition: opacity 0.2s ease;">
-                            <div class="label-group">
-                                <span class="item-label" data-i18n="show_tray_quick_toggles">Show quick toggles in tray</span>
-                                <span class="item-sub" data-i18n="show_tray_quick_toggles_sub">Always On Top & Startup toggles in tray menu</span>
-                            </div>
-                            <div class="toggle" id="trayQuickTogglesToggle"><div class="toggle-knob"></div></div>
-                        </div>
                         <div class="settings-item" style="border-bottom: none;">
                             <div class="label-group"><span class="item-label" data-i18n="pin_window">Pin window to front</span></div>
                             <div class="toggle" id="pinToggle"><div class="toggle-knob"></div></div>
                         </div>
                     </div>
-                    <div class="settings-item">
+                    <div class="settings-item" id="trayQuickTogglesItem" style="display: none; transition: opacity 0.2s ease;">
                         <div class="label-group">
-                            <span class="item-label" data-i18n="disable_on_video">Disable during video</span>
-                            <span class="item-sub" data-i18n="disable_on_video_sub">Pauses when video is playing (no music)</span>
+                            <span class="item-label" data-i18n="show_tray_quick_toggles">Show quick toggles in tray</span>
+                            <span class="item-sub" data-i18n="show_tray_quick_toggles_sub">Always On Top & Startup toggles in tray menu</span>
                         </div>
-                        <div class="toggle" id="disableOnVideoToggle"><div class="toggle-knob"></div></div>
+                        <div class="toggle" id="trayQuickTogglesToggle"><div class="toggle-knob"></div></div>
+                    </div>
+                    <div class="settings-subcard" id="disableSettingsCard">
+                        <div class="settings-item">
+                            <div class="label-group">
+                                <span class="item-label" data-i18n="disable_on_video">Disable during video</span>
+                                <span class="item-sub" data-i18n="disable_on_video_sub">Pauses when video is playing (no music)</span>
+                            </div>
+                            <div class="toggle" id="disableOnVideoToggle"><div class="toggle-knob"></div></div>
+                        </div>
+                        <div class="settings-item">
+                            <div class="label-group">
+                                <span class="item-label" data-i18n="disable_on_battery">Disable on battery power</span>
+                                <span class="item-sub" data-i18n="disable_on_battery_sub">Pauses Never Sleep when your laptop is unplugged</span>
+                            </div>
+                            <div class="toggle" id="disableOnBatteryToggle"><div class="toggle-knob"></div></div>
+                        </div>
                     </div>
                     <div class="settings-item">
                         <div class="label-group">
@@ -3635,6 +3644,7 @@
                 if (window.__TAURI__) window.__TAURI__.invoke('set_pinned', { pinned: val });
             });
             setupToggle('disableOnVideoToggle', 'disableOnVideo', false);
+            setupToggle('disableOnBatteryToggle', 'disableOnBattery', false);
             setupToggle('debugLoggingToggle', 'debugLoggingEnabled', false);
 
             let currentMode = settings.viewMode || 'liquid-glass';
@@ -4630,6 +4640,7 @@
                 breakMinutes: enforceMin('breakMinutes', 1),
                 pinned: getToggle('pinToggle'),
                 disableOnVideo: getToggle('disableOnVideoToggle'),
+                disableOnBattery: getToggle('disableOnBatteryToggle'),
                 debugLoggingEnabled: getToggle('debugLoggingToggle'),
                 viewMode: settings.viewMode || 'liquid-glass',
                 language: document.getElementById('languageSelect')?.value || 'en',
