@@ -6168,6 +6168,7 @@
     let disabledByBattery = false;
     let disableOnBattery = false;
     let manuallyDisabled = false;
+    let isWorkstationLocked = false; // true while Windows session is locked
     let appPauseStartedAt = 0;
     let durationTimerRemainingDuringPause = null;
     let darkenTimerRemainingDuringPause = null;
@@ -7273,7 +7274,7 @@
       }
       await checkAct();
 
-      if (!isScreenOn && !screenDarkened && !isSleeping) {
+      if (!isScreenOn && !screenDarkened && !isSleeping && !isWorkstationLocked) {
         const now = Date.now();
         const rem = (darkenTargetTime - now) / 1000;
         let inactivitySeconds = (now - lastInactivityStart) / 1000;
@@ -7596,7 +7597,13 @@
         updateUI();
       });
 
+      window.__TAURI__.event.listen('workstation-locked', () => {
+        isWorkstationLocked = true;
+      });
+
       window.__TAURI__.event.listen('workstation-unlocked', (event) => {
+        isWorkstationLocked = false;
+        if (!isScreenOn) resetDarkenTimer();
         if (event && typeof event.payload === 'number') {
           lastProcessedUnlockTime = event.payload;
         }
