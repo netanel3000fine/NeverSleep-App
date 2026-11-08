@@ -2936,12 +2936,136 @@ fn get_media_manager(
         .as_ref()
 }
 
+#[cfg(target_os = "windows")]
+fn get_process_name_by_pid(pid: u32) -> Option<String> {
+    use winapi::um::handleapi::CloseHandle;
+    use winapi::um::processthreadsapi::OpenProcess;
+    use winapi::um::psapi::GetModuleBaseNameW;
+    use winapi::um::winnt::{PROCESS_QUERY_INFORMATION, PROCESS_VM_READ};
+
+    unsafe {
+        let handle = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, 0, pid);
+        if handle.is_null() {
+            return None;
+        }
+
+        let mut buf = [0u16; 260];
+        let len = GetModuleBaseNameW(handle, std::ptr::null_mut(), buf.as_mut_ptr(), buf.len() as u32);
+        CloseHandle(handle);
+
+        if len > 0 {
+            Some(String::from_utf16_lossy(&buf[..len as usize]).to_lowercase())
+        } else {
+            None
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn is_audio_session_active_and_playing() -> bool {
+    use windows::core::ComInterface;
+    use windows::Win32::Media::Audio::Endpoints::IAudioMeterInformation;
+    use windows::Win32::Media::Audio::*;
+    use windows::Win32::System::Com::{CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED};
+
+    unsafe {
+        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+
+        let enumerator: Result<IMMDeviceEnumerator, _> =
+            CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL);
+        let enumerator = match enumerator {
+            Ok(e) => e,
+            Err(_) => return false,
+        };
+
+        let device: Result<IMMDevice, _> =
+            enumerator.GetDefaultAudioEndpoint(eRender, eMultimedia);
+        let device = match device {
+            Ok(d) => d,
+            Err(_) => return false,
+        };
+
+        let session_manager: Result<IAudioSessionManager2, _> =
+            device.Activate(CLSCTX_ALL, None);
+        let session_manager = match session_manager {
+            Ok(sm) => sm,
+            Err(_) => return false,
+        };
+
+        let session_enum = match session_manager.GetSessionEnumerator() {
+            Ok(se) => se,
+            Err(_) => return false,
+        };
+
+        let session_count = match session_enum.GetCount() {
+            Ok(count) => count,
+            Err(_) => return false,
+        };
+
+        for i in 0..session_count {
+            let session_control: IAudioSessionControl = match session_enum.GetSession(i) {
+                Ok(s) => s,
+                Err(_) => continue,
+            };
+
+            // Only consider sessions in active state
+            if let Ok(state) = session_control.GetState() {
+                if state != AudioSessionStateActive {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+
+            // Check if audio meter detects actual audible sound output (> silence threshold)
+            if let Ok(meter) = session_control.cast::<IAudioMeterInformation>() {
+                if let Ok(peak) = meter.GetPeakValue() {
+                    if peak <= 0.0005 {
+                        // Silent or paused stream
+                        continue;
+                    }
+                }
+            }
+
+            // Inspect process ID & process name to exclude pure music apps & system sounds
+            if let Ok(session_control2) = session_control.cast::<IAudioSessionControl2>() {
+                if let Ok(pid) = session_control2.GetProcessId() {
+                    if pid == 0 {
+                        // System sounds / idle session
+                        continue;
+                    }
+
+                    if let Some(proc_name) = get_process_name_by_pid(pid) {
+                        let p = proc_name.to_lowercase();
+                        // Ignore pure music services and background communication apps
+                        if p.contains("spotify")
+                            || p.contains("itunes")
+                            || p.contains("musicbee")
+                            || p.contains("foobar2000")
+                            || p.contains("tidal")
+                            || p.contains("apple music")
+                            || p.contains("discord")
+                        {
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        false
+    }
+}
+
 #[tauri::command]
 async fn is_media_playing() -> bool {
     #[cfg(target_os = "windows")]
     {
         use windows::Media::Control::GlobalSystemMediaTransportControlsSessionPlaybackStatus;
 
+        // 1. First check Windows SMTC (Global Media Transport Controls)
         let mut playing = false;
         if let Some(manager) = get_media_manager() {
             if let Ok(sessions) = manager.GetSessions() {
@@ -2982,7 +3106,19 @@ async fn is_media_playing() -> bool {
                 }
             }
         }
-        return playing;
+
+        if playing {
+            return true;
+        }
+
+        // 2. Also check active Core Audio (WASAPI) playback streams
+        // This catches players like Stremio, VLC, MPC, MPV, web video players, and desktop players
+        // that do not register with Windows SMTC.
+        if is_audio_session_active_and_playing() {
+            return true;
+        }
+
+        return false;
     }
     #[allow(unreachable_code)]
     false
