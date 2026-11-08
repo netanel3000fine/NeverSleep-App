@@ -6169,6 +6169,7 @@
     let disableOnBattery = false;
     let manuallyDisabled = false;
     let isWorkstationLocked = false; // true while Windows session is locked
+    let darkenLockedRemainingMs = null; // remaining darken ms saved at lock time
     let appPauseStartedAt = 0;
     let durationTimerRemainingDuringPause = null;
     let darkenTimerRemainingDuringPause = null;
@@ -7599,11 +7600,18 @@
 
       window.__TAURI__.event.listen('workstation-locked', () => {
         isWorkstationLocked = true;
+        // Freeze the darken countdown: save how much was left and push the
+        // target far into the future so it never expires while locked.
+        if (!isScreenOn && darkenTargetTime > 0) {
+          darkenLockedRemainingMs = Math.max(0, darkenTargetTime - Date.now());
+          darkenTargetTime = Date.now() + 24 * 60 * 60 * 1000; // 24 h sentinel
+        }
       });
 
       window.__TAURI__.event.listen('workstation-unlocked', (event) => {
         isWorkstationLocked = false;
-        if (!isScreenOn) resetDarkenTimer();
+        darkenLockedRemainingMs = null; // discard frozen snapshot
+        if (!isScreenOn) resetDarkenTimer(); // always reset to full on unlock
         if (event && typeof event.payload === 'number') {
           lastProcessedUnlockTime = event.payload;
         }

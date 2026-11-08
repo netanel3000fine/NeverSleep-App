@@ -694,6 +694,13 @@ async fn create_screen_overlay(
     method: Option<String>,
     custom_path: Option<String>,
 ) -> Result<(), String> {
+    // Safety net: never send hardware darken signals while the workstation is locked.
+    // JS timers (WebView2) can still fire while throttled under a lock screen, so this
+    // Rust-side guard is the authoritative last line of defence.
+    if matches!(workstation_lock_state(), Ok(true)) {
+        return Ok(());
+    }
+
     let m = method.unwrap_or_else(|| "ddcci".to_string());
     match m.as_str() {
         "win32" => create_darken_win32(),
