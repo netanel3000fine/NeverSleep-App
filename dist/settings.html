@@ -2411,6 +2411,15 @@
             color: var(--theme-color);
             text-decoration: underline;
         }
+
+        .credit-link .check-update-btn {
+            font-weight: 600;
+        }
+
+        .credit-link .check-update-btn:disabled {
+            opacity: 0.55;
+            cursor: wait;
+        }
     </style>
 </head>
 
@@ -3049,25 +3058,15 @@
                     <!-- Lock Screen Multi-Pin Section -->
                     <div class="lock-screen-section" id="lockScreenSectionWrap" style="display:none;">
                         <div class="time-profiles-header-wrap" style="margin-bottom: 12px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                                <span class="item-label" data-i18n="lock_screen_time_title">Daily Lock Times</span>
-                                <button id="addLockPinBtn" class="add-profile-header-btn" type="button" data-i18n-title="add_lock_time" title="Add Time">
-                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                                    <span data-i18n="add_lock_time">Add Time</span>
-                                </button>
-                            </div>
-                            <span class="item-sub" data-i18n="lock_screen_time_sub" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; display: block;">Click the dial or drag pins to set times to lock the PC and disable NeverSleep</span>
+                            <span class="item-label" data-i18n="lock_screen_time_title">Daily Lock Times</span>
+                            <span class="item-sub" data-i18n="lock_screen_time_sub" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; display: block;">Click the dial to add lock times • Drag pins to adjust</span>
                         </div>
 
                         <div class="clock-dial-container">
-                            <div class="profile-days-row" id="lockScreenDaysRow">
-                                <span class="profile-days-label" data-i18n="days_label">Days:</span>
-                                <!-- Day buttons rendered dynamically -->
-                            </div>
                             <div class="clock-svg-wrap" id="lockScreenClockWrap" style="position:relative; cursor:crosshair;">
                                 <!-- Dial rendered by JS -->
                                 <div class="clock-center-info">
-                                    <div class="clock-center-times" id="lockScreenCenterTitle" style="font-size:13px; font-weight:700; color:var(--theme-color);">Next Lock</div>
+                                    <div class="clock-center-times" id="lockScreenCenterTitle" style="font-size:13px; font-weight:700; color:var(--theme-color);">Click dial to add</div>
                                     <div class="clock-center-duration" id="lockScreenNextCountdown" style="font-size:11px; color:var(--text-secondary);">--:--</div>
                                 </div>
                                 <div id="lockPinDragPreview" class="lock-pin-badge-wrap" style="display:none;"></div>
@@ -3075,7 +3074,6 @@
                             <div id="lockPinChipsContainer" class="lock-pin-chips">
                                 <!-- Chips rendered dynamically -->
                             </div>
-                            <div class="countdown-hint" data-i18n="pin_drag_hint" style="margin-top:6px;">Click dial to add • Drag pin to adjust</div>
                         </div>
                     </div>
 
@@ -3153,6 +3151,9 @@
         <!-- Footer -->
         <div class="credit-link">
             <span id="appVersion" class="version-badge"></span>
+            <button type="button" id="checkForUpdatesBtn" class="check-update-btn" data-i18n="check_for_updates">
+                Check for Updates
+            </button>
             <div class="credit-dot"></div>
             <button type="button" id="githubReleasesLink">
                 NeverSleep-App Releases
@@ -3321,6 +3322,36 @@
 
         document.getElementById('githubReleasesLink')?.addEventListener('click', () => {
             openExternalUrl('https://github.com/netanel3000fine/NeverSleep-App/releases');
+        });
+
+        function getUpdateMessage(key, values = {}) {
+            const lang = settings.language || 'en';
+            const text = translations?.[lang]?.[key] || translations?.en?.[key] || key;
+            return Object.entries(values).reduce((result, [name, value]) => result.replace(`{${name}}`, String(value)), text);
+        }
+
+        document.getElementById('checkForUpdatesBtn')?.addEventListener('click', async (event) => {
+            const button = event.currentTarget;
+            if (!window.__TAURI__ || !button) return;
+
+            button.disabled = true;
+            const previousText = button.textContent;
+            button.textContent = getUpdateMessage('checking_for_updates');
+            try {
+                const currentVersion = await window.__TAURI__.app.getVersion();
+                const result = await window.__TAURI__.invoke('check_for_update', { currentVersion });
+                if (result.shouldUpdate) {
+                    alert(getUpdateMessage('update_available', { version: result.version }));
+                    openExternalUrl('https://github.com/netanel3000fine/NeverSleep-App/releases');
+                } else {
+                    alert(getUpdateMessage('no_updates_available', { version: currentVersion }));
+                }
+            } catch (error) {
+                alert(getUpdateMessage('update_check_failed', { error: String(error) }));
+            } finally {
+                button.disabled = false;
+                button.textContent = previousText;
+            }
         });
 
         document.addEventListener('click', (event) => {
@@ -3950,7 +3981,6 @@
             document.getElementById('schedActionKeepAwakeBtn')?.addEventListener('click', () => setScheduleActionMode('keep_awake'));
             document.getElementById('schedActionCountdownBtn')?.addEventListener('click', () => setScheduleActionMode('countdown'));
             document.getElementById('schedActionLockScreenBtn')?.addEventListener('click', () => setScheduleActionMode('lock_screen'));
-            setScheduleActionMode(settings.scheduleActionMode || 'keep_awake', false);
 
             // ===== COUNTDOWN TIMER LOGIC =====
             const COUNTDOWN_PRESETS = [30, 60, 90, 120, 180, 240, 720];
@@ -4580,12 +4610,9 @@
 
 
             // ===== LOCK SCREEN MULTI-PIN DIAL =====
-            let lockScreenTimes = (settings.lockScreenTimes && settings.lockScreenTimes.length)
+            let lockScreenTimes = Array.isArray(settings.lockScreenTimes)
                 ? settings.lockScreenTimes.slice()
-                : ['18:00'];
-            let lockScreenDays = (settings.lockScreenDays && settings.lockScreenDays.length)
-                ? settings.lockScreenDays.slice()
-                : [0, 1, 2, 3, 4, 5, 6];
+                : [];
             let _dragPinIndex = null;
 
             function minsToHHMM(totalMins) {
@@ -4600,23 +4627,21 @@
             }
 
             function getLockNextInfo() {
-                if (!lockScreenTimes.length) return null;
+                if (!lockScreenTimes || !lockScreenTimes.length) return null;
                 const now = new Date();
                 const nowTotalMins = now.getHours() * 60 + now.getMinutes();
-                const todayDay = now.getDay();
-                // Sort ascending
+                const nowSec = now.getSeconds();
                 const sorted = lockScreenTimes.slice().sort();
                 let bestDiffSec = Infinity;
                 let bestTime = null;
-                for (let dayOffset = 0; dayOffset < 8; dayOffset++) {
-                    const checkDay = (todayDay + dayOffset) % 7;
-                    if (!lockScreenDays.includes(checkDay)) continue;
+                for (let dayOffset = 0; dayOffset <= 1; dayOffset++) {
                     for (const t of sorted) {
                         const tMins = hhmmToMins(t);
-                        let diffMins = tMins - nowTotalMins + dayOffset * 1440;
-                        if (diffMins <= 0) continue;
-                        if (diffMins * 60 < bestDiffSec) {
-                            bestDiffSec = diffMins * 60;
+                        let diffMins = tMins - nowTotalMins + (dayOffset * 1440);
+                        if (diffMins <= 0 && dayOffset === 0) continue;
+                        const diffSec = diffMins * 60 - nowSec;
+                        if (diffSec > 0 && diffSec < bestDiffSec) {
+                            bestDiffSec = diffSec;
                             bestTime = t;
                         }
                     }
@@ -4636,7 +4661,6 @@
             }
 
             function buildLockDotSvg() {
-                // Hour ticks (same as buildClockSvgMarkup but no arc/start/end knobs)
                 let ticksHtml = '';
                 for (let h = 0; h < 24; h++) {
                     const angle = (h / 24) * 360;
@@ -4649,7 +4673,6 @@
                     ticksHtml += `<line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}" x2="${p2.x.toFixed(1)}" y2="${p2.y.toFixed(1)}" stroke="${strokeColor}" stroke-width="${strokeW}" stroke-linecap="round"/>`;
                 }
 
-                // Lock-pin knobs
                 let pinsHtml = '';
                 lockScreenTimes.forEach((t, i) => {
                     const mins = hhmmToMins(t);
@@ -4669,7 +4692,7 @@
                     <text x="100" y="187" font-size="9" font-weight="700" fill="rgba(255,255,255,0.45)" text-anchor="middle">12</text>
                     <text x="13" y="103" font-size="9" font-weight="700" fill="rgba(255,255,255,0.45)" text-anchor="middle" dominant-baseline="central">18</text>
                     <!-- Clickable ring for adding pins -->
-                    <circle cx="${CLOCK_CX}" cy="${CLOCK_CY}" r="${CLOCK_R}" fill="none" stroke="transparent" stroke-width="22" class="lock-dial-ring" style="cursor:crosshair;"/>
+                    <circle cx="${CLOCK_CX}" cy="${CLOCK_CY}" r="${CLOCK_R}" fill="none" stroke="transparent" stroke-width="26" class="lock-dial-ring" style="cursor:crosshair;"/>
                     ${pinsHtml}
                 </svg>`;
             }
@@ -4678,7 +4701,6 @@
                 const wrap = document.getElementById('lockScreenClockWrap');
                 if (!wrap) return;
 
-                // Build SVG
                 const existingSvg = wrap.querySelector('.clock-svg');
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = buildLockDotSvg();
@@ -4690,52 +4712,9 @@
                     wrap.insertBefore(newSvg, wrap.firstChild);
                 }
 
-                // Wire pointer events on the new SVG
                 _attachLockDialEvents(wrap, newSvg);
-
-                // Render day chips
-                const daysRow = document.getElementById('lockScreenDaysRow');
-                if (daysRow) {
-                    const lang = document.getElementById('languageSelect')?.value || window.currentLang || 'en';
-                    const dayLabelsAll = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-                    const existing = daysRow.querySelector('.profile-days-label');
-                    daysRow.innerHTML = '';
-                    if (existing) daysRow.appendChild(existing);
-                    else {
-                        const lbl = document.createElement('span');
-                        lbl.className = 'profile-days-label';
-                        lbl.setAttribute('data-i18n', 'days_label');
-                        lbl.textContent = (translations?.[lang]?.days_label) || 'Days:';
-                        daysRow.appendChild(lbl);
-                    }
-                    dayLabelsAll.forEach((label, i) => {
-                        const btn = document.createElement('button');
-                        btn.type = 'button';
-                        btn.className = 'profile-day-btn' + (lockScreenDays.includes(i) ? ' active' : '');
-                        btn.dataset.day = i;
-                        btn.textContent = label;
-                        btn.addEventListener('click', () => {
-                            if (lockScreenDays.includes(i)) {
-                                if (lockScreenDays.length <= 1) return; // keep at least 1 day
-                                lockScreenDays = lockScreenDays.filter(d => d !== i);
-                            } else {
-                                lockScreenDays = [...lockScreenDays, i].sort((a,b)=>a-b);
-                            }
-                            btn.classList.toggle('active', lockScreenDays.includes(i));
-                            updateLockCenterInfo();
-                            saveSettings();
-                        });
-                        daysRow.appendChild(btn);
-                    });
-                }
-
-                // Render chips
                 _renderLockChips();
-
-                // Update center
                 updateLockCenterInfo();
-
-                // Start countdown ticker
                 _startLockCountdownTicker();
             }
 
@@ -4743,24 +4722,14 @@
                 const container = document.getElementById('lockPinChipsContainer');
                 if (!container) return;
                 container.innerHTML = '';
-                if (lockScreenTimes.length === 0) {
-                    const lang = document.getElementById('languageSelect')?.value || window.currentLang || 'en';
-                    const noText = translations?.[lang]?.no_lock_pins || 'No lock times set';
-                    const hint = document.createElement('div');
-                    hint.className = 'empty-profiles-hint';
-                    hint.style.cssText = 'text-align:center;color:var(--text-secondary);font-size:11px;padding:6px 0;';
-                    hint.textContent = noText;
-                    container.appendChild(hint);
-                    return;
-                }
-                // Sort chips by time
+                if (!lockScreenTimes || lockScreenTimes.length === 0) return;
                 const sorted = lockScreenTimes.slice().sort();
                 sorted.forEach((t) => {
                     const realIdx = lockScreenTimes.indexOf(t);
                     const chip = document.createElement('div');
                     chip.className = 'lock-pin-chip';
                     chip.dataset.index = realIdx;
-                    chip.innerHTML = `🔒 ${t} <span class="lock-pin-chip-remove" data-index="${realIdx}"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>`;
+                    chip.innerHTML = `🔒 ${t} <span class="lock-pin-chip-remove" data-index="${realIdx}" title="Remove"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>`;
                     chip.querySelector('.lock-pin-chip-remove').addEventListener('click', (e) => {
                         e.stopPropagation();
                         const idx = parseInt(e.currentTarget.dataset.index, 10);
@@ -4782,14 +4751,14 @@
             function updateLockCenterInfo() {
                 const titleEl = document.getElementById('lockScreenCenterTitle');
                 const countEl = document.getElementById('lockScreenNextCountdown');
-                const info = getLockNextInfo();
                 if (!titleEl || !countEl) return;
+                const info = getLockNextInfo();
                 if (info) {
-                    titleEl.textContent = `🔒 ${info.time}`;
-                    countEl.textContent = formatLockCountdown(info.diffSec);
+                    titleEl.textContent = 'Next Lock';
+                    countEl.textContent = `${info.time} (${formatLockCountdown(info.diffSec)})`;
                 } else {
-                    titleEl.textContent = 'No Lock';
-                    countEl.textContent = '--';
+                    titleEl.textContent = 'Click dial to add';
+                    countEl.textContent = '--:--';
                 }
             }
 
@@ -4813,7 +4782,6 @@
                     const ring = e.target.closest('.lock-dial-ring');
 
                     if (knob) {
-                        // Drag existing pin
                         _dragPinIndex = parseInt(knob.dataset.index, 10);
                         knob.classList.add('active-drag');
                         svgEl.setPointerCapture(e.pointerId);
@@ -4823,14 +4791,11 @@
                             const mins = _lockPointerToMins(moveEvt, svgEl);
                             lockScreenTimes[_dragPinIndex] = minsToHHMM(mins);
 
-                            // Update pin position live
                             const angle = (mins / 1440) * 360;
                             const pos = polarToCartesian(CLOCK_CX, CLOCK_CY, CLOCK_R, angle);
                             knob.setAttribute('transform', `translate(${pos.x.toFixed(2)},${pos.y.toFixed(2)})`);
 
-                            // Show preview badge
                             if (preview) {
-                                // Position badge near knob in wrap coordinates
                                 const wrapRect = wrap.getBoundingClientRect();
                                 const svgRect = svgEl.getBoundingClientRect();
                                 const kx = (parseFloat(pos.x) / 200) * svgRect.width + svgRect.left - wrapRect.left;
@@ -4840,7 +4805,6 @@
                                 preview.style.top = ky + 'px';
                                 preview.textContent = minsToHHMM(mins);
                             }
-                            // Update chips inline
                             _renderLockChips();
                             updateLockCenterInfo();
                         };
@@ -4862,10 +4826,8 @@
                         svgEl.addEventListener('pointercancel', onUp);
 
                     } else if (ring || (!e.target.closest('.clock-knob'))) {
-                        // Click on ring or track: add new pin
                         const mins = _lockPointerToMins(e, svgEl);
                         const newTime = minsToHHMM(mins);
-                        // Avoid exact duplicates
                         if (!lockScreenTimes.includes(newTime)) {
                             lockScreenTimes.push(newTime);
                             renderLockScreenDial();
@@ -4874,24 +4836,10 @@
                     }
                 });
             }
-
-            // Add pin button
-            document.getElementById('addLockPinBtn')?.addEventListener('click', () => {
-                const now = new Date();
-                let mins = now.getHours() * 60 + now.getMinutes() + 15;
-                mins = (Math.round(mins / 5) * 5) % 1440;
-                const newTime = minsToHHMM(mins);
-                // If duplicate, offset by 10
-                const toAdd = lockScreenTimes.includes(newTime) ? minsToHHMM((mins + 10) % 1440) : newTime;
-                lockScreenTimes.push(toAdd);
-                renderLockScreenDial();
-                saveSettings();
-            });
-
             // ===== END LOCK SCREEN DIAL =====
 
-
             renderTimeProfiles();
+            setScheduleActionMode(settings.scheduleActionMode || 'keep_awake', false);
 
             // Active-profile glow ticker
             function isProfileRunningNow(profile) {
@@ -5108,8 +5056,7 @@
                 lockOnCountdown: getToggle('timeProfilesEnabledToggle') && getToggle('lockOnCountdownToggle'),
                 autostartMinimized: getToggle('autostartMinimizedToggle'),
                 showTrayQuickToggles: getToggle('trayQuickTogglesToggle'),
-                lockScreenTimes: (typeof lockScreenTimes !== 'undefined') ? lockScreenTimes : (settings.lockScreenTimes || ['18:00']),
-                lockScreenDays: (typeof lockScreenDays !== 'undefined') ? lockScreenDays : (settings.lockScreenDays || [0,1,2,3,4,5,6])
+                lockScreenTimes: (typeof lockScreenTimes !== 'undefined') ? lockScreenTimes : (settings.lockScreenTimes || [])
             };
             settings = newSettings;
             const serializedSettings = JSON.stringify(newSettings);

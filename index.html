@@ -6180,8 +6180,8 @@
     let timeProfilesEnabled = false;
     let profileControlledAwake = false;
     let scheduleActionMode = 'keep_awake';
-    let s_lockScreenTimes = ['18:00'];
-    let s_lockScreenDays = [0, 1, 2, 3, 4, 5, 6];
+    let s_lockScreenTimes = [];
+    let pausedByLockScreenSchedule = false;
 
     function getLockScreenStatus() {
       if (scheduleActionMode !== 'lock_screen' || !timeProfilesEnabled) return null;
@@ -6189,17 +6189,14 @@
       const now = new Date();
       const nowTotalMins = now.getHours() * 60 + now.getMinutes();
       const nowSecs = now.getSeconds();
-      const todayDay = now.getDay();
       const sorted = s_lockScreenTimes.slice().sort();
       let bestDiffSec = Infinity;
       let bestTime = null;
-      for (let dayOffset = 0; dayOffset < 8; dayOffset++) {
-        const checkDay = (todayDay + dayOffset) % 7;
-        if (!s_lockScreenDays.includes(checkDay)) continue;
+      for (let dayOffset = 0; dayOffset <= 1; dayOffset++) {
         for (const t of sorted) {
           const [h, m] = t.split(':').map(Number);
           const tMins = h * 60 + m;
-          let diffMins = tMins - nowTotalMins + dayOffset * 1440;
+          let diffMins = tMins - nowTotalMins + (dayOffset * 1440);
           if (diffMins <= 0 && dayOffset === 0) continue;
           const diffSec = diffMins * 60 - nowSecs;
           if (diffSec > 0 && diffSec < bestDiffSec) {
@@ -6849,8 +6846,7 @@
         scheduleActionMode = ['keep_awake', 'countdown', 'lock_screen'].includes(s.scheduleActionMode)
           ? s.scheduleActionMode
           : 'keep_awake';
-        s_lockScreenTimes = Array.isArray(s.lockScreenTimes) ? s.lockScreenTimes : ['18:00'];
-        s_lockScreenDays = Array.isArray(s.lockScreenDays) ? s.lockScreenDays : [0, 1, 2, 3, 4, 5, 6];
+        s_lockScreenTimes = Array.isArray(s.lockScreenTimes) ? s.lockScreenTimes : [];
         if (legacyPauseScheduleMode) {
           const migratedSettings = { ...s, scheduleActionMode: 'keep_awake' };
           const serializedSettings = JSON.stringify(migratedSettings);
@@ -7081,10 +7077,10 @@
       }
     }
 
-    function startWarningCountdown(reason) {
+    function startWarningCountdown(reason, customSeconds = 15, onLockCallback = null) {
       cancelPreLockWarning();
-      lockWarningRemaining = 15;
-      window.__neverSleepDebugLog?.(`Lock countdown started; reason=${reason}; seconds=15`);
+      lockWarningRemaining = customSeconds;
+      window.__neverSleepDebugLog?.(`Lock countdown started; reason=${reason}; seconds=${customSeconds}`);
       const toast = document.getElementById('lockWarningToast');
       const text = document.getElementById('lockWarningText');
       const cancelBtn = document.getElementById('lockCancelBtn');
@@ -7115,6 +7111,9 @@
           updateWarningUI();
         } else {
           cancelPreLockWarning();
+          if (typeof onLockCallback === 'function') {
+            try { onLockCallback(); } catch(e){}
+          }
           if (window.__TAURI__) {
             window.__neverSleepDebugLog?.(`Lock workstation command issued; reason=${reason}`);
             window.__TAURI__.invoke('lock_workstation').catch(err => {
@@ -7400,24 +7399,25 @@
         }
       }
 
-      // 4b. Lock Screen pinpoint time trigger
-      if (scheduleActionMode === 'lock_screen' && timeProfilesEnabled) {
+      // 4b. Lock Screen pinpoint time trigger (with 30-second warning toast)
+      if (scheduleActionMode === 'lock_screen' && timeProfilesEnabled && !lockWarningTimer && s_lockScreenTimes.length > 0) {
         const now = new Date();
-        const todayDay = now.getDay();
-        if (s_lockScreenDays.includes(todayDay)) {
-          const hh = String(now.getHours()).padStart(2, '0');
-          const mm = String(now.getMinutes()).padStart(2, '0');
-          const currentHHMM = `${hh}:${mm}`;
-          const triggerKey = `${now.toDateString()} ${currentHHMM}`;
-          if (s_lockScreenTimes.includes(currentHHMM) && window._lastLockScreenTriggerKey !== triggerKey) {
+        // Look ahead 30 seconds
+        const ahead = new Date(now.getTime() + 30000);
+        const aheadHH = String(ahead.getHours()).padStart(2, '0');
+        const aheadMM = String(ahead.getMinutes()).padStart(2, '0');
+        const targetHHMM = `${aheadHH}:${aheadMM}`;
+        const triggerKey = `${ahead.toDateString()} ${targetHHMM}`;
+
+        if (s_lockScreenTimes.includes(targetHHMM) && window._lastLockScreenTriggerKey !== triggerKey) {
+          // Trigger when we are in the 30-second leadup window (approx second 30 of the preceding minute)
+          if (now.getSeconds() >= 29) {
             window._lastLockScreenTriggerKey = triggerKey;
-            window.__neverSleepDebugLog?.(`Lock Screen schedule triggered at ${currentHHMM}`);
-            if (window.__TAURI__) {
-              window.__TAURI__.invoke('lock_workstation').catch(err => {
-                console.error('Failed to lock workstation in lock_screen schedule:', err);
-              });
-            }
-            setAppDisabled(true, 'manual');
+            window.__neverSleepDebugLog?.(`Lock Screen schedule 30s warning triggered for ${targetHHMM}`);
+            startWarningCountdown(`scheduled lock at ${targetHHMM}`, 30, () => {
+              pausedByLockScreenSchedule = true;
+              setAppDisabled(true, 'manual');
+            });
           }
         }
       }
@@ -7709,6 +7709,11 @@
         isWorkstationLocked = false;
         darkenLockedRemainingMs = null; // discard frozen snapshot
         if (!isScreenOn) resetDarkenTimer(); // always reset to full on unlock
+        if (pausedByLockScreenSchedule) {
+          pausedByLockScreenSchedule = false;
+          window.__neverSleepDebugLog?.('Workstation unlocked; auto-resuming keep-awake after scheduled lock');
+          setAppDisabled(false, 'manual');
+        }
         if (event && typeof event.payload === 'number') {
           lastProcessedUnlockTime = event.payload;
         }
