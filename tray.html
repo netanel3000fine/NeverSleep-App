@@ -1184,6 +1184,12 @@
                         if (labelEl) labelEl.textContent = trayText('time_left', 'Time left');
                         if (countdownEl) countdownEl.textContent = '00:00:00';
                     }
+                } else if (mode === 'lock_screen') {
+                    const remSec = current.scheduleRemainingSec || 0;
+                    const schedLabel = current.scheduleLabel || trayText('next_lock', 'Next Lock');
+                    if (box) box.classList.toggle('active', remSec > 0);
+                    if (labelEl) labelEl.textContent = schedLabel;
+                    if (countdownEl) countdownEl.textContent = remSec > 0 ? formatSec(remSec) : '--:--:--';
                 } else {
                     const isActive = !!current.scheduleIsActive;
                     const remSec = current.scheduleRemainingSec || 0;

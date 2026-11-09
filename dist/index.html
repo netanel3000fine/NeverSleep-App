@@ -5990,7 +5990,7 @@
     let themeColor = '#f97316';
     let appDisabled = false;
     function hasEnabledTimeProfiles() {
-      if (scheduleActionMode === 'countdown') return false;
+      if (scheduleActionMode === 'countdown' || scheduleActionMode === 'lock_screen') return false;
       return !!timeProfilesEnabled && Array.isArray(timeProfiles) && timeProfiles.some(p => p.enabled !== false);
     }
 
@@ -6110,7 +6110,7 @@
     }
 
     function getProfileStatus() {
-      if (scheduleActionMode === 'countdown') return null;
+      if (scheduleActionMode === 'countdown' || scheduleActionMode === 'lock_screen') return null;
       if (!timeProfiles || timeProfiles.length === 0) return null;
       const enabledProfiles = timeProfiles.filter(p => p.enabled !== false);
       if (enabledProfiles.length === 0) return null;
@@ -6180,8 +6180,38 @@
     let timeProfilesEnabled = false;
     let profileControlledAwake = false;
     let scheduleActionMode = 'keep_awake';
+    let s_lockScreenTimes = ['18:00'];
+    let s_lockScreenDays = [0, 1, 2, 3, 4, 5, 6];
 
-
+    function getLockScreenStatus() {
+      if (scheduleActionMode !== 'lock_screen' || !timeProfilesEnabled) return null;
+      if (!s_lockScreenTimes || s_lockScreenTimes.length === 0) return null;
+      const now = new Date();
+      const nowTotalMins = now.getHours() * 60 + now.getMinutes();
+      const nowSecs = now.getSeconds();
+      const todayDay = now.getDay();
+      const sorted = s_lockScreenTimes.slice().sort();
+      let bestDiffSec = Infinity;
+      let bestTime = null;
+      for (let dayOffset = 0; dayOffset < 8; dayOffset++) {
+        const checkDay = (todayDay + dayOffset) % 7;
+        if (!s_lockScreenDays.includes(checkDay)) continue;
+        for (const t of sorted) {
+          const [h, m] = t.split(':').map(Number);
+          const tMins = h * 60 + m;
+          let diffMins = tMins - nowTotalMins + dayOffset * 1440;
+          if (diffMins <= 0 && dayOffset === 0) continue;
+          const diffSec = diffMins * 60 - nowSecs;
+          if (diffSec > 0 && diffSec < bestDiffSec) {
+            bestDiffSec = diffSec;
+            bestTime = t;
+          }
+        }
+        if (bestTime) break;
+      }
+      if (!bestTime) return null;
+      return { time: bestTime, remainingSeconds: Math.max(0, bestDiffSec) };
+    }
 
     function getNextProfileSeconds() {
       const status = getProfileStatus();
@@ -6387,6 +6417,24 @@
       }
 
       const status = getProfileStatus();
+      // -- Lock Screen display --
+      if (scheduleActionMode === 'lock_screen' && timeProfilesEnabled) {
+        const lockStat = getLockScreenStatus();
+        const lang = window.currentLang || 'en';
+        const labelText = (translations[lang] && translations[lang].next_lock) ? translations[lang].next_lock : 'Next Lock';
+        if (shutdownLabelEl) shutdownLabelEl.innerHTML = labelText;
+        if (shutdownTimerEl) {
+          if (lockStat) {
+            shutdownTimerEl.textContent = formatTime(lockStat.remainingSeconds);
+          } else {
+            shutdownTimerEl.textContent = "--:--:--";
+          }
+        }
+        updateSleepNextProfile();
+        syncTrayState();
+        return;
+      }
+
       // -- Countdown Timer display --
       if (scheduleActionMode === 'countdown' && timeProfilesEnabled) {
         if (countdownTargetTime > 0) {
@@ -6442,6 +6490,11 @@
         if (shutdownTimerEl) {
           const remaining = Math.max(0, Math.floor((countdownTargetTime - Date.now()) / 1000));
           shutdownTimerEl.textContent = formatTime(remaining);
+        }
+      } else if (scheduleActionMode === 'lock_screen' && timeProfilesEnabled) {
+        if (shutdownTimerEl) {
+          const lockStat = getLockScreenStatus();
+          shutdownTimerEl.textContent = lockStat ? formatTime(lockStat.remainingSeconds) : '--:--:--';
         }
       } else {
         const status = getProfileStatus();
@@ -6590,7 +6643,7 @@
       const countdownEl = document.getElementById('sleepNextCountdown');
       if (!box || !startEl || !endEl || !countdownEl) return;
 
-      if (scheduleActionMode === 'countdown') {
+      if (scheduleActionMode === 'countdown' || scheduleActionMode === 'lock_screen') {
         box.classList.remove('show');
         box.style.display = 'none';
         if (overlay) overlay.classList.remove('has-next-profile');
@@ -6796,6 +6849,8 @@
         scheduleActionMode = ['keep_awake', 'countdown', 'lock_screen'].includes(s.scheduleActionMode)
           ? s.scheduleActionMode
           : 'keep_awake';
+        s_lockScreenTimes = Array.isArray(s.lockScreenTimes) ? s.lockScreenTimes : ['18:00'];
+        s_lockScreenDays = Array.isArray(s.lockScreenDays) ? s.lockScreenDays : [0, 1, 2, 3, 4, 5, 6];
         if (legacyPauseScheduleMode) {
           const migratedSettings = { ...s, scheduleActionMode: 'keep_awake' };
           const serializedSettings = JSON.stringify(migratedSettings);
@@ -7330,8 +7385,8 @@
         }
       }
 
-      // 4. Time Profile Logic
-      if (scheduleActionMode !== 'countdown' && profileControlledAwake) {
+      // 4. Time Profile Logic (keep_awake)
+      if (scheduleActionMode === 'keep_awake' && profileControlledAwake) {
         const status = getProfileStatus();
         if (status && status.isActive) {
           if (isSleeping) {
@@ -7339,15 +7394,30 @@
           }
         } else if (!isSleeping) {
           enterSleepMode({ mode: scheduleActionMode });
-          if (scheduleActionMode === 'lock_screen') {
+          if (lockOnCountdown) {
+            triggerPreLockWarning('scheduled sleep started');
+          }
+        }
+      }
+
+      // 4b. Lock Screen pinpoint time trigger
+      if (scheduleActionMode === 'lock_screen' && timeProfilesEnabled) {
+        const now = new Date();
+        const todayDay = now.getDay();
+        if (s_lockScreenDays.includes(todayDay)) {
+          const hh = String(now.getHours()).padStart(2, '0');
+          const mm = String(now.getMinutes()).padStart(2, '0');
+          const currentHHMM = `${hh}:${mm}`;
+          const triggerKey = `${now.toDateString()} ${currentHHMM}`;
+          if (s_lockScreenTimes.includes(currentHHMM) && window._lastLockScreenTriggerKey !== triggerKey) {
+            window._lastLockScreenTriggerKey = triggerKey;
+            window.__neverSleepDebugLog?.(`Lock Screen schedule triggered at ${currentHHMM}`);
             if (window.__TAURI__) {
-              window.__neverSleepDebugLog?.('Lock screen schedule active; locking workstation');
               window.__TAURI__.invoke('lock_workstation').catch(err => {
                 console.error('Failed to lock workstation in lock_screen schedule:', err);
               });
             }
-          } else if (lockOnCountdown) {
-            triggerPreLockWarning('scheduled sleep started');
+            setAppDisabled(true, 'manual');
           }
         }
       }
@@ -7561,6 +7631,17 @@
           } else {
             schedRemainingSec = 0;
             schedLabel = 'Expired';
+            schedIsActive = false;
+          }
+        } else if (scheduleActionMode === 'lock_screen') {
+          const lockStat = getLockScreenStatus();
+          if (lockStat) {
+            schedRemainingSec = lockStat.remainingSeconds;
+            schedLabel = `Lock at ${lockStat.time}`;
+            schedIsActive = true;
+          } else {
+            schedRemainingSec = 0;
+            schedLabel = 'No lock set';
             schedIsActive = false;
           }
         } else if (schedStatus !== null) {
