@@ -513,6 +513,14 @@ fn lock_workstation() -> Result<bool, String> {
 
 static LAST_UNLOCK_TIME: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
+/// Authoritative lock state maintained by the background detector thread.
+/// Set to `true` the moment a lock transition is confirmed; `false` on unlock.
+/// Used as a belt-and-suspenders guard so DDC/CI commands are never sent
+/// while the workstation is locked — even if `workstation_lock_state()` starts
+/// returning errors during the locked session.
+static IS_WORKSTATION_LOCKED: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
 #[tauri::command]
 fn get_last_unlock_time() -> u64 {
     LAST_UNLOCK_TIME.load(std::sync::atomic::Ordering::Relaxed)
@@ -526,7 +534,7 @@ async fn show_notification(
 ) -> Result<(), String> {
     use tauri::api::notification::Notification;
 
-    if matches!(workstation_lock_state(), Ok(true)) {
+    if IS_WORKSTATION_LOCKED.load(std::sync::atomic::Ordering::Relaxed) {
         return Ok(());
     }
 
@@ -695,9 +703,10 @@ async fn create_screen_overlay(
     custom_path: Option<String>,
 ) -> Result<(), String> {
     // Safety net: never send hardware darken signals while the workstation is locked.
-    // JS timers (WebView2) can still fire while throttled under a lock screen, so this
-    // Rust-side guard is the authoritative last line of defence.
-    if matches!(workstation_lock_state(), Ok(true)) {
+    // We consult the atomic updated by the background detector thread — more reliable
+    // than calling workstation_lock_state() directly here, which can return Err while
+    // locked (causing a matches! guard to silently fall through).
+    if IS_WORKSTATION_LOCKED.load(std::sync::atomic::Ordering::Relaxed) {
         return Ok(());
     }
 
@@ -1646,6 +1655,12 @@ fn ddcci_incompatible_monitors() -> Result<Vec<IncompatibleMonitorInfo>, String>
 #[cfg(target_os = "windows")]
 #[allow(non_snake_case)]
 fn send_ddcci_vcp_power(power_value: u32) -> Result<(), String> {
+    // Belt-and-suspenders: never send DDC/CI hardware commands while locked.
+    // This guard catches any call path that bypasses create_screen_overlay's guard.
+    if IS_WORKSTATION_LOCKED.load(std::sync::atomic::Ordering::Relaxed) {
+        return Ok(());
+    }
+
     use winapi::shared::minwindef::{BOOL, LPARAM, TRUE};
     use winapi::shared::windef::{HDC, HMONITOR, LPRECT};
     use winapi::um::libloaderapi::{FreeLibrary, GetProcAddress, LoadLibraryA};
@@ -3686,24 +3701,36 @@ fn main() {
                     loop {
                         std::thread::sleep(std::time::Duration::from_millis(300));
                         let is_locked = match workstation_lock_state() {
-                            Ok(is_locked) => {
+                            Ok(locked) => {
                                 last_detector_error = None;
-                                is_locked
+                                locked
                             }
                             Err(error) => {
+                                // workstation_lock_state() can return Err while locked
+                                // (e.g. OpenInputDesktop returns an unexpected desktop name
+                                // during the lock/unlock transition, or access is denied).
+                                // Safe fallback: preserve the previous known state so we do
+                                // NOT incorrectly flip back to "unlocked" on a transient error.
                                 if last_detector_error.as_deref() != Some(error.as_str()) {
                                     if let Some(state) = app_handle.try_state::<AppState>() {
                                         let _ = append_debug_log(
                                             &app_handle,
                                             &state,
-                                            &format!("Lock status query failed; no lock transition inferred: {error}"),
+                                            &format!("Lock status query failed; keeping previous state (was_locked={was_locked}): {error}"),
                                         );
                                     }
                                     last_detector_error = Some(error);
                                 }
+                                // Keep atomic in sync with our preserved state.
+                                IS_WORKSTATION_LOCKED.store(
+                                    was_locked,
+                                    std::sync::atomic::Ordering::Relaxed,
+                                );
                                 continue;
                             }
                         };
+                        // Always keep the atomic in sync with the confirmed state.
+                        IS_WORKSTATION_LOCKED.store(is_locked, std::sync::atomic::Ordering::Relaxed);
                         if is_locked && !was_locked {
                             was_locked = true;
                             let _ = app_handle.emit_all("workstation-locked", ());
