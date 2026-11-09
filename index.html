@@ -6154,7 +6154,7 @@
         totalSecondsDelta = (minutesDelta - 1) * 60 + (60 - secondsInCurrentMinute);
       }
 
-      const isAwake = (scheduleActionMode === 'pause') ? !isCurrentCovered : isCurrentCovered;
+      const isAwake = (scheduleActionMode === 'pause' || scheduleActionMode === 'lock_screen') ? !isCurrentCovered : isCurrentCovered;
 
       return {
         isInsideProfile: isCurrentCovered,
@@ -6600,13 +6600,13 @@
 
       const status = getProfileStatus();
       const next = getNextProfileWindow();
-      const shouldShow = isSleeping && profileControlledAwake && status && !status.isActive && (scheduleActionMode === 'pause' ? true : !!next);
+      const shouldShow = isSleeping && profileControlledAwake && status && !status.isActive && ((scheduleActionMode === 'pause' || scheduleActionMode === 'lock_screen') ? true : !!next);
       box.classList.toggle('show', !!shouldShow);
       if (overlay) overlay.classList.toggle('has-next-profile', !!shouldShow);
       if (!shouldShow) return;
 
       const arrow = box.querySelector('.sleep-next-arrow');
-      if (scheduleActionMode === 'pause') {
+      if (scheduleActionMode === 'pause' || scheduleActionMode === 'lock_screen') {
         const resumeDate = new Date(Date.now() + status.remainingSeconds * 1000);
         startEl.textContent = formatClockTime(resumeDate);
         endEl.textContent = '';
@@ -6666,6 +6666,29 @@
           restartBtn.textContent = t.restart_timer_btn || 'Restart Timer';
           restartBtn.setAttribute('data-i18n', 'restart_timer_btn');
         }
+        if (disableBtn) {
+          disableBtn.textContent = t.disable_schedule_btn || 'Disable';
+          disableBtn.setAttribute('data-i18n', 'disable_schedule_btn');
+        }
+      } else if (scheduleActionMode === 'lock_screen') {
+        if (iconEl) {
+          iconEl.style.backgroundImage = 'none';
+          iconEl.innerHTML = `<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--theme-color);filter:drop-shadow(0 0 8px var(--theme-color));"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+        }
+        if (titleEl) {
+          titleEl.textContent = t.sleep_lock_title || 'Workstation Locked';
+          titleEl.setAttribute('data-i18n', 'sleep_lock_title');
+        }
+        if (subFullEl) {
+          subFullEl.textContent = t.sleep_lock_sub || 'Sleep prevention paused and PC locked during scheduled time';
+          subFullEl.setAttribute('data-i18n', 'sleep_lock_sub');
+        }
+        if (subShortEl) {
+          subShortEl.textContent = t.sleep_lock_sub_short || 'Locked';
+          subShortEl.setAttribute('data-i18n', 'sleep_lock_sub_short');
+        }
+        if (hintEl) hintEl.style.display = 'none';
+        if (restartBtn) restartBtn.style.display = 'none';
         if (disableBtn) {
           disableBtn.textContent = t.disable_schedule_btn || 'Disable';
           disableBtn.setAttribute('data-i18n', 'disable_schedule_btn');
@@ -6792,7 +6815,7 @@
         timeProfilesEnabled = s.timeProfilesEnabled === undefined
           ? timeProfiles.some(p => p.enabled !== false)
           : !!s.timeProfilesEnabled;
-        scheduleActionMode = ['keep_awake', 'pause', 'countdown'].includes(s.scheduleActionMode)
+        scheduleActionMode = ['keep_awake', 'pause', 'countdown', 'lock_screen'].includes(s.scheduleActionMode)
           ? s.scheduleActionMode
           : 'keep_awake';
         // Load countdown timer settings
@@ -7330,7 +7353,14 @@
           }
         } else if (!isSleeping) {
           enterSleepMode({ mode: scheduleActionMode });
-          if (lockOnCountdown) {
+          if (scheduleActionMode === 'lock_screen') {
+            if (window.__TAURI__) {
+              window.__neverSleepDebugLog?.('Lock screen schedule active; locking workstation');
+              window.__TAURI__.invoke('lock_workstation').catch(err => {
+                console.error('Failed to lock workstation in lock_screen schedule:', err);
+              });
+            }
+          } else if (lockOnCountdown) {
             triggerPreLockWarning('scheduled sleep started');
           }
         }

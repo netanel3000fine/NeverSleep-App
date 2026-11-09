@@ -1127,9 +1127,10 @@
 
             const mode = liveState.scheduleActionMode || 'keep_awake';
             const modeMap = {
-                keep_awake: trayText('tray_mode_keep_awake', 'Keep PC Awake Mode'),
-                pause:      trayText('tray_mode_pause', 'Pause Prevention Mode'),
-                countdown:  trayText('tray_mode_countdown', 'Countdown Timer Mode')
+                keep_awake:  trayText('tray_mode_keep_awake', 'Keep PC Awake Mode'),
+                pause:       trayText('tray_mode_pause', 'Pause Prevention Mode'),
+                countdown:   trayText('tray_mode_countdown', 'Countdown Timer Mode'),
+                lock_screen: trayText('tray_mode_lock_screen', 'Lock Screen Mode')
             };
             const modeLabel = modeMap[mode] || 'Keep PC Awake Mode';
 

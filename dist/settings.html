@@ -1895,7 +1895,8 @@
             border: 1px solid transparent;
             background: transparent;
             color: var(--text-secondary);
-            font-size: 12px;
+            font-size: 11px;
+            padding: 0 4px;
             font-weight: 600;
             display: flex;
             align-items: center;
@@ -2904,6 +2905,10 @@
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                             <span data-i18n="sched_action_countdown">Countdown Timer</span>
                         </button>
+                        <button type="button" class="schedule-action-btn" data-action="lock_screen" id="schedActionLockScreenBtn">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            <span data-i18n="sched_action_lock_screen">Lock Screen</span>
+                        </button>
                     </div>
                     <!-- Countdown Timer Section -->
                     <div class="countdown-section" id="countdownTimerSection">
@@ -2970,8 +2975,8 @@
                             <!-- Profiles injected by JS -->
                         </div>
                     </div>
-                    <div class="section-divider"></div>
-                    <div class="settings-item">
+                    <div class="section-divider" id="lockOnCountdownDivider"></div>
+                    <div class="settings-item" id="lockOnCountdownRow">
                         <div class="label-group">
                             <span class="item-label" data-i18n="lock_pc_countdown">Lock PC when done</span>
                             <span class="item-sub" data-i18n="lock_pc_countdown_sub">Lock workstation (Win + L) when schedule or timer ends</span>
@@ -3758,7 +3763,7 @@
             }
 
             function setScheduleActionMode(mode, save = true) {
-                const validMode = (mode === 'pause') ? 'pause' : (mode === 'countdown') ? 'countdown' : 'keep_awake';
+                const validMode = (mode === 'pause') ? 'pause' : (mode === 'countdown') ? 'countdown' : (mode === 'lock_screen') ? 'lock_screen' : 'keep_awake';
                 settings.scheduleActionMode = validMode;
                 if (validMode === 'countdown') {
                     settings._countdownRestartAt = Date.now();
@@ -3766,10 +3771,12 @@
                 const keepBtn = document.getElementById('schedActionKeepAwakeBtn');
                 const pauseBtn = document.getElementById('schedActionPauseBtn');
                 const countdownBtn = document.getElementById('schedActionCountdownBtn');
+                const lockScreenBtn = document.getElementById('schedActionLockScreenBtn');
                 if (keepBtn && pauseBtn) {
                     keepBtn.classList.toggle('active', validMode === 'keep_awake');
                     pauseBtn.classList.toggle('active', validMode === 'pause');
                     if (countdownBtn) countdownBtn.classList.toggle('active', validMode === 'countdown');
+                    if (lockScreenBtn) lockScreenBtn.classList.toggle('active', validMode === 'lock_screen');
                 }
                 // Show/hide countdown section
                 const countdownSection = document.getElementById('countdownTimerSection');
@@ -3782,18 +3789,25 @@
                 if (tpSection) tpSection.style.display = isCountdown ? 'none' : '';
                 if (tpDivider) tpDivider.style.display = isCountdown ? 'none' : '';
 
+                // In lock_screen mode, hide the 'Lock PC when done' toggle row
+                const lockRow = document.getElementById('lockOnCountdownRow');
+                const lockDiv = document.getElementById('lockOnCountdownDivider');
+                const isLockScreen = validMode === 'lock_screen';
+                if (lockRow) lockRow.style.display = isLockScreen ? 'none' : '';
+                if (lockDiv) lockDiv.style.display = isLockScreen ? 'none' : '';
+
                 // Dynamic subtitles based on mode
                 const lang = window.currentLang || 'en';
                 const subEl = document.querySelector('[data-i18n="time_profiles_sub"]');
                 if (subEl) {
-                    const key = validMode === 'pause' ? 'sched_action_pause_sub' : 'sched_action_keep_awake_sub';
+                    const key = validMode === 'pause' ? 'sched_action_pause_sub' : (validMode === 'lock_screen' ? 'sched_action_lock_screen_sub' : 'sched_action_keep_awake_sub');
                     if (typeof translations !== 'undefined' && translations[lang] && translations[lang][key]) {
                         subEl.textContent = translations[lang][key];
                     }
                 }
                 const toggleSubEl = document.querySelector('[data-i18n="enable_schedule_sub"]');
                 if (toggleSubEl) {
-                    const subKey = validMode === 'countdown' ? 'enable_schedule_sub_countdown' : (validMode === 'pause' ? 'enable_schedule_sub_pause' : 'enable_schedule_sub_keep_awake');
+                    const subKey = validMode === 'countdown' ? 'enable_schedule_sub_countdown' : (validMode === 'pause' ? 'enable_schedule_sub_pause' : (validMode === 'lock_screen' ? 'enable_schedule_sub_lock_screen' : 'enable_schedule_sub_keep_awake'));
                     if (typeof translations !== 'undefined' && translations[lang] && translations[lang][subKey]) {
                         toggleSubEl.textContent = translations[lang][subKey];
                     }
@@ -3807,6 +3821,7 @@
             document.getElementById('schedActionKeepAwakeBtn')?.addEventListener('click', () => setScheduleActionMode('keep_awake'));
             document.getElementById('schedActionPauseBtn')?.addEventListener('click', () => setScheduleActionMode('pause'));
             document.getElementById('schedActionCountdownBtn')?.addEventListener('click', () => setScheduleActionMode('countdown'));
+            document.getElementById('schedActionLockScreenBtn')?.addEventListener('click', () => setScheduleActionMode('lock_screen'));
             setScheduleActionMode(settings.scheduleActionMode || 'keep_awake', false);
 
             // ===== COUNTDOWN TIMER LOGIC =====
@@ -3979,7 +3994,7 @@
                 const m = diff % 60;
                 let text = `${h}h`;
                 if (m > 0) text += ` ${m}m`;
-                const suffix = settings.scheduleActionMode === 'pause' ? ' paused' : ' awake';
+                const suffix = settings.scheduleActionMode === 'pause' ? ' paused' : (settings.scheduleActionMode === 'lock_screen' ? ' locked' : ' awake');
                 return { diff, hours: h, minutes: m, label: text + suffix, shortLabel: text };
             }
 
