@@ -6154,7 +6154,7 @@
         totalSecondsDelta = (minutesDelta - 1) * 60 + (60 - secondsInCurrentMinute);
       }
 
-      const isAwake = (scheduleActionMode === 'pause' || scheduleActionMode === 'lock_screen') ? !isCurrentCovered : isCurrentCovered;
+      const isAwake = scheduleActionMode === 'lock_screen' ? !isCurrentCovered : isCurrentCovered;
 
       return {
         isInsideProfile: isCurrentCovered,
@@ -6600,13 +6600,13 @@
 
       const status = getProfileStatus();
       const next = getNextProfileWindow();
-      const shouldShow = isSleeping && profileControlledAwake && status && !status.isActive && ((scheduleActionMode === 'pause' || scheduleActionMode === 'lock_screen') ? true : !!next);
+      const shouldShow = isSleeping && profileControlledAwake && status && !status.isActive && (scheduleActionMode === 'lock_screen' ? true : !!next);
       box.classList.toggle('show', !!shouldShow);
       if (overlay) overlay.classList.toggle('has-next-profile', !!shouldShow);
       if (!shouldShow) return;
 
       const arrow = box.querySelector('.sleep-next-arrow');
-      if (scheduleActionMode === 'pause' || scheduleActionMode === 'lock_screen') {
+      if (scheduleActionMode === 'lock_screen') {
         const resumeDate = new Date(Date.now() + status.remainingSeconds * 1000);
         startEl.textContent = formatClockTime(resumeDate);
         endEl.textContent = '';
@@ -6686,29 +6686,6 @@
         if (subShortEl) {
           subShortEl.textContent = t.sleep_lock_sub_short || 'Locked';
           subShortEl.setAttribute('data-i18n', 'sleep_lock_sub_short');
-        }
-        if (hintEl) hintEl.style.display = 'none';
-        if (restartBtn) restartBtn.style.display = 'none';
-        if (disableBtn) {
-          disableBtn.textContent = t.disable_schedule_btn || 'Disable';
-          disableBtn.setAttribute('data-i18n', 'disable_schedule_btn');
-        }
-      } else if (scheduleActionMode === 'pause') {
-        if (iconEl) {
-          iconEl.style.backgroundImage = 'none';
-          iconEl.innerHTML = `<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--theme-color);filter:drop-shadow(0 0 8px var(--theme-color));"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
-        }
-        if (titleEl) {
-          titleEl.textContent = t.sleep_pause_title || 'Prevention Paused';
-          titleEl.setAttribute('data-i18n', 'sleep_pause_title');
-        }
-        if (subFullEl) {
-          subFullEl.textContent = t.sleep_pause_sub || 'Sleep prevention is paused during your scheduled pause';
-          subFullEl.setAttribute('data-i18n', 'sleep_pause_sub');
-        }
-        if (subShortEl) {
-          subShortEl.textContent = t.sleep_pause_sub_short || 'Paused';
-          subShortEl.setAttribute('data-i18n', 'sleep_pause_sub_short');
         }
         if (hintEl) hintEl.style.display = 'none';
         if (restartBtn) restartBtn.style.display = 'none';
@@ -6805,7 +6782,7 @@
         if (s.themeColor) applyTheme(s.themeColor);
 
         // Migration: modern -> liquid-glass
-        let currentMode = s.viewMode || 'liquid-glass';
+        let currentMode = s.viewMode || 'classic';
         if (currentMode === 'modern') currentMode = 'liquid-glass';
 
         applyViewMode(currentMode);
@@ -6815,9 +6792,18 @@
         timeProfilesEnabled = s.timeProfilesEnabled === undefined
           ? timeProfiles.some(p => p.enabled !== false)
           : !!s.timeProfilesEnabled;
-        scheduleActionMode = ['keep_awake', 'pause', 'countdown', 'lock_screen'].includes(s.scheduleActionMode)
+        const legacyPauseScheduleMode = s.scheduleActionMode === 'pause';
+        scheduleActionMode = ['keep_awake', 'countdown', 'lock_screen'].includes(s.scheduleActionMode)
           ? s.scheduleActionMode
           : 'keep_awake';
+        if (legacyPauseScheduleMode) {
+          const migratedSettings = { ...s, scheduleActionMode: 'keep_awake' };
+          const serializedSettings = JSON.stringify(migratedSettings);
+          localStorage.setItem('neverSleepSettings', serializedSettings);
+          if (window.__TAURI__) {
+            window.__TAURI__.invoke('save_settings', { settings: serializedSettings }).catch(() => {});
+          }
+        }
         // Load countdown timer settings
         const prevCountdownDuration = countdownDurationMins;
         countdownDurationMins = s.countdownDurationMins || 60;
@@ -8155,10 +8141,7 @@
 
       const isCoffeeMode = document.body.classList.contains("coffee-mode");
 
-      // In pause mode, show the animation if a schedule is active (even though autoShutdown is false)
-      const pauseWithActiveProfile = scheduleActionMode === 'pause' && timeProfilesEnabled && getActiveProfileTimes() !== null;
-
-      if (!isCoffeeMode || isSleeping || (!autoShutdown && !pauseWithActiveProfile)) {
+      if (!isCoffeeMode || isSleeping || !autoShutdown) {
         overlay.classList.remove("active");
         fill.style.height = "0%";
         if (crema) crema.style.bottom = "-30px";
