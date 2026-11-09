@@ -2622,26 +2622,24 @@ try {{
 
 #[tauri::command]
 async fn check_for_update(current_version: String) -> Result<serde_json::Value, String> {
-    // Scan ALL releases to find the highest version by asset filename
-    let api_url = "https://api.github.com/repos/netanel3000fine/NeverSleep-App/releases";
+    let api_url = "https://api.github.com/repos/netanel3000fine/NeverSleep-App/releases/latest";
 
-    let json_text = std::thread::spawn(move || {
+    let release = std::thread::spawn(move || {
         let client = reqwest::blocking::Client::builder()
             .user_agent("NeverSleep-Updater/1.0")
+            .timeout(std::time::Duration::from_secs(12))
             .build()
             .map_err(|e| e.to_string())?;
         let resp = client
             .get(api_url)
             .header("Accept", "application/vnd.github+json")
             .send()
+            .and_then(|response| response.error_for_status())
             .map_err(|e| e.to_string())?;
-        resp.text().map_err(|e| e.to_string())
+        resp.json::<serde_json::Value>().map_err(|e| e.to_string())
     })
     .join()
     .map_err(|_| "Thread panicked".to_string())??;
-
-    let releases: serde_json::Value =
-        serde_json::from_str(&json_text).map_err(|e| format!("JSON parse error: {}", e))?;
 
     fn parse_ver(s: &str) -> (u32, u32, u32) {
         let p: Vec<u32> = s
@@ -2663,47 +2661,25 @@ async fn check_for_update(current_version: String) -> Result<serde_json::Value, 
     }
 
     let cur = parse_ver(&current_version);
-    let mut best_ver: (u32, u32, u32) = (0, 0, 0);
-    let mut best_url = String::new();
-
-    if let Some(arr) = releases.as_array() {
-        for release in arr {
-            if let Some(assets) = release["assets"].as_array() {
-                for asset in assets {
-                    let name = asset["name"].as_str().unwrap_or("");
-                    let url = asset["browser_download_url"].as_str().unwrap_or("");
-                    // Match: Never.Sleep_14.3.0_x64-setup.exe  or  Never Sleep_14.3.0_x64-setup.exe
-                    if name.contains("x64-setup") && name.ends_with(".exe") && !url.is_empty() {
-                        // Extract version from filename: any 3-part number group
-                        let parts: Vec<&str> = name
-                            .split(|c: char| !c.is_alphanumeric() && c != '.')
-                            .filter(|s| !s.is_empty())
-                            .collect();
-                        for part in &parts {
-                            let v = parse_ver(part);
-                            if v != (0, 0, 0) && is_newer(v, best_ver) {
-                                best_ver = v;
-                                best_url = url.to_string();
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    let latest_tag = release["tag_name"]
+        .as_str()
+        .ok_or_else(|| "GitHub release is missing its version tag".to_string())?;
+    let latest_ver = parse_ver(latest_tag);
+    if latest_ver == (0, 0, 0) {
+        return Err(format!("Could not read release version from tag: {latest_tag}"));
     }
+    let latest_version = ver_str(latest_ver);
 
-    if best_ver == (0, 0, 0) {
-        return Ok(serde_json::json!({ "shouldUpdate": false }));
-    }
-
-    if is_newer(best_ver, cur) {
+    if is_newer(latest_ver, cur) {
         Ok(serde_json::json!({
             "shouldUpdate": true,
-            "version": ver_str(best_ver),
-            "url": best_url
+            "version": latest_version
         }))
     } else {
-        Ok(serde_json::json!({ "shouldUpdate": false }))
+        Ok(serde_json::json!({
+            "shouldUpdate": false,
+            "version": latest_version
+        }))
     }
 }
 
@@ -2725,6 +2701,24 @@ fn open_url(app: tauri::AppHandle, url: String) -> Result<(), String> {
         Command::new("cmd")
             .args(["/C", "start", "", &url])
             .creation_flags(0x08000000) // CREATE_NO_WINDOW
+            .spawn()
+            .map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&url)
             .spawn()
             .map_err(|e| e.to_string())?;
         return Ok(());
