@@ -1455,6 +1455,13 @@
             }
         });
 
+        if (window.__TAURI__ && window.__TAURI__.event) {
+            window.__TAURI__.event.listen('settings-updated', (event) => {
+                syncFromStorage();
+                syncAutostartToggle();
+            });
+        }
+
         // Initial Sync
         syncFromStorage();
         syncAutostartToggle();

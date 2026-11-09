@@ -3171,6 +3171,7 @@
         let settings = {};
         let themeColor = '#f97316';
         let isInitializing = true;
+        let lockScreenTimes = [];
         let activeDarkenMethod = 'ddcci';
 
         function applySettingsViewMode(mode) {
@@ -4610,7 +4611,7 @@
 
 
             // ===== LOCK SCREEN MULTI-PIN DIAL =====
-            let lockScreenTimes = Array.isArray(settings.lockScreenTimes)
+            lockScreenTimes = Array.isArray(settings.lockScreenTimes)
                 ? settings.lockScreenTimes.slice()
                 : [];
             let _dragPinIndex = null;
@@ -5056,7 +5057,7 @@
                 lockOnCountdown: getToggle('timeProfilesEnabledToggle') && getToggle('lockOnCountdownToggle'),
                 autostartMinimized: getToggle('autostartMinimizedToggle'),
                 showTrayQuickToggles: getToggle('trayQuickTogglesToggle'),
-                lockScreenTimes: (typeof lockScreenTimes !== 'undefined') ? lockScreenTimes : (settings.lockScreenTimes || [])
+                lockScreenTimes: Array.isArray(lockScreenTimes) ? lockScreenTimes : []
             };
             settings = newSettings;
             const serializedSettings = JSON.stringify(newSettings);
