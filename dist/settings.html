@@ -2222,6 +2222,56 @@
             filter: drop-shadow(0 0 8px var(--theme-color));
         }
 
+        /* ===== IN-APP UPDATE MODAL & TOAST ===== */
+        .update-notes-box::-webkit-scrollbar {
+            width: 6px;
+        }
+        .update-notes-box::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+        }
+        .update-notes-box::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+        }
+        .update-notes-box::-webkit-scrollbar-thumb:hover {
+            background: var(--theme-color);
+        }
+
+        .update-status-toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--surface-border);
+            color: #fff;
+            padding: 9px 18px;
+            border-radius: 12px;
+            font-size: 12.5px;
+            font-weight: 600;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 99999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .update-status-toast.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .update-status-toast.success {
+            border-color: rgba(34, 197, 94, 0.6);
+            color: #4ade80;
+        }
+        .update-status-toast.error {
+            border-color: rgba(239, 68, 68, 0.6);
+            color: #f87171;
+        }
+
         /* ===== APP ICON PICKER ===== */
         .icon-section-label {
             font-size: 11px;
@@ -3145,6 +3195,66 @@
             </div>
         </div>
 
+        <!-- 6. In-App Update Modal Popup -->
+        <div class="popup-overlay" id="updateModalPopup" role="dialog" aria-modal="true">
+            <div class="popup-modal" style="max-width: 520px;">
+                <div class="popup-header">
+                    <div class="popup-header-title-wrap">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px;">🚀</span>
+                            <h3 class="popup-title" data-i18n="update_available_title">New Update Available</h3>
+                            <span id="updateModalBadge" class="version-badge" style="background: var(--theme-color); color: #fff; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 11px;">v20.0.0</span>
+                        </div>
+                        <p class="popup-desc" id="updateModalDate" style="margin-top: 4px; font-size: 11.5px; color: var(--text-secondary);">Release Date</p>
+                    </div>
+                    <button type="button" class="popup-close-btn" data-close-target="updateModalPopup" aria-label="Close" title="Close">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="popup-body" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 14px;">
+                    <!-- Release Notes Container -->
+                    <div id="updateNotesContainer" class="update-notes-box" style="max-height: 240px; overflow-y: auto; background: rgba(0,0,0,0.25); border: 1px solid var(--surface-border); border-radius: 10px; padding: 12px 14px; font-size: 12.5px; line-height: 1.55; color: var(--text-primary);">
+                        <!-- Notes populated dynamically -->
+                    </div>
+
+                    <!-- Progress bar container (hidden until downloading) -->
+                    <div id="updateProgressWrap" style="display: none; flex-direction: column; gap: 6px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 600;">
+                            <span id="updateProgressLabel" data-i18n="downloading_update">Downloading update...</span>
+                            <span id="updateProgressPercent" style="color: var(--theme-color);">0%</span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; position: relative;">
+                            <div id="updateProgressBar" style="width: 0%; height: 100%; background: var(--theme-color); border-radius: 4px; transition: width 0.15s ease;"></div>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; font-size: 10.5px; color: var(--text-secondary);">
+                            <span id="updateProgressBytes">0 MB / 0 MB</span>
+                        </div>
+                    </div>
+
+                    <!-- Modal Actions -->
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px;">
+                        <button type="button" class="btn-secondary" id="updateLaterBtn" data-close-target="updateModalPopup" style="padding: 8px 16px; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; background: rgba(255,255,255,0.06); border: 1px solid var(--surface-border); color: var(--text-secondary);">
+                            <span data-i18n="later">Later</span>
+                        </button>
+                        <button type="button" class="btn-primary" id="updateDownloadBtn" style="padding: 8px 20px; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; background: var(--theme-color); color: #fff; border: none; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            <span id="updateDownloadBtnText" data-i18n="download_and_update">Download & Update</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- In-app Update Toast Notification -->
+        <div id="updateStatusToast" class="update-status-toast"></div>
+
         <!-- Floating Test Status Toast -->
         <div class="darken-test-toast" id="darkenTestToast">⚡ Safe test active — move mouse or press any key to restore</div>
 
@@ -3331,6 +3441,38 @@
             return Object.entries(values).reduce((result, [name, value]) => result.replace(`{${name}}`, String(value)), text);
         }
 
+        let _pendingUpdateInfo = null;
+        let _isDownloadingUpdate = false;
+
+        function showUpdateToast(msg, type = 'info') {
+            const toast = document.getElementById('updateStatusToast');
+            if (!toast) return;
+            toast.className = `update-status-toast visible ${type}`;
+            toast.innerHTML = (type === 'success' ? '✓ ' : type === 'error' ? '⚠️ ' : 'ℹ️ ') + msg;
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => {
+                toast.classList.remove('visible');
+            }, 4000);
+        }
+
+        function formatMarkdownNotes(md) {
+            if (!md) return '<p style="color:var(--text-secondary);">No release notes provided.</p>';
+            let clean = md
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/^### (.*$)/gim, '<h4 style="margin:12px 0 6px; font-size:13px; font-weight:700; color:var(--theme-color);">$1</h4>')
+                .replace(/^## (.*$)/gim, '<h3 style="margin:14px 0 8px; font-size:14px; font-weight:700; color:var(--text-primary); border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:4px;">$1</h3>')
+                .replace(/^# (.*$)/gim, '<h2 style="margin:16px 0 10px; font-size:15px; font-weight:800; color:var(--text-primary);">$1</h2>')
+                .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+                .replace(/`([^`]+)`/gim, '<code style="background:rgba(255,255,255,0.1); padding:2px 5px; border-radius:4px; font-size:11.5px;">$1</code>')
+                .replace(/^\s*-\s+(.*$)/gim, '<li style="margin:3px 0 3px 18px;">$1</li>')
+                .replace(/\n\n+/g, '<br><br>')
+                .replace(/\n/g, '<br>');
+            return clean;
+        }
+
         document.getElementById('checkForUpdatesBtn')?.addEventListener('click', async (event) => {
             const button = event.currentTarget;
             if (!window.__TAURI__ || !button) return;
@@ -3342,16 +3484,99 @@
                 const currentVersion = await window.__TAURI__.app.getVersion();
                 const result = await window.__TAURI__.invoke('check_for_update', { currentVersion });
                 if (result.shouldUpdate) {
-                    alert(getUpdateMessage('update_available', { version: result.version }));
-                    openExternalUrl('https://github.com/netanel3000fine/NeverSleep-App/releases');
+                    _pendingUpdateInfo = result;
+                    const badge = document.getElementById('updateModalBadge');
+                    if (badge) badge.textContent = `v${result.version}`;
+                    const dateEl = document.getElementById('updateModalDate');
+                    if (dateEl && result.publishedAt) {
+                        try {
+                            const d = new Date(result.publishedAt);
+                            dateEl.textContent = d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+                        } catch(e) {
+                            dateEl.textContent = result.publishedAt;
+                        }
+                    }
+                    const notesBox = document.getElementById('updateNotesContainer');
+                    if (notesBox) notesBox.innerHTML = formatMarkdownNotes(result.body);
+
+                    const progressWrap = document.getElementById('updateProgressWrap');
+                    if (progressWrap) progressWrap.style.display = 'none';
+                    const downloadBtn = document.getElementById('updateDownloadBtn');
+                    if (downloadBtn) {
+                        downloadBtn.disabled = false;
+                        const lang = settings.language || 'en';
+                        const dlText = translations?.[lang]?.download_and_update || 'Download & Update';
+                        document.getElementById('updateDownloadBtnText').textContent = dlText;
+                    }
+                    openPopup('updateModalPopup');
                 } else {
-                    alert(getUpdateMessage('no_updates_available', { version: currentVersion }));
+                    const lang = settings.language || 'en';
+                    const upToDateMsg = (translations?.[lang]?.no_updates_available || "You're up to date ({version})").replace('{version}', currentVersion);
+                    showUpdateToast(upToDateMsg, 'success');
                 }
             } catch (error) {
-                alert(getUpdateMessage('update_check_failed', { error: String(error) }));
+                showUpdateToast(String(error), 'error');
             } finally {
                 button.disabled = false;
                 button.textContent = previousText;
+            }
+        });
+
+        document.getElementById('updateDownloadBtn')?.addEventListener('click', async () => {
+            if (_isDownloadingUpdate || !_pendingUpdateInfo || !_pendingUpdateInfo.downloadUrl) return;
+            _isDownloadingUpdate = true;
+
+            const downloadBtn = document.getElementById('updateDownloadBtn');
+            const downloadBtnText = document.getElementById('updateDownloadBtnText');
+            const laterBtn = document.getElementById('updateLaterBtn');
+            const progressWrap = document.getElementById('updateProgressWrap');
+            const progressBar = document.getElementById('updateProgressBar');
+            const progressPercent = document.getElementById('updateProgressPercent');
+            const progressBytes = document.getElementById('updateProgressBytes');
+            const progressLabel = document.getElementById('updateProgressLabel');
+
+            if (downloadBtn) downloadBtn.disabled = true;
+            if (laterBtn) laterBtn.disabled = true;
+            if (progressWrap) progressWrap.style.display = 'flex';
+            if (progressBar) progressBar.style.width = '0%';
+            if (progressPercent) progressPercent.textContent = '0%';
+
+            const lang = settings.language || 'en';
+            if (downloadBtnText) downloadBtnText.textContent = translations?.[lang]?.downloading_update || 'Downloading...';
+            if (progressLabel) progressLabel.textContent = translations?.[lang]?.downloading_update || 'Downloading update...';
+
+            let unlisten = null;
+            if (window.__TAURI__ && window.__TAURI__.event) {
+                unlisten = await window.__TAURI__.event.listen('update-download-progress', (e) => {
+                    const p = e.payload;
+                    if (!p) return;
+                    const pct = Math.round(p.percent);
+                    if (progressBar) progressBar.style.width = `${pct}%`;
+                    if (progressPercent) progressPercent.textContent = `${pct}%`;
+                    if (progressBytes) {
+                        const downMb = (p.downloaded / 1048576).toFixed(1);
+                        const totMb = (p.total / 1048576).toFixed(1);
+                        progressBytes.textContent = `${downMb} MB / ${totMb} MB`;
+                    }
+                });
+            }
+
+            try {
+                if (downloadBtnText) downloadBtnText.textContent = translations?.[lang]?.launching_installer || 'Launching installer...';
+                await window.__TAURI__.invoke('download_and_install_update', {
+                    downloadUrl: _pendingUpdateInfo.downloadUrl,
+                    fileName: _pendingUpdateInfo.fileName || null
+                });
+                closePopup('updateModalPopup');
+            } catch (err) {
+                console.error('Update failed:', err);
+                showUpdateToast(String(err), 'error');
+                if (downloadBtn) downloadBtn.disabled = false;
+                if (laterBtn) laterBtn.disabled = false;
+                if (downloadBtnText) downloadBtnText.textContent = translations?.[lang]?.download_and_update || 'Download & Update';
+            } finally {
+                _isDownloadingUpdate = false;
+                if (typeof unlisten === 'function') unlisten();
             }
         });
 

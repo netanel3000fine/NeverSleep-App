@@ -430,55 +430,45 @@ fn record_input_activity(
 
 #[cfg(target_os = "windows")]
 fn workstation_lock_state() -> Result<bool, String> {
-    use winapi::um::winuser::{
-        CloseDesktop, GetUserObjectInformationW, OpenInputDesktop, DESKTOP_READOBJECTS, UOI_NAME,
+    use windows::core::PWSTR;
+    use windows::Win32::System::RemoteDesktop::{
+        WTSFreeMemory, WTSQuerySessionInformationW, WTSINFOEXW, WTSSessionInfoEx,
+        WTS_CURRENT_SERVER_HANDLE, WTS_CURRENT_SESSION, WTS_SESSIONSTATE_LOCK,
+        WTS_SESSIONSTATE_UNLOCK,
     };
 
+    let mut buffer = PWSTR::null();
+    let mut bytes_returned = 0u32;
     unsafe {
-        let desktop = OpenInputDesktop(0, 0, DESKTOP_READOBJECTS);
-        if desktop.is_null() {
-            return Err(format!(
-                "OpenInputDesktop failed: {}",
-                std::io::Error::last_os_error()
-            ));
+        WTSQuerySessionInformationW(
+            WTS_CURRENT_SERVER_HANDLE,
+            WTS_CURRENT_SESSION,
+            WTSSessionInfoEx,
+            &mut buffer,
+            &mut bytes_returned,
+        )
+        .map_err(|error| format!("Could not query Windows session lock state: {error}"))?;
+
+        if buffer.0.is_null() || (bytes_returned as usize) < std::mem::size_of::<WTSINFOEXW>() {
+            if !buffer.0.is_null() {
+                WTSFreeMemory(buffer.0 as *mut std::ffi::c_void);
+            }
+            return Err("Windows returned incomplete session lock information".into());
         }
 
-        let mut name = [0u16; 256];
-        let mut needed = 0u32;
-        let ok = GetUserObjectInformationW(
-            desktop as _,
-            UOI_NAME as i32,
-            name.as_mut_ptr() as _,
-            (name.len() * std::mem::size_of::<u16>()) as u32,
-            &mut needed,
-        );
-        let query_error = if ok == 0 {
-            Some(std::io::Error::last_os_error())
+        let info = &*(buffer.0 as *const WTSINFOEXW);
+        let session_flags = if info.Level == 1 {
+            Some(info.Data.WTSInfoExLevel1.SessionFlags as u32)
         } else {
             None
         };
-        CloseDesktop(desktop);
+        WTSFreeMemory(buffer.0 as *mut std::ffi::c_void);
 
-        if let Some(error) = query_error {
-            return Err(format!("GetUserObjectInformationW failed: {error}"));
-        }
-        if needed < std::mem::size_of::<u16>() as u32 {
-            return Err("GetUserObjectInformationW returned an empty desktop name".into());
-        }
-        if needed as usize > name.len() * std::mem::size_of::<u16>() {
-            return Err(
-                "GetUserObjectInformationW returned a desktop name larger than the buffer".into(),
-            );
-        }
-
-        let len = (needed as usize / std::mem::size_of::<u16>()).saturating_sub(1);
-        let desktop_name = String::from_utf16_lossy(&name[..len]);
-        if desktop_name.eq_ignore_ascii_case("Default") {
-            Ok(false)
-        } else if desktop_name.eq_ignore_ascii_case("Winlogon") {
-            Ok(true)
-        } else {
-            Err(format!("Unexpected input desktop: {desktop_name}"))
+        match session_flags {
+            Some(WTS_SESSIONSTATE_LOCK) => Ok(true),
+            Some(WTS_SESSIONSTATE_UNLOCK) => Ok(false),
+            Some(flags) => Err(format!("Windows returned unknown session lock flags: {flags}")),
+            None => Err("Windows returned an unknown session information level".into()),
         }
     }
 }
@@ -707,7 +697,7 @@ async fn create_screen_overlay(
     // than calling workstation_lock_state() directly here, which can return Err while
     // locked (causing a matches! guard to silently fall through).
     if IS_WORKSTATION_LOCKED.load(std::sync::atomic::Ordering::Relaxed) {
-        return Ok(());
+        return Err("Workstation is locked; skipping screen darken command".to_string());
     }
 
     let m = method.unwrap_or_else(|| "ddcci".to_string());
@@ -1550,6 +1540,9 @@ fn ddcci_incompatible_monitors() -> Result<Vec<IncompatibleMonitorInfo>, String>
                 ];
                 if p_get_mons(h_monitor, count, physical_mons.as_mut_ptr()) != 0 {
                     for mon in &physical_mons {
+                        if IS_WORKSTATION_LOCKED.load(std::sync::atomic::Ordering::Relaxed) {
+                            break;
+                        }
                         let mut vcp_type = 0u8;
                         let mut current_value = 0u32;
                         let mut maximum_value = 0u32;
@@ -1658,7 +1651,7 @@ fn send_ddcci_vcp_power(power_value: u32) -> Result<(), String> {
     // Belt-and-suspenders: never send DDC/CI hardware commands while locked.
     // This guard catches any call path that bypasses create_screen_overlay's guard.
     if IS_WORKSTATION_LOCKED.load(std::sync::atomic::Ordering::Relaxed) {
-        return Ok(());
+        return Err("Workstation is locked; skipping DDC/CI command".to_string());
     }
 
     use winapi::shared::minwindef::{BOOL, LPARAM, TRUE};
@@ -1813,6 +1806,10 @@ fn send_ddcci_vcp_power(power_value: u32) -> Result<(), String> {
         // when several displays are connected through the same GPU adapter.
         let attempts = 5;
         for attempt in 0..attempts {
+            if IS_WORKSTATION_LOCKED.load(std::sync::atomic::Ordering::Relaxed) {
+                FreeLibrary(dxva2);
+                return Err("Workstation is locked; skipping DDC/CI command".to_string());
+            }
             ctx.success_count = 0;
             ctx.physical_monitor_count = 0;
             ctx.verified_on_count = 0;
@@ -1823,6 +1820,11 @@ fn send_ddcci_vcp_power(power_value: u32) -> Result<(), String> {
                 Some(monitor_enum_proc),
                 &mut ctx as *mut _ as LPARAM,
             );
+
+            if IS_WORKSTATION_LOCKED.load(std::sync::atomic::Ordering::Relaxed) {
+                FreeLibrary(dxva2);
+                return Err("Workstation is locked; skipping DDC/CI command".to_string());
+            }
 
             let all_monitors_succeeded = ctx.physical_monitor_count > 0
                 && ctx.success_count == ctx.physical_monitor_count
@@ -1934,6 +1936,12 @@ fn check_control_my_monitor(custom_path: Option<String>) -> Result<String, Strin
 }
 
 fn execute_control_my_monitor(custom_path: Option<&str>, value: &str) -> Result<(), String> {
+    // ControlMyMonitor sends the same VCP power command through a separate
+    // process, so protect this path independently from the native dxva2 path.
+    if IS_WORKSTATION_LOCKED.load(std::sync::atomic::Ordering::Relaxed) {
+        return Err("Workstation is locked; skipping DDC/CI command".to_string());
+    }
+
     let exe = find_control_my_monitor(custom_path)
         .ok_or_else(|| "ControlMyMonitor.exe not found on system".to_string())?;
 
@@ -2620,6 +2628,13 @@ try {{
     })
 }
 
+#[derive(Clone, serde::Serialize)]
+struct DownloadProgressPayload {
+    downloaded: u64,
+    total: u64,
+    percent: f64,
+}
+
 #[tauri::command]
 async fn check_for_update(current_version: String) -> Result<serde_json::Value, String> {
     let api_url = "https://api.github.com/repos/netanel3000fine/NeverSleep-App/releases/latest";
@@ -2670,17 +2685,160 @@ async fn check_for_update(current_version: String) -> Result<serde_json::Value, 
     }
     let latest_version = ver_str(latest_ver);
 
+    let name_str = release["name"].as_str().unwrap_or(&latest_version);
+    let body_str = release["body"].as_str().unwrap_or("");
+    let published_at = release["published_at"].as_str().unwrap_or("");
+    let html_url = release["html_url"].as_str().unwrap_or("https://github.com/netanel3000fine/NeverSleep-App/releases");
+
+    let mut download_url = String::new();
+    let mut file_name = String::new();
+    let mut file_size: u64 = 0;
+
+    if let Some(assets) = release["assets"].as_array() {
+        for asset in assets {
+            let name = asset["name"].as_str().unwrap_or("");
+            let url = asset["browser_download_url"].as_str().unwrap_or("");
+            let size = asset["size"].as_u64().unwrap_or(0);
+            if name.ends_with(".exe") && (name.contains("setup") || name.contains("Setup")) {
+                download_url = url.to_string();
+                file_name = name.to_string();
+                file_size = size;
+                break;
+            }
+        }
+        if download_url.is_empty() {
+            for asset in assets {
+                let name = asset["name"].as_str().unwrap_or("");
+                let url = asset["browser_download_url"].as_str().unwrap_or("");
+                let size = asset["size"].as_u64().unwrap_or(0);
+                if name.ends_with(".exe") {
+                    download_url = url.to_string();
+                    file_name = name.to_string();
+                    file_size = size;
+                    break;
+                }
+            }
+        }
+    }
+
     if is_newer(latest_ver, cur) {
         Ok(serde_json::json!({
             "shouldUpdate": true,
-            "version": latest_version
+            "version": latest_version,
+            "name": name_str,
+            "body": body_str,
+            "publishedAt": published_at,
+            "htmlUrl": html_url,
+            "downloadUrl": download_url,
+            "fileName": file_name,
+            "fileSize": file_size
         }))
     } else {
         Ok(serde_json::json!({
             "shouldUpdate": false,
-            "version": latest_version
+            "version": latest_version,
+            "name": name_str,
+            "body": body_str,
+            "publishedAt": published_at
         }))
     }
+}
+
+#[tauri::command]
+async fn download_and_install_update(
+    app: tauri::AppHandle,
+    download_url: String,
+    file_name: Option<String>,
+) -> Result<(), String> {
+    if !download_url.starts_with("https://github.com/")
+        && !download_url.starts_with("https://objects.githubusercontent.com/")
+    {
+        return Err("Untrusted download source".to_string());
+    }
+
+    let app_handle = app.clone();
+    std::thread::spawn(move || -> Result<(), String> {
+        let client = reqwest::blocking::Client::builder()
+            .user_agent("NeverSleep-Updater/1.0")
+            .timeout(std::time::Duration::from_secs(600))
+            .build()
+            .map_err(|e| format!("Failed to create HTTP client: {e}"))?;
+
+        let mut resp = client
+            .get(&download_url)
+            .send()
+            .and_then(|r| r.error_for_status())
+            .map_err(|e| format!("Download request failed: {e}"))?;
+
+        let total_size = resp.content_length().unwrap_or(0);
+
+        let target_dir = std::env::temp_dir();
+        let safe_name = match file_name.filter(|n| !n.is_empty()) {
+            Some(name) => name,
+            None => "NeverSleep_Setup_Update.exe".to_string(),
+        };
+        let installer_path = target_dir.join(&safe_name);
+
+        let mut file = std::fs::File::create(&installer_path)
+            .map_err(|e| format!("Failed to create installer file: {e}"))?;
+
+        use std::io::{Read, Write};
+        let mut buffer = [0u8; 16384];
+        let mut downloaded: u64 = 0;
+        let mut last_emit = std::time::Instant::now();
+
+        loop {
+            let n = resp.read(&mut buffer).map_err(|e| format!("Read error: {e}"))?;
+            if n == 0 {
+                break;
+            }
+            file.write_all(&buffer[..n])
+                .map_err(|e| format!("Write error: {e}"))?;
+            downloaded += n as u64;
+
+            if last_emit.elapsed() >= std::time::Duration::from_millis(80) || downloaded == total_size {
+                let percent = if total_size > 0 {
+                    ((downloaded as f64 / total_size as f64) * 100.0).min(100.0)
+                } else {
+                    0.0
+                };
+                let _ = app_handle.emit_all(
+                    "update-download-progress",
+                    DownloadProgressPayload {
+                        downloaded,
+                        total: total_size,
+                        percent,
+                    },
+                );
+                last_emit = std::time::Instant::now();
+            }
+        }
+
+        drop(file);
+
+        let _ = app_handle.emit_all(
+            "update-download-progress",
+            DownloadProgressPayload {
+                downloaded,
+                total: downloaded,
+                percent: 100.0,
+            },
+        );
+
+        std::thread::sleep(std::time::Duration::from_millis(200));
+
+        #[cfg(target_os = "windows")]
+        {
+            use std::process::Command;
+            Command::new(&installer_path)
+                .spawn()
+                .map_err(|e| format!("Failed to launch installer: {e}"))?;
+        }
+
+        Ok(())
+    })
+    .join()
+    .map_err(|_| "Download worker thread panicked".to_string())?
 }
 
 #[tauri::command]
@@ -3471,6 +3629,7 @@ fn main() {
             set_decorations,
             open_url,
             check_for_update,
+            download_and_install_update,
             is_media_playing,
             set_app_icon,
             hard_apply_app_icon,
@@ -3703,23 +3862,23 @@ fn main() {
                                 // workstation_lock_state() can return Err while locked
                                 // (e.g. OpenInputDesktop returns an unexpected desktop name
                                 // during the lock/unlock transition, or access is denied).
-                                // Safe fallback: preserve the previous known state so we do
-                                // NOT incorrectly flip back to "unlocked" on a transient error.
+                                // Fail closed: an unknown desktop state must suppress hardware
+                                // commands. A later successful query will confirm unlock.
                                 if last_detector_error.as_deref() != Some(error.as_str()) {
                                     if let Some(state) = app_handle.try_state::<AppState>() {
                                         let _ = append_debug_log(
                                             &app_handle,
                                             &state,
-                                            &format!("Lock status query failed; keeping previous state (was_locked={was_locked}): {error}"),
+                                            &format!("Lock status query failed; treating workstation as locked: {error}"),
                                         );
                                     }
                                     last_detector_error = Some(error);
                                 }
-                                // Keep atomic in sync with our preserved state.
-                                IS_WORKSTATION_LOCKED.store(
-                                    was_locked,
-                                    std::sync::atomic::Ordering::Relaxed,
-                                );
+                                IS_WORKSTATION_LOCKED.store(true, std::sync::atomic::Ordering::Relaxed);
+                                if !was_locked {
+                                    was_locked = true;
+                                    let _ = app_handle.emit_all("workstation-locked", ());
+                                }
                                 continue;
                             }
                         };
