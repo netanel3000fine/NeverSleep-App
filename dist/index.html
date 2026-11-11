@@ -1034,6 +1034,37 @@
       box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15), 0 0 15px rgba(239, 68, 68, 0.3);
     }
 
+    /* Classic Mode: lock warning fills the entire compact bar */
+    body.classic-mode .lock-warning-toast {
+      inset: 0;
+      top: 0;
+      left: 0;
+      transform: none;
+      width: 100%;
+      height: 100%;
+      border-radius: 10px;
+      justify-content: center;
+      gap: 14px;
+      font-size: 13px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.6), 0 0 20px rgba(239, 68, 68, 0.35);
+    }
+
+    body.classic-mode .lock-warning-toast.visible {
+      transform: none;
+    }
+
+    /* Lock cancelled green feedback state */
+    .lock-warning-toast.lock-cancelled-feedback .lock-warning-icon {
+      color: #4ade80;
+      animation: none;
+    }
+
+    .lock-warning-toast.lock-cancelled-feedback {
+      border-color: rgba(74, 222, 128, 0.8);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5), 0 0 15px rgba(74, 222, 128, 0.35);
+    }
+
     .sleep-overlay {
       position: absolute;
       inset: 0;
@@ -7067,7 +7098,18 @@
       }
       lockWarningRemaining = 0;
       const toast = document.getElementById('lockWarningToast');
-      if (toast) toast.classList.remove('visible');
+      if (toast) {
+        toast.classList.remove('visible', 'lock-cancelled-feedback');
+        // Reset icon to locked state
+        const iconEl = toast.querySelector('.lock-warning-icon');
+        if (iconEl) {
+          iconEl.style.animation = '';
+          iconEl.style.color = '';
+          iconEl.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
+        }
+        const cancelBtn = document.getElementById('lockCancelBtn');
+        if (cancelBtn) cancelBtn.style.display = '';
+      }
     }
 
     function triggerPreLockWarning(reason) {
@@ -7911,7 +7953,37 @@
     };
     document.getElementById('lockCancelBtn')?.addEventListener('click', (e) => {
       e.stopPropagation();
-      cancelPreLockWarning();
+      // 1. Immediately cancel the lock timer
+      if (lockWarningTimer) { clearInterval(lockWarningTimer); lockWarningTimer = null; }
+      lockWarningRemaining = 0;
+
+      // 2. Show "Lock cancelled" feedback (green unlock icon, hide Cancel btn)
+      const toast = document.getElementById('lockWarningToast');
+      const iconEl = toast?.querySelector('.lock-warning-icon');
+      const textEl = document.getElementById('lockWarningText');
+      const cancelBtn = document.getElementById('lockCancelBtn');
+      if (iconEl) {
+        iconEl.style.animation = 'none';
+        iconEl.style.color = '#4ade80';
+        iconEl.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a3 3 0 0 1 6 0"></path></svg>';
+      }
+      const lang = window.currentLang || 'en';
+      if (textEl) textEl.textContent = (translations[lang] && translations[lang].lock_cancelled) ? translations[lang].lock_cancelled : 'Lock cancelled';
+      if (cancelBtn) cancelBtn.style.display = 'none';
+      if (toast) toast.classList.add('lock-cancelled-feedback');
+
+      // 3. After 1 second, fully dismiss and reset
+      setTimeout(() => {
+        if (toast) {
+          toast.classList.remove('visible', 'lock-cancelled-feedback');
+          if (iconEl) {
+            iconEl.style.animation = '';
+            iconEl.style.color = '';
+            iconEl.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
+          }
+          if (cancelBtn) cancelBtn.style.display = '';
+        }
+      }, 1000);
     });
 
     // ===== COFFEE STREAM CANVAS ENGINE =====

@@ -96,6 +96,7 @@ const translations = {
     "lock_pc_countdown_sub": "Lock workstation (Win + L) when schedule or timer ends",
     "lock_warning_msg": "Locking PC in {s}s...",
     "lock_cancel": "Cancel",
+    "lock_cancelled": "Lock cancelled",
     
     "enable_notifications": "Enable notifications",
     "system_sounds": "Play system sounds",
@@ -309,6 +310,7 @@ const translations = {
     "lock_pc_countdown_sub": "נעילת תחנת עבודה (Win + L) כשהזמן או הטיימר מסתיימים",
     "lock_warning_msg": "נעילת מחשב בעוד {s} שנ׳...",
     "lock_cancel": "ביטול",
+    "lock_cancelled": "נעילת מחשב בוטלה",
     
     "enable_notifications": "הפעל התראות",
     "system_sounds": "שמע התראות מערכת",
@@ -519,6 +521,7 @@ const translations = {
     "lock_pc_countdown_sub": "Блокировать систему (Win + L) по окончании времени или таймера",
     "lock_warning_msg": "Блокировка ПК через {s} сек...",
     "lock_cancel": "Отмена",
+    "lock_cancelled": "Блокировка отменена",
 
     "enable_notifications": "Включить уведомления",
     "system_sounds": "Системные звуки",
