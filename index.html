@@ -1318,6 +1318,13 @@
       flex: 0 0 auto;
     }
 
+    /* Bigger title font when Session Finished in Classic Mode */
+    body.classic-mode .sleep-overlay.countdown-expired .sleep-title {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+    }
+
     body.classic-mode .sleep-content>div {
       font-size: 11px;
     }
@@ -6294,9 +6301,8 @@
       if (scheduleActionMode === 'countdown' && timeProfilesEnabled) {
         countdownTargetTime = Date.now() + countdownDurationMins * 60 * 1000;
         lastLockState = false;
-        if (isSleeping) {
-          exitSleepModeAndPreventSleep();
-        }
+        // Always exit sleep mode on unlock — resets timer even if countdown had already expired
+        exitSleepModeAndPreventSleep();
         updateUI();
       }
     }
@@ -6695,8 +6701,9 @@
           iconEl.innerHTML = `<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--theme-color);filter:drop-shadow(0 0 8px var(--theme-color));"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
         }
         if (titleEl) {
-          titleEl.textContent = t.sleep_countdown_title || 'Countdown Finished';
+          titleEl.textContent = t.sleep_countdown_title || 'Session Finished';
           titleEl.setAttribute('data-i18n', 'sleep_countdown_title');
+          if (overlay) overlay.classList.add('countdown-expired');
         }
         if (subFullEl) {
           subFullEl.textContent = t.sleep_countdown_sub || 'Sleep prevention timer has ended';
@@ -6726,6 +6733,7 @@
           iconEl.innerHTML = `<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--theme-color);filter:drop-shadow(0 0 8px var(--theme-color));"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
         }
         if (titleEl) {
+          if (overlay) overlay.classList.remove('countdown-expired');
           titleEl.textContent = t.sleep_lock_title || 'Workstation Locked';
           titleEl.setAttribute('data-i18n', 'sleep_lock_title');
         }
@@ -6748,6 +6756,7 @@
           iconEl.innerHTML = '';
           iconEl.style.backgroundImage = "url('coffe2.png')";
         }
+        if (overlay) overlay.classList.remove('countdown-expired');
         if (titleEl) {
           titleEl.textContent = t.sleep_active_title || 'Sleep Mode Active';
           titleEl.setAttribute('data-i18n', 'sleep_active_title');
