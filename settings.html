@@ -3234,6 +3234,9 @@
                         </div>
                     </div>
 
+                    <!-- Restart countdown (shown after update installs) -->
+                    <div id="updateCountdownMsg" style="display: none; text-align: center; font-size: 14px; font-weight: 700; color: #4ade80; padding: 6px 0 2px; letter-spacing: 0.2px;"></div>
+
                     <!-- Modal Actions -->
                     <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px;">
                         <button type="button" class="btn-secondary" id="updateLaterBtn" data-close-target="updateModalPopup" style="padding: 8px 16px; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; background: rgba(255,255,255,0.06); border: 1px solid var(--surface-border); color: var(--text-secondary);">
@@ -3563,11 +3566,30 @@
 
             try {
                 if (downloadBtnText) downloadBtnText.textContent = translations?.[lang]?.launching_installer || 'Launching installer...';
-                await window.__TAURI__.invoke('download_and_install_update', {
+                // Rust runs NSIS /S then calls app.exit(0) — promise may never resolve, that's expected
+                window.__TAURI__.invoke('download_and_install_update', {
                     downloadUrl: _pendingUpdateInfo.downloadUrl,
                     fileName: _pendingUpdateInfo.fileName || null
-                });
-                closePopup('updateModalPopup');
+                }).catch(() => {});
+
+                // Show 3-second countdown while installer runs
+                const countdownEl = document.getElementById('updateCountdownMsg');
+                if (countdownEl) countdownEl.style.display = 'block';
+                if (progressWrap) progressWrap.style.display = 'none';
+                const restartTpl = translations?.[lang]?.restarting_in || 'Restarting in {n}...';
+                let count = 3;
+                const setCountdown = (n) => {
+                    if (!countdownEl) return;
+                    countdownEl.textContent = n > 0
+                        ? restartTpl.replace('{n}', n)
+                        : (translations?.[lang]?.restarting || 'Restarting...');
+                };
+                setCountdown(count);
+                const restartIv = setInterval(() => {
+                    count--;
+                    setCountdown(count);
+                    if (count <= 0) clearInterval(restartIv);
+                }, 1000);
             } catch (err) {
                 console.error('Update failed:', err);
                 showUpdateToast(String(err), 'error');

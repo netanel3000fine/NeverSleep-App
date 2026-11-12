@@ -2830,11 +2830,18 @@ async fn download_and_install_update(
         #[cfg(target_os = "windows")]
         {
             use std::process::Command;
+            // /S = silent install, no dialogs, installs over the existing app
             Command::new(&installer_path)
+                .arg("/S")
                 .spawn()
                 .map_err(|e| format!("Failed to launch installer: {e}"))?;
         }
 
+        // Give the installer a moment to start, then exit so the exe isn't file-locked
+        std::thread::sleep(std::time::Duration::from_millis(500));
+        app_handle.exit(0);
+
+        #[allow(unreachable_code)]
         Ok(())
     })
     .join()
