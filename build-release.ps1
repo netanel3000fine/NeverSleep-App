@@ -2,6 +2,9 @@
 # Syncs source files from root → dist/, then builds and deploys.
 # Edit root files only — never touch dist/ manually.
 
+Write-Host "Building Liquid Glass React bundle..." -ForegroundColor Cyan
+node build-liquid-glass.js
+
 Write-Host "Syncing source files to dist/..." -ForegroundColor Cyan
 
 # Files to copy from root → dist/
@@ -13,7 +16,9 @@ $filesToSync = @(
     "overlay.html",
     "sleep.html",
     "tray.html",
-    "cleaning.html"
+    "cleaning.html",
+    "liquid-glass.css",
+    "liquid-glass-bundle.js"
 )
 
 foreach ($file in $filesToSync) {

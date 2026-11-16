@@ -3058,7 +3058,10 @@ fn set_window_size(app: tauri::AppHandle, width: u32, height: u32) {
         // Ensure transparent border-radius works on Windows
         // Need to remove decorations to allow the CSS border-radius to curve the edges physically
         let _ = window.set_decorations(false);
-        position_main_window_top_center(&window, Some(width as f64));
+        // Only position at top-center for Classic Mode (height <= 50); normal 260px modes stay where placed
+        if height <= 50 {
+            position_main_window_top_center(&window, Some(width as f64));
+        }
     }
 }
 

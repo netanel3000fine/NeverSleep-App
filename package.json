@@ -5,10 +5,17 @@
   "scripts": {
     "tauri": "tauri",
     "dev": "tauri dev",
+    "build:liquid-glass": "node build-liquid-glass.js",
     "prebuild": "powershell -Command \"Get-ChildItem src-tauri/target/release/build/ -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'app-*' } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue; (Get-Item src-tauri/build.rs).LastWriteTime = Get-Date\"",
-    "build": "tauri build"
+    "build": "node build-liquid-glass.js && tauri build"
+  },
+  "dependencies": {
+    "@glass-sdk/liquid-glass": "~0.0.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^1.5.9"
+    "@tauri-apps/cli": "^1.5.9",
+    "esbuild": "^0.28.2"
   }
 }

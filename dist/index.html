@@ -4,6 +4,8 @@
 <head>
   <script src="lang.js"></script>
   <script src="debug_logging.js"></script>
+  <link rel="stylesheet" href="liquid-glass.css">
+  <script src="liquid-glass-bundle.js"></script>
   <meta charset="UTF-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -1849,6 +1851,31 @@
       display: none !important;
     }
 
+    /* ===== LIQUID GLASS MODE (Official @glass-sdk/liquid-glass) ===== */
+    #liquidGlassMount {
+      display: none;
+      position: absolute;
+      inset: 0;
+      width: 500px;
+      height: 260px;
+      z-index: 5;
+      pointer-events: auto;
+    }
+    body.liquid-glass-mode #liquidGlassMount {
+      display: block;
+    }
+    body.liquid-glass-mode .app > .header,
+    body.liquid-glass-mode .app > .main,
+    body.liquid-glass-mode .app > .coffee-beans-container {
+      display: none !important;
+    }
+    body.liquid-glass-mode .app {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
     /* ===== LIQUID GLASS MODE (Golden Gate iOS 26) ===== */
     body.liquid-glass-mode {
       --bg-color: transparent;
@@ -5670,6 +5697,8 @@
 
 <body data-tauri-drag-region>
   <div class="app" data-tauri-drag-region>
+    <!-- Real @glass-sdk/liquid-glass React Root Mount -->
+    <div id="liquidGlassMount" data-tauri-drag-region></div>
     <div class="coffee-beans-container" id="coffeeBeansContainer">
       <div class="bean bean-0"></div>
       <div class="bean bean-1"></div>
@@ -6349,11 +6378,21 @@
       const rgb = hexToRgb(c);
       document.documentElement.style.setProperty('--theme-color', c);
       document.documentElement.style.setProperty('--theme-color-rgb', rgb);
+      if (window.NeverSleepLiquidGlass && document.body.classList.contains('liquid-glass-mode')) {
+        window.NeverSleepLiquidGlass.updateState({
+          themeColor: c
+        });
+      }
     }
 
 
     function applyWhiteMode(active) {
       document.body.classList.toggle('white-mode', !!active);
+      if (window.NeverSleepLiquidGlass && document.body.classList.contains('liquid-glass-mode')) {
+        window.NeverSleepLiquidGlass.updateState({
+          appearance: active ? 'light' : 'dark'
+        });
+      }
     }
 
     function applySchedulePanelVisibility() {
@@ -6369,11 +6408,70 @@
       activate: '\u05D2\u05DD \u05D4\u05DE\u05E1\u05DA \u05E0\u05E9\u05D0\u05E8 \u05E2\u05E8',
       shutdown: 'עירנות עד…'
     };
+    // ── Real @glass-sdk/liquid-glass React Bridge Handlers ──
+    window.__onLiquidGlassToggleAwake = function(checked) {
+      if (checked !== isScreenOn) {
+        const activateToggle = document.getElementById('activateToggle');
+        if (activateToggle) {
+          activateToggle.click();
+        } else {
+          isScreenOn = checked;
+          handleToggle();
+        }
+      }
+    };
+    window.__onLiquidGlassToggleDisabled = function() {
+      const disablePill = document.getElementById('disableTogglePill');
+      if (disablePill) disablePill.click();
+    };
+    window.__onLiquidGlassOpenSettings = function() {
+      const settingsBtn = document.getElementById('settingsBtn');
+      if (settingsBtn) settingsBtn.click();
+    };
+    window.__onLiquidGlassOpenTray = function() {
+      const trayBtn = document.getElementById('trayBtn');
+      if (trayBtn) trayBtn.click();
+    };
+    window.__onLiquidGlassOpenSchedule = function() {
+      if (typeof openScheduleSettings === 'function') {
+        openScheduleSettings();
+      } else {
+        const el = document.getElementById('shutdownToggleLabel');
+        if (el) el.click();
+      }
+    };
+
     function applyViewMode(mode) {
       document.body.classList.remove('classic-mode', 'liquid-glass-mode', 'coffee-mode');
+      const mountEl = document.getElementById('liquidGlassMount');
       if (mode === 'liquid-glass') {
         document.body.classList.add('liquid-glass-mode');
+        if (mountEl && window.NeverSleepLiquidGlass) {
+          mountEl.style.display = 'block';
+          const lang = window.currentLang || 'en';
+          const t = (typeof translations !== 'undefined' && translations[lang]) ? translations[lang] : {};
+          window.NeverSleepLiquidGlass.mount(mountEl, {
+            appearance: document.body.classList.contains('white-mode') ? 'light' : 'dark',
+            material: 'clear',
+            isAwake: isScreenOn,
+            isDisabled: !!appDisabled,
+            keepAwakeLabel: t.keep_screen_awake || 'Keep screen',
+            pcAwakeTitle: t.pc_awake || 'Your PC is awake now',
+            timeToDarkenLabel: t.time_to_darken || 'Time to darken',
+            darkenTime: document.getElementById('darkenTimer')?.textContent || '00:10:00',
+            scheduleLabel: t.category_auto_quit || 'Schedule',
+            timeLeftLabel: t.time_left || 'Time left',
+            shutdownTime: document.getElementById('shutdownTimer')?.textContent || '00:00:00',
+            themeColor: (typeof themeColor !== 'undefined' && themeColor) ? themeColor : '#34C759'
+          });
+        }
       } else {
+        if (mountEl) {
+          mountEl.style.display = 'none';
+          if (window.NeverSleepLiquidGlass) {
+            window.NeverSleepLiquidGlass.unmount();
+          }
+        }
         document.body.classList.add(mode + '-mode');
       }
 
@@ -6502,6 +6600,17 @@
 
       updateSleepNextProfile();
       syncTrayState();
+
+      if (window.NeverSleepLiquidGlass && document.body.classList.contains('liquid-glass-mode')) {
+        window.NeverSleepLiquidGlass.updateState({
+          isAwake: isScreenOn,
+          isDisabled: !!appDisabled,
+          darkenTime: document.getElementById('darkenTimer')?.textContent || '00:10:00',
+          shutdownTime: document.getElementById('shutdownTimer')?.textContent || '00:00:00',
+          appearance: document.body.classList.contains('white-mode') ? 'light' : 'dark',
+          themeColor: (typeof themeColor !== 'undefined' && themeColor) ? themeColor : '#34C759'
+        });
+      }
     }
 
     // Keep numeric countdowns rendering even if a native power/media check takes
