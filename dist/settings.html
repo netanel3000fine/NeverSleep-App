@@ -445,6 +445,40 @@
             filter: brightness(0.92);
         }
 
+        /* ===== LIQUID GLASS HEADER OVERRIDES ===== */
+
+        /* Full header is draggable — only traffic lights have no-drag */
+        body.liquid-glass-mode .header,
+        body.liquid-glass-mode .header-icon-wrap,
+        body.liquid-glass-mode .header-text,
+        body.liquid-glass-mode .header-title-row {
+            -webkit-app-region: drag;
+        }
+
+        /* Strip the box from the icon — raw floating image */
+        body.liquid-glass-mode .header-icon-wrap {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            overflow: visible !important;
+            width: 44px !important;
+            height: 44px !important;
+            border-radius: 0 !important;
+        }
+
+        /* Hide the blurred bg layer — it only existed for the box */
+        body.liquid-glass-mode .header-icon-bg {
+            display: none !important;
+        }
+
+        /* Bigger icon with theme-color glow */
+        body.liquid-glass-mode .header-icon-fg {
+            width: 44px !important;
+            height: 44px !important;
+            filter: drop-shadow(0 0 8px var(--theme-color, rgba(0,220,180,0.55)))
+                    drop-shadow(0 2px 6px rgba(0,0,0,0.45)) !important;
+        }
+
         .coffee-mode {
             background: linear-gradient(145deg, #100a05 0%, #1a120b 50%, #0d0804 100%) !important;
         }
