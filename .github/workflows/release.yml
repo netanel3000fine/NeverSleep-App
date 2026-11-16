@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag (e.g. v21.0.0)"
+        description: "Release tag (e.g. v21.1.0)"
         required: true
-        default: "v21.0.0"
+        default: "v21.1.0"
       draft:
         description: "Create as draft release"
         required: false
