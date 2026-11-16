@@ -1875,6 +1875,9 @@
       box-shadow: none !important;
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
+      border-radius: 28px !important;
+      clip-path: inset(0 round 28px);
+      overflow: hidden !important;
     }
     /* ===== LIQUID GLASS MODE (Golden Gate iOS 26) ===== */
     body.liquid-glass-mode {
@@ -1888,42 +1891,30 @@
 
     /* ── App shell: clear refractive glass chassis ── */
     body.liquid-glass-mode .app {
-      background:
-        linear-gradient(
-          160deg,
-          rgba(255, 255, 255, 0.10) 0%,
-          rgba(255, 255, 255, 0.04) 100%
-        );
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      box-shadow:
-        inset 0 1.5px 0 rgba(255, 255, 255, 0.48),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.08),
-        inset 1px 0 0 rgba(255, 255, 255, 0.12),
-        inset -1px 0 0 rgba(255, 255, 255, 0.08),
-        0 8px 32px rgba(0, 0, 0, 0.22),
-        0 2px 8px rgba(0, 0, 0, 0.12),
-        0 0 0 0.5px rgba(255, 255, 255, 0.10);
-      backdrop-filter: blur(24px) saturate(170%) brightness(102%);
-      -webkit-backdrop-filter: blur(24px) saturate(170%) brightness(102%);
-      overflow: visible;
-      transition: box-shadow 0.4s cubic-bezier(0.23, 1, 0.32, 1),
-                  border-color 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border-radius: 28px !important;
+      clip-path: inset(0 round 28px) !important;
+      overflow: hidden !important;
       position: relative;
     }
 
     body.liquid-glass-mode .app:hover {
-      border-color: rgba(255, 255, 255, 0.32);
-      box-shadow:
-        inset 0 1.5px 0 rgba(255, 255, 255, 0.60),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.10),
-        inset 1px 0 0 rgba(255, 255, 255, 0.16),
-        inset -1px 0 0 rgba(255, 255, 255, 0.10),
-        0 12px 40px rgba(0, 0, 0, 0.28),
-        0 0 0 0.5px rgba(255, 255, 255, 0.18);
+      border: none !important;
+      box-shadow: none !important;
+    }
+
+    /* Ensure no legacy CSS outlines render on .app in Liquid Glass theme */
+    body.liquid-glass-mode .app::before,
+    body.liquid-glass-mode .app::after {
+      display: none !important;
+      content: none !important;
     }
 
     /* Prismatic caustic: subtle light slides along glass rim with cursor */
-    body.liquid-glass-mode .app::before,
     body.liquid-glass-mode .panel::before,
     body.liquid-glass-mode .icon-btn::before,
     body.liquid-glass-mode .toggle::before,
@@ -1945,7 +1936,6 @@
       z-index: 0;
     }
 
-    body.liquid-glass-mode .app:hover::before,
     body.liquid-glass-mode .panel:hover::before,
     body.liquid-glass-mode .icon-btn:hover::before,
     body.liquid-glass-mode .toggle:hover::before,
@@ -2215,7 +2205,6 @@
     }
 
     /* ── Glass edge specular caustics (cursor-tracking rim lights) ── */
-    body.liquid-glass-mode .app::after,
     body.liquid-glass-mode .panel::after,
     body.liquid-glass-mode .icon-btn::after,
     body.liquid-glass-mode .toggle::after,
@@ -2239,7 +2228,6 @@
       z-index: 10;
     }
 
-    body.liquid-glass-mode .app:hover::after,
     body.liquid-glass-mode .panel:hover::after,
     body.liquid-glass-mode .icon-btn:hover::after,
     body.liquid-glass-mode .toggle:hover::after,
@@ -2294,12 +2282,9 @@
 
     /* ── White mode overrides for Liquid Glass ── */
     body.white-mode.liquid-glass-mode .app {
-      background: linear-gradient(160deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.10) 100%);
-      border-color: rgba(0, 0, 0, 0.08);
-      box-shadow:
-        inset 0 1.5px 0 rgba(255, 255, 255, 0.90),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.04),
-        0 8px 32px rgba(0, 0, 0, 0.10);
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
     }
 
     body.white-mode.liquid-glass-mode .panel {
@@ -6411,13 +6396,32 @@
     // ── Real @glass-sdk/liquid-glass React Bridge Handlers ──
     window.__onLiquidGlassToggleAwake = function(checked) {
       if (checked !== isScreenOn) {
+        isScreenOn = checked;
         const activateToggle = document.getElementById('activateToggle');
-        if (activateToggle) {
-          activateToggle.click();
+        if (activateToggle) activateToggle.classList.toggle('active', isScreenOn);
+        window.__neverSleepDebugLog?.(`Keep-awake state changed by user (liquid-glass): screenOn=${isScreenOn}`);
+        saveTogglesState();
+        if (isScreenOn) {
+          if (darkenTimerContainer) darkenTimerContainer.style.display = 'none';
+          if (mouseIcon) mouseIcon.classList.remove('show');
+          if (kbdIcon) kbdIcon.classList.remove('show');
+          if (!appDisabled && !disabledByBattery && window.__TAURI__) {
+            window.__TAURI__.invoke('prevent_sleep').catch(() => {});
+          }
+          minimizeTriggered = false;
         } else {
-          isScreenOn = checked;
-          handleToggle();
+          resetDarkenTimer();
+          screenDarkened = false;
+          focusTriggered = false;
+          darkModeStartTime = 0;
+          if (window.__TAURI__) {
+            window.__TAURI__.invoke('get_last_activity').then(r => {
+              lastAct = r[0];
+              initCheck = true;
+            }).catch(() => {});
+          }
         }
+        updateUI();
       }
     };
     window.__onLiquidGlassToggleDisabled = function() {
@@ -6462,7 +6466,10 @@
             scheduleLabel: t.category_auto_quit || 'Schedule',
             timeLeftLabel: t.time_left || 'Time left',
             shutdownTime: document.getElementById('shutdownTimer')?.textContent || '00:00:00',
-            themeColor: (typeof themeColor !== 'undefined' && themeColor) ? themeColor : '#34C759'
+            themeColor: (typeof themeColor !== 'undefined' && themeColor) ? themeColor : '#34C759',
+            tipStatus: typeof statusTip === 'function' ? statusTip() : '',
+            tipDarken: typeof darkenTip === 'function' ? darkenTip() : '',
+            tipShutdown: typeof shutdownTip === 'function' ? shutdownTip() : ''
           });
         }
       } else {
@@ -6602,13 +6609,23 @@
       syncTrayState();
 
       if (window.NeverSleepLiquidGlass && document.body.classList.contains('liquid-glass-mode')) {
+        const lang = window.currentLang || 'en';
+        const t = (typeof translations !== 'undefined' && translations[lang]) ? translations[lang] : {};
         window.NeverSleepLiquidGlass.updateState({
           isAwake: isScreenOn,
           isDisabled: !!appDisabled,
+          keepAwakeLabel: t.keep_screen_awake || 'Keep screen',
+          pcAwakeTitle: t.pc_awake || 'Your PC is awake now',
+          timeToDarkenLabel: t.time_to_darken || 'Time to darken',
+          scheduleLabel: t.category_auto_quit || 'Schedule',
+          timeLeftLabel: t.time_left || 'Time left',
           darkenTime: document.getElementById('darkenTimer')?.textContent || '00:10:00',
           shutdownTime: document.getElementById('shutdownTimer')?.textContent || '00:00:00',
           appearance: document.body.classList.contains('white-mode') ? 'light' : 'dark',
-          themeColor: (typeof themeColor !== 'undefined' && themeColor) ? themeColor : '#34C759'
+          themeColor: (typeof themeColor !== 'undefined' && themeColor) ? themeColor : '#34C759',
+          tipStatus: typeof statusTip === 'function' ? statusTip() : '',
+          tipDarken: typeof darkenTip === 'function' ? darkenTip() : '',
+          tipShutdown: typeof shutdownTip === 'function' ? shutdownTip() : ''
         });
       }
     }
@@ -6642,6 +6659,13 @@
       } else {
         const status = getProfileStatus();
         if (shutdownTimerEl) shutdownTimerEl.textContent = status ? formatTime(status.remainingSeconds) : '00:00:00';
+      }
+
+      if (window.NeverSleepLiquidGlass && document.body.classList.contains('liquid-glass-mode')) {
+        window.NeverSleepLiquidGlass.updateState({
+          darkenTime: darkenTimerEl?.textContent || '00:10:00',
+          shutdownTime: shutdownTimerEl?.textContent || '00:00:00'
+        });
       }
     }
     setInterval(refreshTimerReadouts, 1000);
@@ -6684,6 +6708,9 @@
           if (!isScreenOn && (now - lastActivityIconAt > 1000)) {
             lastActivityIconAt = now;
             if (darkenTimerEl) darkenTimerEl.classList.add('hide-for-activity');
+            if (window.NeverSleepLiquidGlass) {
+              window.NeverSleepLiquidGlass.triggerActivity(type === 'keyboard' ? 'keyboard' : 'mouse');
+            }
             if (type === 'mouse') {
               if (mouseIcon) mouseIcon.classList.add('show');
               if (kbdIcon) kbdIcon.classList.remove('show');

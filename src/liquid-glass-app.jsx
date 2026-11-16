@@ -22,17 +22,32 @@ export function LiquidGlassApp({ initialProps = {} }) {
     timeLeftLabel: 'Time left',
     shutdownTime: '00:00:00',
     themeColor: '#34C759',
+    tipStatus: '',
+    tipDarken: '',
+    tipShutdown: '',
     ...initialProps
   });
 
+  const [hoveredPanel, setHoveredPanel] = useState(null); // 'left' | 'right' | null
+  const [activeActivity, setActiveActivity] = useState(null); // 'mouse' | 'keyboard' | null
+  const activityTimerRef = useRef(null);
   const appRef = useRef(null);
 
   useEffect(() => {
     window.__updateNeverSleepLiquidGlass = (partial) => {
       setState((prev) => ({ ...prev, ...partial }));
     };
+    window.__triggerNeverSleepActivity = (type) => {
+      setActiveActivity(type);
+      if (activityTimerRef.current) clearTimeout(activityTimerRef.current);
+      activityTimerRef.current = setTimeout(() => {
+        setActiveActivity(null);
+      }, 800);
+    };
     return () => {
       window.__updateNeverSleepLiquidGlass = null;
+      window.__triggerNeverSleepActivity = null;
+      if (activityTimerRef.current) clearTimeout(activityTimerRef.current);
     };
   }, []);
 
@@ -88,6 +103,12 @@ export function LiquidGlassApp({ initialProps = {} }) {
   const textSecondary = isDark ? 'rgba(255, 255, 255, 0.65)' : 'rgba(17, 17, 19, 0.60)';
   const activeAccent = state.themeColor || '#34C759';
 
+  const leftTooltipHtml = state.isAwake
+    ? (state.tipStatus || "Screen won't turn off as long as app is active.")
+    : (state.tipDarken || 'After countdown, screen goes dark but PC stays awake.');
+
+  const rightTooltipHtml = state.tipShutdown || 'When timer is active, PC will sleep after time ends.';
+
   return (
     <div
       ref={appRef}
@@ -99,7 +120,7 @@ export function LiquidGlassApp({ initialProps = {} }) {
         userSelect: 'none',
         overflow: 'hidden',
         boxSizing: 'border-box',
-        padding: '5px',
+        borderRadius: 28,
         fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif',
         '--lg-accent': activeAccent
       }}
@@ -115,7 +136,8 @@ export function LiquidGlassApp({ initialProps = {} }) {
           display: 'flex',
           flexDirection: 'column',
           boxSizing: 'border-box',
-          overflow: 'visible'
+          overflow: 'hidden',
+          borderRadius: 28
         }}
       >
         <GlassContent>
@@ -131,8 +153,8 @@ export function LiquidGlassApp({ initialProps = {} }) {
                 ? 'radial-gradient(ellipse 130% 100% at 50% -20%, rgba(255, 255, 255, 0.16) 0%, rgba(20, 28, 42, 0.95) 55%, #080c14 100%)'
                 : 'radial-gradient(ellipse 130% 100% at 50% -20%, rgba(255, 255, 255, 0.98) 0%, rgba(235, 240, 248, 0.94) 60%, #cbd5e1 100%)',
               boxShadow: isDark
-                ? '0 16px 48px rgba(0,0,0,0.6), inset 0 1.5px 0 rgba(255,255,255,0.35)'
-                : '0 16px 48px rgba(0,0,0,0.12), inset 0 1.5px 0 rgba(255,255,255,0.95)',
+                ? '0 16px 48px rgba(0,0,0,0.6)'
+                : '0 16px 48px rgba(0,0,0,0.12)',
               overflow: 'hidden'
             }}
           >
@@ -178,7 +200,9 @@ export function LiquidGlassApp({ initialProps = {} }) {
             justifyContent: 'space-between',
             boxSizing: 'border-box',
             position: 'relative',
-            zIndex: 1
+            zIndex: 1,
+            borderRadius: 28,
+            overflow: 'hidden'
           }}
           data-tauri-drag-region
         >
@@ -308,180 +332,333 @@ export function LiquidGlassApp({ initialProps = {} }) {
             }}
           >
             {/* Left Glass Surface (Keep Screen / Status or Darken Timer) */}
-            <GlassSurface
-              interactive
-              radius={22}
-              style={{
-                padding: '14px 16px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                boxSizing: 'border-box',
-                cursor: 'default',
-                background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 255, 255, 0.65)',
-                border: isDark ? '1px solid rgba(255, 255, 255, 0.16)' : '1px solid rgba(0, 0, 0, 0.08)'
-              }}
+            <div
+              style={{ position: 'relative', height: '100%', borderRadius: 22, overflow: 'hidden' }}
               data-tauri-drag-region
             >
-              {/* Top row: Label + GlassSwitch with active tint */}
-              <div
-                data-tauri-drag-region
+              <GlassSurface
+                interactive
+                radius={22}
                 style={{
+                  width: '100%',
+                  height: '100%',
+                  padding: '14px 16px',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between'
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  boxSizing: 'border-box',
+                  cursor: 'default',
+                  background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 255, 255, 0.65)',
+                  border: isDark ? '1px solid rgba(255, 255, 255, 0.16)' : '1px solid rgba(0, 0, 0, 0.08)',
+                  borderRadius: 22,
+                  position: 'relative'
                 }}
+                data-tauri-drag-region
               >
-                <span
+                {/* Top row: Label + GlassSwitch with active tint (never hidden by tooltip) */}
+                <div
+                  data-tauri-drag-region
                   style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    letterSpacing: -0.2,
-                    color: textColor
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    position: 'relative',
+                    zIndex: 25
                   }}
                 >
-                  {state.keepAwakeLabel}
-                </span>
-                <GlassSwitch
-                  checked={state.isAwake}
-                  onCheckedChange={handleToggleAwake}
-                  tint={activeAccent}
-                  name="keepAwakeSwitch"
-                />
-              </div>
+                  <span
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 600,
+                      letterSpacing: -0.2,
+                      color: textColor
+                    }}
+                  >
+                    {state.keepAwakeLabel}
+                  </span>
+                  <GlassSwitch
+                    checked={state.isAwake}
+                    onCheckedChange={handleToggleAwake}
+                    tint={activeAccent}
+                    name="keepAwakeSwitch"
+                  />
+                </div>
 
-              {/* Bottom: Follows Coffee Theme Rule exactly! */}
-              {state.isAwake ? (
-                /* When Keep Screen is ON: Show 'Your PC is awake now' status and HIDE the timer countdown */
-                <div data-tauri-drag-region style={{ marginTop: 'auto' }}>
+                {/* Bottom Section: Tooltip hover target (matches Coffee theme darkenSection) */}
+                <div
+                  onMouseEnter={() => setHoveredPanel('left')}
+                  onMouseLeave={() => setHoveredPanel(null)}
+                  data-tauri-drag-region
+                  style={{
+                    marginTop: 'auto',
+                    position: 'relative',
+                    minHeight: 52,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'flex-end',
+                    cursor: 'help'
+                  }}
+                >
+                  {state.isAwake ? (
+                    /* When Keep Screen is ON: Show 'Your PC is awake now' status and HIDE the timer countdown */
+                    <div data-tauri-drag-region>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 500,
+                          color: textSecondary,
+                          lineHeight: 1.25
+                        }}
+                      >
+                        Your PC is
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 19,
+                          fontWeight: 700,
+                          letterSpacing: -0.3,
+                          color: textColor,
+                          marginTop: 2
+                        }}
+                      >
+                        awake now
+                      </div>
+                    </div>
+                  ) : (
+                    /* When Keep Screen is OFF: Reveal 'Time to darken' and the live ticking countdown */
+                    <div data-tauri-drag-region>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 500,
+                          color: textSecondary,
+                          marginBottom: 2
+                        }}
+                      >
+                        {state.timeToDarkenLabel}
+                      </div>
+                      <div
+                        style={{
+                          position: 'relative',
+                          height: 32,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'flex-start'
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 27,
+                            fontWeight: 700,
+                            letterSpacing: -0.6,
+                            fontVariantNumeric: 'tabular-nums',
+                            color: activeAccent,
+                            textShadow: isDark ? `0 2px 14px ${activeAccent}55` : 'none',
+                            opacity: activeActivity ? 0 : 1,
+                            transition: 'opacity 0.2s ease',
+                            textAlign: 'left'
+                          }}
+                        >
+                          {state.darkenTime}
+                        </div>
+
+                        {/* Animated Activity Indicator (Mouse / Keyboard) - Left-aligned over count numbers */}
+                        {activeActivity && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              left: 0,
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'flex-start',
+                              pointerEvents: 'none',
+                              color: activeAccent,
+                              animation: 'popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                            }}
+                          >
+                            {activeActivity === 'keyboard' ? (
+                              <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z" />
+                              </svg>
+                            ) : (
+                              <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M7 2L19.2 13.2 13.4 13.7 16.7 21 14.5 21.9 11.3 14.6 6.9 18.9V2z" />
+                              </svg>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Confined In-Card Frosted Glass Tooltip Overlay (bottom area only, matching Coffee theme) */}
                   <div
                     style={{
-                      fontSize: 13,
-                      fontWeight: 500,
-                      color: textSecondary,
-                      lineHeight: 1.25
-                    }}
-                  >
-                    Your PC is
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 19,
-                      fontWeight: 700,
-                      letterSpacing: -0.3,
+                      position: 'absolute',
+                      inset: '-4px -6px -4px -6px',
+                      borderRadius: 14,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '8px 10px',
+                      background: isDark ? 'rgba(16, 22, 34, 0.94)' : 'rgba(255, 255, 255, 0.94)',
                       color: textColor,
-                      marginTop: 2
+                      fontSize: 12,
+                      lineHeight: 1.25,
+                      textAlign: 'center',
+                      boxSizing: 'border-box',
+                      pointerEvents: 'none',
+                      opacity: hoveredPanel === 'left' ? 1 : 0,
+                      transform: hoveredPanel === 'left' ? 'scale(1)' : 'scale(0.96)',
+                      transition: 'opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+                      zIndex: 20,
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      boxShadow: isDark
+                        ? 'inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 24px rgba(0,0,0,0.5)'
+                        : 'inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 24px rgba(0,0,0,0.1)'
                     }}
-                  >
-                    awake now
-                  </div>
+                    dangerouslySetInnerHTML={{ __html: leftTooltipHtml }}
+                  />
                 </div>
-              ) : (
-                /* When Keep Screen is OFF: Reveal 'Time to darken' and the live ticking countdown */
-                <div data-tauri-drag-region style={{ marginTop: 'auto' }}>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 500,
-                      color: textSecondary,
-                      marginBottom: 2
-                    }}
-                  >
-                    {state.timeToDarkenLabel}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 27,
-                      fontWeight: 700,
-                      letterSpacing: -0.6,
-                      fontVariantNumeric: 'tabular-nums',
-                      color: activeAccent,
-                      textShadow: isDark ? `0 2px 14px ${activeAccent}55` : 'none'
-                    }}
-                  >
-                    {state.darkenTime}
-                  </div>
-                </div>
-              )}
-            </GlassSurface>
+              </GlassSurface>
+            </div>
 
             {/* Right Glass Surface (Schedule / Time Left — clickable like Coffee theme) */}
-            <GlassSurface
-              interactive
-              radius={22}
-              style={{
-                padding: '14px 16px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                boxSizing: 'border-box',
-                cursor: 'default',
-                background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 255, 255, 0.65)',
-                border: isDark ? '1px solid rgba(255, 255, 255, 0.16)' : '1px solid rgba(0, 0, 0, 0.08)'
-              }}
+            <div
+              style={{ position: 'relative', height: '100%', borderRadius: 22, overflow: 'hidden' }}
               data-tauri-drag-region
             >
-              {/* Top row: Schedule Title (Clickable link to Settings) */}
-              <div
-                data-tauri-drag-region
+              <GlassSurface
+                interactive
+                radius={22}
                 style={{
+                  width: '100%',
+                  height: '100%',
+                  padding: '14px 16px',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between'
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  boxSizing: 'border-box',
+                  cursor: 'default',
+                  background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 255, 255, 0.65)',
+                  border: isDark ? '1px solid rgba(255, 255, 255, 0.16)' : '1px solid rgba(0, 0, 0, 0.08)',
+                  borderRadius: 22,
+                  position: 'relative'
                 }}
+                data-tauri-drag-region
               >
-                <span
-                  onClick={handleOpenSchedule}
-                  title="Open Schedule Settings"
+                {/* Top row: Schedule Title (Clickable link to Settings, never hidden by tooltip) */}
+                <div
+                  data-tauri-drag-region
                   style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    letterSpacing: -0.2,
-                    color: textColor,
-                    cursor: 'pointer',
-                    textDecoration: 'underline dotted',
-                    textUnderlineOffset: '3px'
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    position: 'relative',
+                    zIndex: 25
                   }}
                 >
-                  {state.scheduleLabel}
-                </span>
-                <div
-                  style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: '50%',
-                    background: activeAccent,
-                    boxShadow: `0 0 8px ${activeAccent}`
-                  }}
-                />
-              </div>
+                  <span
+                    onClick={handleOpenSchedule}
+                    title="Open Schedule Settings"
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 600,
+                      letterSpacing: -0.2,
+                      color: textColor,
+                      cursor: 'pointer',
+                      textDecoration: 'underline dotted',
+                      textUnderlineOffset: '3px'
+                    }}
+                  >
+                    {state.scheduleLabel}
+                  </span>
+                  <div
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: '50%',
+                      background: activeAccent,
+                      boxShadow: `0 0 8px ${activeAccent}`
+                    }}
+                  />
+                </div>
 
-              {/* Bottom: Time left & Countdown */}
-              <div data-tauri-drag-region style={{ marginTop: 'auto' }}>
+                {/* Bottom Section: Tooltip hover target (matches Coffee theme shutdownSection) */}
                 <div
+                  onMouseEnter={() => setHoveredPanel('right')}
+                  onMouseLeave={() => setHoveredPanel(null)}
+                  data-tauri-drag-region
                   style={{
-                    fontSize: 11,
-                    fontWeight: 500,
-                    color: textSecondary,
-                    marginBottom: 2
+                    marginTop: 'auto',
+                    position: 'relative',
+                    minHeight: 52,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'flex-end',
+                    cursor: 'help'
                   }}
                 >
-                  {state.timeLeftLabel}
+                  <div data-tauri-drag-region>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 500,
+                        color: textSecondary,
+                        marginBottom: 2
+                      }}
+                    >
+                      {state.timeLeftLabel}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 27,
+                        fontWeight: 700,
+                        letterSpacing: -0.6,
+                        fontVariantNumeric: 'tabular-nums',
+                        color: isDark ? 'rgba(255, 255, 255, 0.95)' : '#111113',
+                        textShadow: isDark ? '0 2px 10px rgba(0,0,0,0.4)' : 'none'
+                      }}
+                    >
+                      {state.shutdownTime}
+                    </div>
+                  </div>
+
+                  {/* Confined In-Card Frosted Glass Tooltip Overlay (bottom area only, matching Coffee theme) */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: '-4px -6px -4px -6px',
+                      borderRadius: 14,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '8px 10px',
+                      background: isDark ? 'rgba(16, 22, 34, 0.94)' : 'rgba(255, 255, 255, 0.94)',
+                      color: textColor,
+                      fontSize: 12,
+                      lineHeight: 1.25,
+                      textAlign: 'center',
+                      boxSizing: 'border-box',
+                      pointerEvents: 'none',
+                      opacity: hoveredPanel === 'right' ? 1 : 0,
+                      transform: hoveredPanel === 'right' ? 'scale(1)' : 'scale(0.96)',
+                      transition: 'opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+                      zIndex: 20,
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      boxShadow: isDark
+                        ? 'inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 24px rgba(0,0,0,0.5)'
+                        : 'inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 24px rgba(0,0,0,0.1)'
+                    }}
+                    dangerouslySetInnerHTML={{ __html: rightTooltipHtml }}
+                  />
                 </div>
-                <div
-                  style={{
-                    fontSize: 27,
-                    fontWeight: 700,
-                    letterSpacing: -0.6,
-                    fontVariantNumeric: 'tabular-nums',
-                    color: isDark ? 'rgba(255, 255, 255, 0.95)' : '#111113',
-                    textShadow: isDark ? '0 2px 10px rgba(0,0,0,0.4)' : 'none'
-                  }}
-                >
-                  {state.shutdownTime}
-                </div>
-              </div>
-            </GlassSurface>
+              </GlassSurface>
+            </div>
           </div>
         </GlassSurface>
       </GlassScene>
@@ -505,6 +682,11 @@ window.NeverSleepLiquidGlass = {
   updateState(partialState = {}) {
     if (typeof window.__updateNeverSleepLiquidGlass === 'function') {
       window.__updateNeverSleepLiquidGlass(partialState);
+    }
+  },
+  triggerActivity(type) {
+    if (typeof window.__triggerNeverSleepActivity === 'function') {
+      window.__triggerNeverSleepActivity(type);
     }
   },
   unmount() {

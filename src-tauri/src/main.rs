@@ -2209,6 +2209,14 @@ fn open_settings(app: tauri::AppHandle, section: Option<String>) {
     };
 
     if let Some(window) = app.get_window("settings") {
+        if let Ok(settings_path) = get_settings_path(app.clone()) {
+            if let Ok(content) = std::fs::read_to_string(settings_path) {
+                if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+                    let is_liquid = json.get("viewMode").and_then(|v| v.as_str()) == Some("liquid-glass");
+                    let _ = window.set_decorations(!is_liquid);
+                }
+            }
+        }
         let _ = window
             .eval("if (window.refreshSettingsFromStorage) window.refreshSettingsFromStorage();");
         if let Some(sec) = &section {
@@ -2999,6 +3007,14 @@ fn set_window_effect(app: tauri::AppHandle, effect: String) {
         if let Some(settings_win) = app.get_window("settings") {
             let _ = clear_acrylic(&settings_win);
             let _ = settings_win.set_resizable(false);
+            if let Ok(settings_path) = get_settings_path(app.clone()) {
+                if let Ok(content) = std::fs::read_to_string(settings_path) {
+                    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+                        let is_liquid = json.get("viewMode").and_then(|v| v.as_str()) == Some("liquid-glass");
+                        let _ = settings_win.set_decorations(!is_liquid);
+                    }
+                }
+            }
             if let Ok(hwnd_raw) = settings_win.hwnd() {
                 let hwnd = hwnd_raw.0 as winapi::shared::windef::HWND;
                 unsafe {
@@ -3093,6 +3109,13 @@ fn set_window_height(app: tauri::AppHandle, height: u32) {
 #[tauri::command]
 fn set_decorations(app: tauri::AppHandle, decorations: bool) {
     if let Some(window) = app.get_window("main") {
+        let _ = window.set_decorations(decorations);
+    }
+}
+
+#[tauri::command]
+fn set_settings_decorations(app: tauri::AppHandle, decorations: bool) {
+    if let Some(window) = app.get_window("settings") {
         let _ = window.set_decorations(decorations);
     }
 }
@@ -3637,6 +3660,8 @@ fn main() {
             set_window_height,
             set_window_size,
             set_decorations,
+            set_settings_decorations,
+            minimize_window,
             open_url,
             check_for_update,
             download_and_install_update,

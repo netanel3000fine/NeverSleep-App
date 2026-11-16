@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag (e.g. v20.8.0)"
+        description: "Release tag (e.g. v21.0.0)"
         required: true
-        default: "v20.8.0"
+        default: "v21.0.0"
       draft:
         description: "Create as draft release"
         required: false
@@ -67,11 +67,15 @@ jobs:
       - name: 📥 Install Node dependencies
         run: npm ci
 
+      - name: ⚛️ Build Liquid Glass React bundle
+        run: node build-liquid-glass.js
+
       - name: 🔄 Sync dist/ from source root
         shell: pwsh
         run: |
           $files = @("index.html","settings.html","lang.js","debug_logging.js",
-                      "overlay.html","sleep.html","tray.html","cleaning.html")
+                      "overlay.html","sleep.html","tray.html","cleaning.html",
+                      "liquid-glass.css","liquid-glass-bundle.js")
           foreach ($f in $files) {
             if (Test-Path $f) {
               Copy-Item $f "dist\$f" -Force
