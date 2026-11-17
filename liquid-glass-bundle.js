@@ -29563,6 +29563,12 @@ ${source}`;
         window.__onLiquidGlassOpenSchedule();
       }
     };
+    const handleOpenCleaning = (e24) => {
+      e24.stopPropagation();
+      if (typeof window.__onLiquidGlassOpenCleaning === "function") {
+        window.__onLiquidGlassOpenCleaning();
+      }
+    };
     const isDark = state.appearance !== "light";
     const textColor = isDark ? "#ffffff" : "#111113";
     const textSecondary = isDark ? "rgba(255, 255, 255, 0.65)" : "rgba(17, 17, 19, 0.60)";
@@ -29725,24 +29731,32 @@ ${source}`;
               )
             ),
             /* @__PURE__ */ import_react8.default.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ import_react8.default.createElement(
-              "div",
+              r26,
+              {
+                "data-size": "icon-sm",
+                onClick: handleOpenCleaning,
+                title: "Keyboard Cleaning Mode",
+                style: { borderRadius: "50%" }
+              },
+              /* @__PURE__ */ import_react8.default.createElement("svg", { width: "13", height: "13", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.2", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ import_react8.default.createElement("rect", { x: "2", y: "4", width: "20", height: "16", rx: "3.5", ry: "3.5" }), /* @__PURE__ */ import_react8.default.createElement("line", { x1: "6", y1: "8", x2: "6.01", y2: "8", strokeWidth: "2.5" }), /* @__PURE__ */ import_react8.default.createElement("line", { x1: "10", y1: "8", x2: "10.01", y2: "8", strokeWidth: "2.5" }), /* @__PURE__ */ import_react8.default.createElement("line", { x1: "14", y1: "8", x2: "14.01", y2: "8", strokeWidth: "2.5" }), /* @__PURE__ */ import_react8.default.createElement("line", { x1: "18", y1: "8", x2: "18.01", y2: "8", strokeWidth: "2.5" }), /* @__PURE__ */ import_react8.default.createElement("line", { x1: "6", y1: "12", x2: "6.01", y2: "12", strokeWidth: "2.5" }), /* @__PURE__ */ import_react8.default.createElement("line", { x1: "10", y1: "12", x2: "10.01", y2: "12", strokeWidth: "2.5" }), /* @__PURE__ */ import_react8.default.createElement("line", { x1: "14", y1: "12", x2: "14.01", y2: "12", strokeWidth: "2.5" }), /* @__PURE__ */ import_react8.default.createElement("line", { x1: "18", y1: "12", x2: "18.01", y2: "12", strokeWidth: "2.5" }), /* @__PURE__ */ import_react8.default.createElement("line", { x1: "8", y1: "16", x2: "16", y2: "16", strokeWidth: "2" }))
+            ), /* @__PURE__ */ import_react8.default.createElement(
+              r26,
               {
                 onClick: handleToggleDisabled,
                 title: state.isDisabled ? "Enable Never Sleep" : "Disable Never Sleep",
                 style: {
-                  display: "flex",
+                  display: "inline-flex",
                   alignItems: "center",
                   gap: 6,
-                  padding: "3px 10px",
+                  padding: "4px 10px",
                   borderRadius: 20,
                   fontSize: 11,
                   fontWeight: 600,
-                  cursor: "pointer",
-                  background: state.isDisabled ? "rgba(239, 68, 68, 0.22)" : "rgba(128, 128, 128, 0.16)",
-                  border: state.isDisabled ? "1px solid rgba(239, 68, 68, 0.55)" : "1px solid rgba(255, 255, 255, 0.16)",
+                  height: 28,
+                  minWidth: 0,
                   color: state.isDisabled ? "#ef4444" : textColor,
-                  transition: "all 0.2s ease",
-                  marginRight: 4
+                  background: state.isDisabled ? "rgba(239, 68, 68, 0.22)" : void 0,
+                  borderColor: state.isDisabled ? "rgba(239, 68, 68, 0.55)" : void 0
                 }
               },
               /* @__PURE__ */ import_react8.default.createElement(
