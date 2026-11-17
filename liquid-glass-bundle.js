@@ -29497,6 +29497,7 @@ ${source}`;
       timeLeftLabel: "Time left",
       shutdownTime: "00:00:00",
       themeColor: "#34C759",
+      appIcon: "A visually striking illustration.png",
       tipStatus: "",
       tipDarken: "",
       tipShutdown: "",
@@ -29582,7 +29583,7 @@ ${source}`;
         onPointerMove: handlePointerMove,
         style: {
           width: 500,
-          height: 260,
+          height: 190,
           position: "relative",
           userSelect: "none",
           overflow: "hidden",
@@ -29618,7 +29619,7 @@ ${source}`;
               width: "100%",
               height: "100%",
               borderRadius: 28,
-              background: isDark ? "radial-gradient(ellipse 130% 100% at 50% -20%, rgba(255, 255, 255, 0.16) 0%, rgba(20, 28, 42, 0.95) 55%, #080c14 100%)" : "radial-gradient(ellipse 130% 100% at 50% -20%, rgba(255, 255, 255, 0.98) 0%, rgba(235, 240, 248, 0.94) 60%, #cbd5e1 100%)",
+              background: isDark ? "radial-gradient(ellipse 130% 100% at 50% -20%, rgba(255, 255, 255, 0.16) 0%, rgba(20, 28, 42, 0.95) 55%, #080c14 100%)" : "radial-gradient(ellipse 130% 100% at 50% -20%, rgba(255,255,255,0.55) 0%, rgba(220,230,245,0.38) 60%, rgba(185,200,220,0.28) 100%)",
               boxShadow: isDark ? "0 16px 48px rgba(0,0,0,0.6)" : "0 16px 48px rgba(0,0,0,0.12)",
               overflow: "hidden"
             }
@@ -29690,32 +29691,36 @@ ${source}`;
               }
             },
             /* @__PURE__ */ import_react8.default.createElement(
-              "div",
+              r26,
               {
                 "data-tauri-drag-region": true,
+                title: "Never Sleep",
                 style: {
-                  display: "flex",
+                  display: "inline-flex",
                   alignItems: "center",
-                  gap: 9,
-                  cursor: "default"
+                  gap: 7,
+                  padding: "4px 10px",
+                  borderRadius: 20,
+                  height: 28,
+                  minWidth: 0,
+                  cursor: "default",
+                  pointerEvents: "none"
                 }
               },
               /* @__PURE__ */ import_react8.default.createElement(
-                "div",
+                "img",
                 {
+                  src: state.appIcon || "A visually striking illustration.png",
+                  alt: "App Icon",
                   style: {
-                    width: 24,
-                    height: 24,
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: activeAccent,
-                    boxShadow: `0 0 14px ${activeAccent}99`,
-                    transition: "background-color 0.25s ease"
+                    width: 20,
+                    height: 20,
+                    borderRadius: 5,
+                    objectFit: "cover",
+                    flexShrink: 0,
+                    pointerEvents: "none"
                   }
-                },
-                /* @__PURE__ */ import_react8.default.createElement("svg", { width: "13", height: "13", viewBox: "0 0 24 24", fill: "none", stroke: "#ffffff", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ import_react8.default.createElement("path", { d: "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" }))
+                }
               ),
               /* @__PURE__ */ import_react8.default.createElement(
                 "span",
@@ -29724,7 +29729,8 @@ ${source}`;
                     fontWeight: 700,
                     fontSize: 14,
                     letterSpacing: -0.2,
-                    color: textColor
+                    color: textColor,
+                    whiteSpace: "nowrap"
                   }
                 },
                 "Never Sleep"

@@ -99,11 +99,11 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 260,
+        "height": 190,
         "resizable": false,
         "title": "Never Sleep",
         "width": 500,
-        "minHeight": 260,
+        "minHeight": 44,
         "minWidth": 500,
         "maxHeight": 260,
         "maxWidth": 500,

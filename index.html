@@ -389,6 +389,16 @@
       animation: black-hole-cycle 6.8s ease-in-out infinite;
     }
 
+    /* Black hole dot: use dark shadow in white mode so it's visible on light background */
+    body.white-mode .status-darken-dot .bh-system {
+      filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 6px rgba(var(--theme-color-rgb, 52, 199, 89), 0.55));
+    }
+
+    /* Hide cleaning button in classic mode — it lives in LG/Coffee only */
+    body.classic-mode #cleaningBtn {
+      display: none !important;
+    }
+
 
 
 
@@ -6486,6 +6496,7 @@
             timeLeftLabel: t.time_left || 'Time left',
             shutdownTime: document.getElementById('shutdownTimer')?.textContent || '00:00:00',
             themeColor: (typeof themeColor !== 'undefined' && themeColor) ? themeColor : '#34C759',
+            appIcon: (() => { try { return JSON.parse(localStorage.getItem('neverSleepSettings') || '{}').appIcon || 'A visually striking illustration.png'; } catch(e) { return 'A visually striking illustration.png'; } })(),
             tipStatus: typeof statusTip === 'function' ? statusTip() : '',
             tipDarken: typeof darkenTip === 'function' ? darkenTip() : '',
             tipShutdown: typeof shutdownTip === 'function' ? shutdownTip() : ''
@@ -6519,6 +6530,9 @@
         if (mode === 'classic') {
           const classicWidth = window.currentLang === 'he' ? 560 : 580;
           window.__TAURI__.invoke('set_window_size', { width: classicWidth, height: 44 }).catch(() => { });
+        } else if (mode === 'liquid-glass') {
+          if (darkenTimerContainer) darkenTimerContainer.style.display = 'block';
+          window.__TAURI__.invoke('set_window_size', { width: 500, height: 190 }).catch(() => { });
         } else {
           if (darkenTimerContainer) darkenTimerContainer.style.display = 'block';
           window.__TAURI__.invoke('set_window_size', { width: 500, height: 260 }).catch(() => { });
@@ -6642,6 +6656,7 @@
           shutdownTime: document.getElementById('shutdownTimer')?.textContent || '00:00:00',
           appearance: document.body.classList.contains('white-mode') ? 'light' : 'dark',
           themeColor: (typeof themeColor !== 'undefined' && themeColor) ? themeColor : '#34C759',
+          appIcon: (() => { try { return JSON.parse(localStorage.getItem('neverSleepSettings') || '{}').appIcon || 'A visually striking illustration.png'; } catch(e) { return 'A visually striking illustration.png'; } })(),
           tipStatus: typeof statusTip === 'function' ? statusTip() : '',
           tipDarken: typeof darkenTip === 'function' ? darkenTip() : '',
           tipShutdown: typeof shutdownTip === 'function' ? shutdownTip() : ''

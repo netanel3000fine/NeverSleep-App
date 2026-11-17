@@ -400,7 +400,10 @@ fn get_last_activity(state: tauri::State<'_, AppState>) -> Result<(u64, String),
     #[cfg(target_os = "windows")]
     if let Some(win_input_time) = get_windows_last_input_time() {
         if win_input_time > activity.0.saturating_add(50) {
-            *activity = (win_input_time, "mouse".to_string());
+            // Only update the timestamp — do NOT overwrite the input type.
+            // rdev already set the correct type ("keyboard" or "mouse") via record_input_activity.
+            // GetLastInputInfo returns the latest *any* input time regardless of type.
+            activity.0 = win_input_time;
         }
     }
     Ok(activity.clone())

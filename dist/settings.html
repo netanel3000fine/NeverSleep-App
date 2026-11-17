@@ -192,13 +192,149 @@
             transition: background 0.4s ease;
         }
 
-        /* White Mode Liquid Glass Container */
+        /* White Mode Liquid Glass Container — translucent frosted glass, not opaque */
         body.white-mode .app-container.liquid-glass-mode,
         body.white-mode.liquid-glass-mode .app-container {
-            background: radial-gradient(ellipse 130% 100% at 50% -20%, rgba(255, 255, 255, 0.98) 0%, rgba(235, 240, 248, 0.94) 60%, #cbd5e1 100%) !important;
-            border: 1px solid rgba(255, 255, 255, 0.6) !important;
-            box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.95), 0 20px 50px rgba(0, 0, 0, 0.12) !important;
+            background: radial-gradient(ellipse 130% 100% at 50% -20%, rgba(255,255,255,0.45) 0%, rgba(220,230,245,0.30) 60%, rgba(185,200,220,0.22) 100%) !important;
+            border: 1px solid rgba(255, 255, 255, 0.55) !important;
+            box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.85), 0 20px 50px rgba(0, 0, 0, 0.12) !important;
+            backdrop-filter: blur(36px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(36px) saturate(180%) !important;
         }
+
+        /* White Mode Coffee — creamy latte light background */
+        body.white-mode.coffee-mode .app-container,
+        body.white-mode .app-container.coffee-mode {
+            background: linear-gradient(145deg, #fdfaf6, #f5ece0, #f0e3cf) !important;
+            --text-primary: #3c2415;
+            --text-secondary: rgba(60, 36, 21, 0.68);
+            --text-muted: rgba(60, 36, 21, 0.45);
+            --surface: rgba(255, 255, 255, 0.70);
+            --surface-card: rgba(255, 255, 255, 0.60);
+            --surface-hover: rgba(255, 255, 255, 0.85);
+            --surface-border: rgba(60, 36, 21, 0.10);
+            --surface-card-border: rgba(60, 36, 21, 0.14);
+            --input-bg: rgba(0, 0, 0, 0.04);
+            --input-border: rgba(60, 36, 21, 0.14);
+        }
+        body.white-mode.coffee-mode .category-block,
+        body.white-mode .category-block.coffee-mode {
+            background: rgba(255, 255, 255, 0.72) !important;
+            border-color: rgba(60, 36, 21, 0.09) !important;
+            box-shadow: 0 2px 20px rgba(60, 36, 21, 0.07) !important;
+        }
+        body.white-mode.coffee-mode .category-title {
+            color: #3c2415 !important;
+        }
+        body.white-mode.coffee-mode .settings-item {
+            border-bottom-color: rgba(60, 36, 21, 0.06) !important;
+        }
+        body.white-mode.coffee-mode .setting-label,
+        body.white-mode.coffee-mode .setting-description {
+            color: #3c2415 !important;
+        }
+        body.white-mode.coffee-mode .toggle {
+            background: #d4c4b0 !important;
+            border-color: #b8a090 !important;
+        }
+        body.white-mode.coffee-mode .toggle.active {
+            background: var(--theme-color) !important;
+            border-color: var(--theme-color) !important;
+        }
+        body.white-mode.coffee-mode select,
+        body.white-mode.coffee-mode input[type="text"],
+        body.white-mode.coffee-mode input[type="number"],
+        body.white-mode.coffee-mode input[type="time"] {
+            background: rgba(255, 255, 255, 0.80) !important;
+            border-color: rgba(60, 36, 21, 0.14) !important;
+            color: #3c2415 !important;
+        }
+        body.white-mode.coffee-mode .version-badge {
+            background: rgba(60, 36, 21, 0.07) !important;
+            border-color: rgba(60, 36, 21, 0.14) !important;
+            color: #3c2415 !important;
+        }
+        body.white-mode.coffee-mode .credit-link a,
+        body.white-mode.coffee-mode .credit-link button {
+            color: #3c2415 !important;
+        }
+        body.white-mode.coffee-mode .coffee-beans-container {
+            opacity: 0.18 !important;
+        }
+
+        /* ===== COFFEE BEANS (settings window, mirrored from main window) ===== */
+        .coffee-beans-container {
+            display: none;
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 0;
+        }
+        body.coffee-mode .coffee-beans-container {
+            display: block;
+        }
+        /* Ensure category blocks float above beans */
+        body.coffee-mode .category-block {
+            position: relative;
+            z-index: 1;
+        }
+        .bean {
+            position: absolute;
+            left: 0;
+            opacity: 0;
+            will-change: transform, opacity;
+            overflow: visible;
+            filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.65));
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        .bean-0  { width:75px;  height:75px;  top:5%;   background-image:url('bean_img_0.png'); animation:bean-anim-0  38s ease-in-out 0s   infinite; }
+        .bean-1  { width:55px;  height:55px;  top:25%;  background-image:url('bean_img_1.png'); animation:bean-anim-1  42s ease-in-out -7s  infinite; }
+        .bean-2  { width:65px;  height:65px;  top:50%;  background-image:url('bean_img_2.png'); animation:bean-anim-2  33s ease-in-out -5s  infinite; }
+        .bean-3  { width:80px;  height:80px;  top:72%;  background-image:url('bean_img_3.png'); animation:bean-anim-3  48s ease-in-out -18s infinite; }
+        .bean-4  { width:50px;  height:50px;  top:88%;  background-image:url('bean_img_0.png'); animation:bean-anim-4  36s ease-in-out -28s infinite; }
+        .bean-5  { width:60px;  height:60px;  top:38%;  background-image:url('bean_img_1.png'); animation:bean-anim-5  44s ease-in-out -11s infinite; }
+        .bean-6  { width:45px;  height:45px;  top:14%;  background-image:url('bean_img_2.png'); animation:bean-anim-6  30s ease-in-out -21s infinite; }
+        .bean-7  { width:24px;  height:24px;  top:8%;   background-image:url('bean_img_3.png'); animation:bean-anim-7  22s ease-in-out -4s  infinite; }
+        .bean-8  { width:20px;  height:20px;  top:45%;  background-image:url('bean_img_0.png'); animation:bean-anim-8  20s ease-in-out -17s infinite; }
+        .bean-9  { width:25px;  height:25px;  top:80%;  background-image:url('bean_img_1.png'); animation:bean-anim-9  19s ease-in-out -13s infinite; }
+        .bean-10 { width:29px;  height:29px;  top:55%;  background-image:url('bean_img_2.png'); animation:bean-anim-10 21s ease-in-out -24s infinite; }
+        .bean-11 { width:85px;  height:85px;  top:10%;  background-image:url('bean_img_3.png'); animation:bean-anim-11 45s ease-in-out -12s infinite; }
+        .bean-12 { width:65px;  height:65px;  top:32%;  background-image:url('bean_img_0.png'); animation:bean-anim-12 40s ease-in-out -2s  infinite; }
+        .bean-13 { width:140px; height:140px; top:56%;  background-image:url('bean_img_1.png'); animation:bean-anim-13 55s ease-in-out -22s infinite; }
+        .bean-14 { width:75px;  height:75px;  top:78%;  background-image:url('bean_img_2.png'); animation:bean-anim-14 50s ease-in-out -8s  infinite; }
+        .bean-15 { width:58px;  height:58px;  top:44%;  background-image:url('bean_img_3.png'); animation:bean-anim-15 38s ease-in-out -33s infinite; }
+        .bean-16 { width:52px;  height:52px;  top:62%;  background-image:url('bean_img_0.png'); animation:bean-anim-16 35s ease-in-out -15s infinite; }
+        .bean-17 { width:90px;  height:90px;  top:93%;  background-image:url('bean_img_1.png'); animation:bean-anim-17 52s ease-in-out -40s infinite; }
+        .bean-18 { width:27px;  height:27px;  top:22%;  background-image:url('bean_img_2.png'); animation:bean-anim-18 18s ease-in-out -9s  infinite; }
+        .bean-19 { width:31px;  height:31px;  top:66%;  background-image:url('bean_img_3.png'); animation:bean-anim-19 24s ease-in-out -3s  infinite; }
+        .bean-20 { width:22px;  height:22px;  top:35%;  background-image:url('bean_img_0.png'); animation:bean-anim-20 17s ease-in-out -6s  infinite; }
+        .bean-21 { width:18px;  height:18px;  top:92%;  background-image:url('bean_img_1.png'); animation:bean-anim-21 16s ease-in-out -20s infinite; }
+
+        @keyframes bean-anim-0  { 0%{transform:translateX(-160px) rotate(0deg)   scale(0.88);opacity:0} 10%{opacity:0.65} 50%{transform:translateX(220px) rotate(110deg) scale(1);opacity:0.65} 90%{opacity:0.65} 100%{transform:translateX(620px) rotate(250deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-1  { 0%{transform:translateX(-130px) rotate(-45deg) scale(0.88);opacity:0} 10%{opacity:0.6}  50%{transform:translateX(190px) rotate(95deg)  scale(1);opacity:0.6}  90%{opacity:0.6}  100%{transform:translateX(590px) rotate(230deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-2  { 0%{transform:translateX(-150px) rotate(15deg)  scale(0.88);opacity:0} 10%{opacity:0.68} 50%{transform:translateX(170px) rotate(145deg) scale(1);opacity:0.68} 90%{opacity:0.68} 100%{transform:translateX(560px) rotate(300deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-3  { 0%{transform:translateX(-180px) rotate(30deg)  scale(0.88);opacity:0} 10%{opacity:0.55} 50%{transform:translateX(240px) rotate(180deg) scale(1);opacity:0.55} 90%{opacity:0.55} 100%{transform:translateX(650px) rotate(360deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-4  { 0%{transform:translateX(-120px) rotate(-20deg) scale(0.88);opacity:0} 10%{opacity:0.7}  50%{transform:translateX(200px) rotate(120deg) scale(1);opacity:0.7}  90%{opacity:0.7}  100%{transform:translateX(580px) rotate(265deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-5  { 0%{transform:translateX(-140px) rotate(5deg)   scale(0.88);opacity:0} 10%{opacity:0.62} 50%{transform:translateX(210px) rotate(160deg) scale(1);opacity:0.62} 90%{opacity:0.62} 100%{transform:translateX(600px) rotate(320deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-6  { 0%{transform:translateX(-100px) rotate(-30deg) scale(0.88);opacity:0} 10%{opacity:0.72} 50%{transform:translateX(180px) rotate(80deg)  scale(1);opacity:0.72} 90%{opacity:0.72} 100%{transform:translateX(540px) rotate(200deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-7  { 0%{transform:translateX(-90px)  rotate(10deg)  scale(0.88);opacity:0} 10%{opacity:0.58} 50%{transform:translateX(160px) rotate(130deg) scale(1);opacity:0.58} 90%{opacity:0.58} 100%{transform:translateX(520px) rotate(275deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-8  { 0%{transform:translateX(-110px) rotate(-15deg) scale(0.88);opacity:0} 10%{opacity:0.75} 50%{transform:translateX(185px) rotate(100deg) scale(1);opacity:0.75} 90%{opacity:0.75} 100%{transform:translateX(550px) rotate(240deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-9  { 0%{transform:translateX(-125px) rotate(25deg)  scale(0.88);opacity:0} 10%{opacity:0.63} 50%{transform:translateX(195px) rotate(155deg) scale(1);opacity:0.63} 90%{opacity:0.63} 100%{transform:translateX(570px) rotate(310deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-10 { 0%{transform:translateX(-145px) rotate(-10deg) scale(0.88);opacity:0} 10%{opacity:0.67} 50%{transform:translateX(205px) rotate(90deg)  scale(1);opacity:0.67} 90%{opacity:0.67} 100%{transform:translateX(610px) rotate(220deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-11 { 0%{transform:translateX(-170px) rotate(20deg)  scale(0.88);opacity:0} 10%{opacity:0.52} 50%{transform:translateX(230px) rotate(170deg) scale(1);opacity:0.52} 90%{opacity:0.52} 100%{transform:translateX(640px) rotate(340deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-12 { 0%{transform:translateX(-135px) rotate(-35deg) scale(0.88);opacity:0} 10%{opacity:0.71} 50%{transform:translateX(215px) rotate(115deg) scale(1);opacity:0.71} 90%{opacity:0.71} 100%{transform:translateX(595px) rotate(260deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-13 { 0%{transform:translateX(-200px) rotate(40deg)  scale(0.88);opacity:0} 10%{opacity:0.48} 50%{transform:translateX(250px) rotate(190deg) scale(1);opacity:0.48} 90%{opacity:0.48} 100%{transform:translateX(680px) rotate(380deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-14 { 0%{transform:translateX(-155px) rotate(-5deg)  scale(0.88);opacity:0} 10%{opacity:0.66} 50%{transform:translateX(225px) rotate(135deg) scale(1);opacity:0.66} 90%{opacity:0.66} 100%{transform:translateX(630px) rotate(285deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-15 { 0%{transform:translateX(-115px) rotate(35deg)  scale(0.88);opacity:0} 10%{opacity:0.74} 50%{transform:translateX(175px) rotate(165deg) scale(1);opacity:0.74} 90%{opacity:0.74} 100%{transform:translateX(530px) rotate(330deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-16 { 0%{transform:translateX(-160px) rotate(-25deg) scale(0.88);opacity:0} 10%{opacity:0.59} 50%{transform:translateX(220px) rotate(105deg) scale(1);opacity:0.59} 90%{opacity:0.59} 100%{transform:translateX(615px) rotate(250deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-17 { 0%{transform:translateX(-190px) rotate(45deg)  scale(0.88);opacity:0} 10%{opacity:0.50} 50%{transform:translateX(245px) rotate(200deg) scale(1);opacity:0.50} 90%{opacity:0.50} 100%{transform:translateX(670px) rotate(395deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-18 { 0%{transform:translateX(-95px)  rotate(-40deg) scale(0.88);opacity:0} 10%{opacity:0.76} 50%{transform:translateX(165px) rotate(85deg)  scale(1);opacity:0.76} 90%{opacity:0.76} 100%{transform:translateX(510px) rotate(210deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-19 { 0%{transform:translateX(-130px) rotate(8deg)   scale(0.88);opacity:0} 10%{opacity:0.64} 50%{transform:translateX(200px) rotate(148deg) scale(1);opacity:0.64} 90%{opacity:0.64} 100%{transform:translateX(575px) rotate(305deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-20 { 0%{transform:translateX(-105px) rotate(-18deg) scale(0.88);opacity:0} 10%{opacity:0.70} 50%{transform:translateX(185px) rotate(108deg) scale(1);opacity:0.70} 90%{opacity:0.70} 100%{transform:translateX(545px) rotate(248deg) scale(0.88);opacity:0} }
+        @keyframes bean-anim-21 { 0%{transform:translateX(-80px)  rotate(50deg)  scale(0.88);opacity:0} 10%{opacity:0.68} 50%{transform:translateX(155px) rotate(175deg) scale(1);opacity:0.68} 90%{opacity:0.68} 100%{transform:translateX(500px) rotate(350deg) scale(0.88);opacity:0} }
 
         /* Frosted Glass Category Blocks */
         .liquid-glass-mode .category-block {
@@ -272,8 +408,12 @@
             border-radius: 50% !important;
         }
         body.white-mode.liquid-glass-mode .toggle {
-            background: rgba(0, 0, 0, 0.12) !important;
-            border: 1px solid rgba(0, 0, 0, 0.08) !important;
+            background: rgba(0, 0, 0, 0.18) !important;
+            border: 1px solid rgba(0, 0, 0, 0.22) !important;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+        }
+        body.white-mode.liquid-glass-mode .toggle .toggle-knob {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45) !important;
         }
 
         /* Form Inputs & Selects */
@@ -2756,6 +2896,32 @@
 
 <body>
     <div class="app-container" id="appContainer">
+
+        <!-- Coffee Beans Background (Coffee theme only) -->
+        <div class="coffee-beans-container" id="coffeeBeansContainer" aria-hidden="true">
+            <div class="bean bean-0"></div>
+            <div class="bean bean-1"></div>
+            <div class="bean bean-2"></div>
+            <div class="bean bean-3"></div>
+            <div class="bean bean-4"></div>
+            <div class="bean bean-5"></div>
+            <div class="bean bean-6"></div>
+            <div class="bean bean-7"></div>
+            <div class="bean bean-8"></div>
+            <div class="bean bean-9"></div>
+            <div class="bean bean-10"></div>
+            <div class="bean bean-11"></div>
+            <div class="bean bean-12"></div>
+            <div class="bean bean-13"></div>
+            <div class="bean bean-14"></div>
+            <div class="bean bean-15"></div>
+            <div class="bean bean-16"></div>
+            <div class="bean bean-17"></div>
+            <div class="bean bean-18"></div>
+            <div class="bean bean-19"></div>
+            <div class="bean bean-20"></div>
+            <div class="bean bean-21"></div>
+        </div>
 
         <!-- Header -->
         <div class="header" data-tauri-drag-region>
