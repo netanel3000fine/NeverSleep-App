@@ -2230,6 +2230,18 @@ fn open_settings(app: tauri::AppHandle, section: Option<String>) {
         } else {
             let _ = window.eval("if (window.showAllSections) window.showAllSections();");
         }
+        let size = tauri::Size::Logical(tauri::LogicalSize {
+            width: 515.0,
+            height: 500.0,
+        });
+        let _ = window.set_resizable(true);
+        let _ = window.set_min_size(None::<tauri::Size>);
+        let _ = window.set_max_size(None::<tauri::Size>);
+        let _ = window.set_size(size);
+        let _ = window.set_min_size(Some(size));
+        let _ = window.set_max_size(Some(size));
+        let _ = window.set_resizable(false);
+
         if window.is_minimized().unwrap_or(false) {
             let _ = window.unminimize();
         }
@@ -2241,7 +2253,7 @@ fn open_settings(app: tauri::AppHandle, section: Option<String>) {
         // Fallback: This should rarely happen with static window, but if it was somehow destroyed
         let _ = tauri::WindowBuilder::new(&app, "settings", tauri::WindowUrl::App(url_str.into()))
             .title("Settings - Never Sleep")
-            .inner_size(500.0, 600.0)
+            .inner_size(515.0, 500.0)
             .resizable(false)
             .transparent(true)
             .decorations(true)
