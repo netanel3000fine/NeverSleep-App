@@ -2211,11 +2211,12 @@ fn open_settings(app: tauri::AppHandle, section: Option<String>) {
         None => "settings.html".to_string(),
     };
 
+    let mut is_liquid = false;
     if let Some(window) = app.get_window("settings") {
         if let Ok(settings_path) = get_settings_path(app.clone()) {
             if let Ok(content) = std::fs::read_to_string(settings_path) {
                 if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-                    let is_liquid = json.get("viewMode").and_then(|v| v.as_str()) == Some("liquid-glass");
+                    is_liquid = json.get("viewMode").and_then(|v| v.as_str()) == Some("liquid-glass");
                     let _ = window.set_decorations(!is_liquid);
                 }
             }
@@ -2230,9 +2231,10 @@ fn open_settings(app: tauri::AppHandle, section: Option<String>) {
         } else {
             let _ = window.eval("if (window.showAllSections) window.showAllSections();");
         }
+        let target_height = if is_liquid { 530.0 } else { 540.0 };
         let size = tauri::Size::Logical(tauri::LogicalSize {
             width: 515.0,
-            height: 535.0,
+            height: target_height,
         });
         let _ = window.set_resizable(true);
         let _ = window.set_min_size(None::<tauri::Size>);
@@ -2251,12 +2253,13 @@ fn open_settings(app: tauri::AppHandle, section: Option<String>) {
         let _ = window.set_always_on_top(false);
     } else {
         // Fallback: This should rarely happen with static window, but if it was somehow destroyed
+        let target_height = if is_liquid { 530.0 } else { 540.0 };
         let _ = tauri::WindowBuilder::new(&app, "settings", tauri::WindowUrl::App(url_str.into()))
             .title("Settings - Never Sleep")
-            .inner_size(515.0, 535.0)
+            .inner_size(515.0, target_height)
             .resizable(false)
             .transparent(true)
-            .decorations(true)
+            .decorations(!is_liquid)
             .build();
     }
 }
@@ -3133,6 +3136,35 @@ fn set_decorations(app: tauri::AppHandle, decorations: bool) {
 fn set_settings_decorations(app: tauri::AppHandle, decorations: bool) {
     if let Some(window) = app.get_window("settings") {
         let _ = window.set_decorations(decorations);
+        let height = if decorations { 540.0 } else { 530.0 };
+        let _ = window.set_resizable(true);
+        let _ = window.set_min_size(None::<tauri::Size>);
+        let _ = window.set_max_size(None::<tauri::Size>);
+        let size = tauri::Size::Logical(tauri::LogicalSize {
+            width: 515.0,
+            height,
+        });
+        let _ = window.set_size(size);
+        let _ = window.set_min_size(Some(size));
+        let _ = window.set_max_size(Some(size));
+        let _ = window.set_resizable(false);
+    }
+}
+
+#[tauri::command]
+fn set_settings_height(app: tauri::AppHandle, height: u32) {
+    if let Some(window) = app.get_window("settings") {
+        let _ = window.set_resizable(true);
+        let _ = window.set_min_size(None::<tauri::Size>);
+        let _ = window.set_max_size(None::<tauri::Size>);
+        let size = tauri::Size::Logical(tauri::LogicalSize {
+            width: 515.0,
+            height: height as f64,
+        });
+        let _ = window.set_size(size);
+        let _ = window.set_min_size(Some(size));
+        let _ = window.set_max_size(Some(size));
+        let _ = window.set_resizable(false);
     }
 }
 
@@ -3677,6 +3709,7 @@ fn main() {
             set_window_size,
             set_decorations,
             set_settings_decorations,
+            set_settings_height,
             minimize_window,
             open_url,
             check_for_update,

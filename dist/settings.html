@@ -4000,6 +4000,8 @@
                 window.__TAURI__.invoke('set_window_effect', { effect }).catch(() => {});
                 const isLiquidGlass = (mode === 'liquid-glass');
                 window.__TAURI__.invoke('set_settings_decorations', { decorations: !isLiquidGlass }).catch(() => {});
+                const targetHeight = isLiquidGlass ? 530 : 540;
+                window.__TAURI__.invoke('set_settings_height', { height: targetHeight }).catch(() => {});
             }
         }
 
