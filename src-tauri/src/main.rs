@@ -2232,7 +2232,7 @@ fn open_settings(app: tauri::AppHandle, section: Option<String>) {
         }
         let size = tauri::Size::Logical(tauri::LogicalSize {
             width: 515.0,
-            height: 500.0,
+            height: 535.0,
         });
         let _ = window.set_resizable(true);
         let _ = window.set_min_size(None::<tauri::Size>);
@@ -2253,7 +2253,7 @@ fn open_settings(app: tauri::AppHandle, section: Option<String>) {
         // Fallback: This should rarely happen with static window, but if it was somehow destroyed
         let _ = tauri::WindowBuilder::new(&app, "settings", tauri::WindowUrl::App(url_str.into()))
             .title("Settings - Never Sleep")
-            .inner_size(515.0, 500.0)
+            .inner_size(515.0, 535.0)
             .resizable(false)
             .transparent(true)
             .decorations(true)
