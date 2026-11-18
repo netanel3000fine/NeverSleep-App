@@ -3793,9 +3793,16 @@ fn main() {
             }
             tauri::WindowEvent::Resized(_) => {
                 let window = event.window();
-                if window.label() == "main" && !window.is_minimized().unwrap_or(false) {
+                if window.label() == "main" {
                     let pinned = MAIN_WINDOW_PINNED.load(Ordering::SeqCst);
-                    let _ = window.set_always_on_top(pinned);
+                    if pinned {
+                        // When pinned (always-on-top), prevent Windows "Show Desktop" (Win+D) from hiding Never Sleep
+                        if window.is_minimized().unwrap_or(false) {
+                            let _ = window.unminimize();
+                            let _ = window.show();
+                        }
+                        let _ = window.set_always_on_top(true);
+                    }
                 }
             }
             _ => {}

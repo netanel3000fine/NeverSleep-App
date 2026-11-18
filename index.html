@@ -6787,19 +6787,32 @@
       } catch (e) { }
     }
 
-    // Force size maintenance for classic mode
+    // Force size & desktop presence maintenance across all modes when pinned
     let resizeTimer;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         const s = JSON.parse(localStorage.getItem('neverSleepSettings') || '{}');
-        if (s.viewMode === 'classic') {
+        const mode = s.viewMode || 'classic';
+        if (mode === 'classic') {
           const targetWidth = window.currentLang === 'he' ? 560 : 580;
           if (window.innerWidth !== targetWidth || window.innerHeight !== 44) {
             applyViewMode('classic');
           }
+        } else if (s.pinned) {
+          // In coffee or liquid-glass mode, when pinned (always on top) and collapsed by Win+D, restore presence
+          if (mode === 'liquid-glass') {
+            if (window.innerWidth !== 500 || window.innerHeight !== 190) {
+              applyViewMode('liquid-glass');
+            }
+          } else {
+            // Coffee theme
+            if (window.innerWidth !== 500 || window.innerHeight !== 260) {
+              applyViewMode(mode);
+            }
+          }
         }
-      }, 500);
+      }, 400);
     });
 
     async function notify(t, b) {
