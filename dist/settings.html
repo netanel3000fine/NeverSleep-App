@@ -2644,6 +2644,17 @@
         }
 
         /* ===== IN-APP UPDATE MODAL & TOAST ===== */
+        .update-notes-box {
+            max-height: 240px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--surface-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 12.5px;
+            line-height: 1.55;
+            color: var(--text-primary);
+        }
         .update-notes-box::-webkit-scrollbar {
             width: 6px;
         }
@@ -2657,6 +2668,230 @@
         }
         .update-notes-box::-webkit-scrollbar-thumb:hover {
             background: var(--theme-color);
+        }
+
+        /* Update Notes Markdown Table */
+        .update-table-wrap {
+            overflow-x: auto;
+            margin: 12px 0;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(0, 0, 0, 0.20);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+        .update-notes-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            text-align: left;
+        }
+        .update-notes-table th {
+            background: rgba(255, 255, 255, 0.07);
+            padding: 8px 12px;
+            font-weight: 700;
+            color: var(--text-primary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+            letter-spacing: 0.2px;
+        }
+        .update-notes-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            line-height: 1.45;
+        }
+        .update-notes-table tr:last-child td {
+            border-bottom: none;
+        }
+        .update-notes-table tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-primary);
+        }
+
+        /* Update Modal Actions Bar */
+        .update-modal-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 6px;
+            padding-top: 10px;
+            border-top: 1px solid var(--surface-border);
+        }
+
+        /* Secondary Glass Button ("Later") */
+        .btn-update-later {
+            padding: 9px 18px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: var(--text-secondary);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 2px 8px rgba(0, 0, 0, 0.15);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
+            outline: none;
+        }
+        .btn-update-later:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.13);
+            border-color: rgba(255, 255, 255, 0.26);
+            color: var(--text-primary);
+            transform: translateY(-1px);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.20), 0 4px 12px rgba(0, 0, 0, 0.25);
+        }
+        .btn-update-later:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.2);
+        }
+        .btn-update-later:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        /* Primary Accent Button ("Download & Update") */
+        .btn-update-download {
+            padding: 9px 22px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--theme-color) 0%, rgba(var(--theme-color-rgb, 52, 199, 89), 0.88) 100%);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 18px rgba(var(--theme-color-rgb, 52, 199, 89), 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
+            outline: none;
+        }
+        .btn-update-download svg {
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+        .btn-update-download:hover:not(:disabled) {
+            transform: translateY(-1.5px);
+            filter: brightness(1.08);
+            box-shadow: 0 6px 24px rgba(var(--theme-color-rgb, 52, 199, 89), 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+        }
+        .btn-update-download:hover:not(:disabled) svg {
+            transform: translateY(1.5px);
+        }
+        .btn-update-download:active:not(:disabled) {
+            transform: translateY(0);
+            filter: brightness(0.96);
+            box-shadow: 0 2px 10px rgba(var(--theme-color-rgb, 52, 199, 89), 0.3);
+        }
+        .btn-update-download:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            filter: grayscale(40%);
+        }
+
+        /* Adaptive Theme Styling: Liquid Glass */
+        .liquid-glass-mode .update-notes-box {
+            background: rgba(0, 0, 0, 0.32);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        .liquid-glass-mode .btn-update-later {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.20);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 3px 12px rgba(0, 0, 0, 0.3);
+        }
+        .liquid-glass-mode .btn-update-download {
+            box-shadow: 0 4px 22px rgba(var(--theme-color-rgb, 52, 199, 89), 0.48), inset 0 1.5px 0 rgba(255, 255, 255, 0.55);
+        }
+
+        /* Adaptive Theme Styling: Coffee Mode */
+        body.coffee-mode .update-notes-box {
+            background: rgba(20, 13, 5, 0.65);
+            border-color: rgba(196, 116, 64, 0.22);
+        }
+        body.coffee-mode .update-table-wrap {
+            border-color: rgba(196, 116, 64, 0.24);
+            background: rgba(20, 13, 5, 0.5);
+        }
+        body.coffee-mode .update-notes-table th {
+            background: rgba(196, 116, 64, 0.15);
+            border-bottom-color: rgba(196, 116, 64, 0.24);
+            color: #f5ebe0;
+        }
+        body.coffee-mode .update-notes-table td {
+            border-bottom-color: rgba(196, 116, 64, 0.1);
+            color: #d4a373;
+        }
+        body.coffee-mode .btn-update-later {
+            background: rgba(180, 110, 60, 0.12);
+            border-color: rgba(180, 110, 60, 0.26);
+            color: #d4a373;
+        }
+        body.coffee-mode .btn-update-later:hover:not(:disabled) {
+            background: rgba(180, 110, 60, 0.22);
+            border-color: rgba(180, 110, 60, 0.42);
+            color: #f5ebe0;
+        }
+
+        /* Adaptive Theme Styling: White Mode */
+        body.white-mode .update-notes-box {
+            background: rgba(0, 0, 0, 0.03) !important;
+            border-color: rgba(0, 0, 0, 0.08) !important;
+            color: #0f172a !important;
+        }
+        body.white-mode .update-table-wrap {
+            background: rgba(0, 0, 0, 0.02) !important;
+            border-color: rgba(0, 0, 0, 0.08) !important;
+            box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.02) !important;
+        }
+        body.white-mode .update-notes-table th {
+            background: rgba(0, 0, 0, 0.04) !important;
+            border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+            color: #0f172a !important;
+        }
+        body.white-mode .update-notes-table td {
+            border-bottom-color: rgba(0, 0, 0, 0.04) !important;
+            color: #334155 !important;
+        }
+        body.white-mode .update-notes-table tr:hover td {
+            background: rgba(0, 0, 0, 0.03) !important;
+            color: #0f172a !important;
+        }
+        body.white-mode .update-modal-actions {
+            border-top-color: rgba(0, 0, 0, 0.08) !important;
+        }
+        body.white-mode .btn-update-later {
+            background: rgba(0, 0, 0, 0.05) !important;
+            border-color: rgba(0, 0, 0, 0.12) !important;
+            color: #475569 !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 4px rgba(0, 0, 0, 0.05) !important;
+        }
+        body.white-mode .btn-update-later:hover:not(:disabled) {
+            background: rgba(0, 0, 0, 0.09) !important;
+            border-color: rgba(0, 0, 0, 0.18) !important;
+            color: #0f172a !important;
+        }
+        body.white-mode .btn-update-download {
+            border-color: rgba(255, 255, 255, 0.4) !important;
+            box-shadow: 0 4px 14px rgba(var(--theme-color-rgb, 52, 199, 89), 0.35) !important;
+        }
+        body.white-mode.coffee-mode .btn-update-later {
+            background: rgba(60, 36, 21, 0.06) !important;
+            border-color: rgba(60, 36, 21, 0.14) !important;
+            color: #3c2415 !important;
+        }
+        body.white-mode.coffee-mode .btn-update-later:hover:not(:disabled) {
+            background: rgba(60, 36, 21, 0.12) !important;
+            border-color: rgba(60, 36, 21, 0.22) !important;
+            color: #1c1007 !important;
         }
 
         .update-status-toast {
@@ -3697,12 +3932,12 @@
                     <div id="updateCountdownMsg" style="display: none; text-align: center; font-size: 14px; font-weight: 700; color: #4ade80; padding: 6px 0 2px; letter-spacing: 0.2px;"></div>
 
                     <!-- Modal Actions -->
-                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px;">
-                        <button type="button" class="btn-secondary" id="updateLaterBtn" data-close-target="updateModalPopup" style="padding: 8px 16px; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; background: rgba(255,255,255,0.06); border: 1px solid var(--surface-border); color: var(--text-secondary);">
+                    <div class="update-modal-actions">
+                        <button type="button" class="btn-update-later" id="updateLaterBtn" data-close-target="updateModalPopup">
                             <span data-i18n="later">Later</span>
                         </button>
-                        <button type="button" class="btn-primary" id="updateDownloadBtn" style="padding: 8px 20px; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; background: var(--theme-color); color: #fff; border: none; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <button type="button" class="btn-update-download" id="updateDownloadBtn">
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                 <polyline points="7 10 12 15 17 10"></polyline>
                                 <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -3945,8 +4180,9 @@
         function formatMarkdownNotes(md) {
             if (!md) return '<p style="color:var(--text-secondary);">No release notes provided.</p>';
 
-            // Split into lines for block-level processing (tables, headings, lists)
-            const lines = md.split('\n');
+            // Normalize line endings (CRLF / CR -> LF) to prevent \r from breaking regex parsing
+            const cleanMd = md.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            const lines = cleanMd.split('\n');
             const outputBlocks = [];
             let i = 0;
 
@@ -3957,32 +4193,32 @@
                 if (/^\s*\|/.test(line)) {
                     const tableLines = [];
                     while (i < lines.length && /^\s*\|/.test(lines[i])) {
-                        tableLines.push(lines[i]);
+                        tableLines.push(lines[i].trim());
                         i++;
                     }
                     // Build table HTML
-                    let tableHtml = '<table style="width:100%;border-collapse:collapse;font-size:12px;margin:10px 0;">';
+                    let tableHtml = '<div class="update-table-wrap"><table class="update-notes-table">';
                     let isHeader = true;
                     for (const tl of tableLines) {
-                        // Skip separator rows (---|--- pattern)
-                        if (/^\s*\|[\s\-|:]+\|\s*$/.test(tl)) { isHeader = false; continue; }
+                        // Skip separator rows (e.g. |---|---| or |:---|---:| pattern)
+                        if (/^\|[\s\-|:]+\|$/.test(tl)) { isHeader = false; continue; }
                         const cells = tl.split('|').filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
                         if (cells.length === 0) continue;
                         if (isHeader) {
                             tableHtml += '<thead><tr>';
                             for (const cell of cells) {
-                                tableHtml += `<th style="background:rgba(255,255,255,0.08);padding:6px 10px;text-align:left;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.15);">${inlineFormat(cell.trim())}</th>`;
+                                tableHtml += `<th>${inlineFormat(cell.trim())}</th>`;
                             }
                             tableHtml += '</tr></thead><tbody>';
                         } else {
                             tableHtml += '<tr>';
                             for (const cell of cells) {
-                                tableHtml += `<td style="padding:5px 10px;border-bottom:1px solid rgba(255,255,255,0.05);">${inlineFormat(cell.trim())}</td>`;
+                                tableHtml += `<td>${inlineFormat(cell.trim())}</td>`;
                             }
                             tableHtml += '</tr>';
                         }
                     }
-                    tableHtml += '</tbody></table>';
+                    tableHtml += '</tbody></table></div>';
                     outputBlocks.push(tableHtml);
                     continue;
                 }
