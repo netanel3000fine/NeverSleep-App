@@ -91,35 +91,54 @@
             overflow: hidden;
         }
 
-        /* Ambient Prismatic Caustics in Tray Card */
-        body.liquid-glass-mode .tray-card::before {
-            content: '';
-            position: absolute;
-            top: -25px;
-            left: -25px;
-            width: 110px;
-            height: 110px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(var(--theme-color-rgb, 52, 199, 89), 0.30) 0%, transparent 70%);
-            filter: blur(18px);
-            pointer-events: none;
-            z-index: 0;
-            transition: background 0.4s ease;
+        /* Ambient Prismatic Caustics — removed per UX request */
+        body.liquid-glass-mode .tray-card::before,
+        body.liquid-glass-mode .tray-card::after {
+            display: none !important;
         }
 
-        body.liquid-glass-mode .tray-card::after {
-            content: '';
-            position: absolute;
-            bottom: -30px;
-            right: -30px;
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(var(--theme-color-rgb, 52, 199, 89), 0.20) 0%, transparent 70%);
-            filter: blur(20px);
+        /* Comic beak — downward pointing nob at bottom-center of flyout */
+        .tray-beak {
+            position: fixed;
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%) rotate(45deg);
+            width: 11px;
+            height: 11px;
+            background: rgba(15, 23, 42, 0.92);
+            border-right: 1.5px solid rgba(255, 255, 255, 0.14);
+            border-bottom: 1.5px solid rgba(255, 255, 255, 0.14);
             pointer-events: none;
-            z-index: 0;
-            transition: background 0.4s ease;
+            z-index: 10;
+        }
+        body:not(.white-mode).liquid-glass-mode .tray-beak {
+            background: #0a0d14;
+            border-right-color: rgba(255, 255, 255, 0.18);
+            border-bottom-color: rgba(255, 255, 255, 0.18);
+        }
+        body.white-mode.liquid-glass-mode .tray-beak {
+            background: #cbd5e1;
+            border-right-color: rgba(255, 255, 255, 0.7);
+            border-bottom-color: rgba(255, 255, 255, 0.7);
+        }
+        body.coffee-mode .tray-beak {
+            background: rgba(28, 20, 16, 0.94);
+            border-right-color: rgba(180, 110, 60, 0.25);
+            border-bottom-color: rgba(180, 110, 60, 0.25);
+        }
+        body.white-mode:not(.liquid-glass-mode):not(.coffee-mode) .tray-beak {
+            background: rgba(255, 255, 255, 0.92);
+            border-right-color: rgba(0, 0, 0, 0.10);
+            border-bottom-color: rgba(0, 0, 0, 0.10);
+        }
+
+        /* Fallback divider line when quick toggles section is hidden */
+        .tray-divider-line {
+            height: 1px;
+            background: var(--surface-border, rgba(255,255,255,0.12));
+            border-radius: 1px;
+            flex-shrink: 0;
+            margin: 0 4px;
         }
 
         body.white-mode.liquid-glass-mode .tray-card {
@@ -970,6 +989,9 @@
             </div>
         </div>
 
+        <!-- Fallback separator when quick toggles are hidden -->
+        <div class="tray-divider-line" id="trayDarkenDivider" style="display:none;" aria-hidden="true"></div>
+
         <!-- Quick Features -->
         <div class="quick-toggles-box" id="quickTogglesBox">
             <div class="toggle-item">
@@ -1003,6 +1025,9 @@
             </button>
         </div>
     </div>
+
+    <!-- Comic beak at bottom-center, outside tray-card to avoid overflow:hidden clipping -->
+    <div class="tray-beak" id="trayBeak" aria-hidden="true"></div>
 
     <script>
         let settings = {};
@@ -1136,9 +1161,13 @@
 
             // Sync Quick Toggles visibility from settings
             const quickBox = document.getElementById('quickTogglesBox');
+            const darkenSection = document.getElementById('darkenSection');
+            const darkenDivider = document.getElementById('trayDarkenDivider');
             if (quickBox) {
                 const showQuick = settings.showTrayQuickToggles !== false;
                 quickBox.style.display = showQuick ? 'flex' : 'none';
+                if (darkenSection) darkenSection.style.display = showQuick ? '' : 'none';
+                if (darkenDivider) darkenDivider.style.display = showQuick ? 'none' : 'block';
             }
 
 
