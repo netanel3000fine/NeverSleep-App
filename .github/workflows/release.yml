@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag (e.g. v21.5.0)"
+        description: "Release tag (e.g. v21.6.0)"
         required: true
-        default: "v21.5.0"
+        default: "v21.6.0"
       draft:
         description: "Create as draft release"
         required: false
@@ -85,6 +85,10 @@ jobs:
           if (Test-Path "fonts") {
             if (-not (Test-Path "dist\fonts")) { New-Item -ItemType Directory "dist\fonts" -Force | Out-Null }
             Copy-Item "fonts\*" "dist\fonts\" -Recurse -Force
+          }
+          if (Test-Path "sounds") {
+            if (-not (Test-Path "dist\sounds")) { New-Item -ItemType Directory "dist\sounds" -Force | Out-Null }
+            Copy-Item "sounds\*" "dist\sounds\" -Recurse -Force
           }
 
       - name: 🧹 Clear stale Tauri codegen cache

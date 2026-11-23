@@ -1209,6 +1209,245 @@
             padding-bottom: 0;
         }
 
+        /* ===== SOUND PILL BUTTON ===== */
+        .sound-pill-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 16px;
+            padding: 3px 6px 3px 10px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            max-width: 145px;
+            user-select: none;
+            flex-shrink: 0;
+        }
+        .sound-pill-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.28);
+            transform: translateY(-1px);
+        }
+        .sound-pill-name {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sound-pill-preview-btn {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
+            border: none;
+            color: var(--theme-color, #3b82f6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.18s ease;
+            padding: 0;
+        }
+        .sound-pill-preview-btn:hover {
+            background: var(--theme-color, #3b82f6);
+            color: #fff;
+            transform: scale(1.1);
+        }
+
+        /* Sound Picker Modal & List */
+        .sound-picker-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .sound-card-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            cursor: pointer;
+            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .sound-card-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateX(2px);
+        }
+        .sound-card-item.active {
+            background: rgba(59, 130, 246, 0.12);
+            border-color: var(--theme-color, #3b82f6);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+        }
+        .sound-card-item-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+        .sound-card-radio {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255, 255, 255, 0.35);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .sound-card-item.active .sound-card-radio {
+            border-color: var(--theme-color, #3b82f6);
+            background: var(--theme-color, #3b82f6);
+            box-shadow: inset 0 0 0 2.5px #111827;
+        }
+        .sound-card-title {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sound-card-type {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+        .sound-card-play-btn {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+            padding: 0;
+        }
+        .sound-card-play-btn:hover {
+            background: var(--theme-color, #3b82f6);
+            color: #fff;
+            border-color: var(--theme-color, #3b82f6);
+            transform: scale(1.1);
+        }
+
+        /* White Mode & Coffee Mode sound styles */
+        body.white-mode .sound-pill-btn {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.12);
+        }
+        body.white-mode .sound-pill-btn:hover {
+            background: rgba(0, 0, 0, 0.08);
+            border-color: rgba(0, 0, 0, 0.22);
+        }
+        body.white-mode .sound-card-item {
+            background: rgba(0, 0, 0, 0.02);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+        body.white-mode .sound-card-item:hover {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.16);
+        }
+        body.white-mode .sound-card-item.active {
+            background: rgba(59, 130, 246, 0.08);
+        }
+        body.white-mode .sound-card-item.active .sound-card-radio {
+            box-shadow: inset 0 0 0 2.5px #fff;
+        }
+        body.coffee-mode .sound-card-item.active {
+            background: rgba(196, 116, 64, 0.15);
+        }
+
+        /* ===== SMALL TOGGLE FOR NOTIFICATION ROWS ===== */
+        .toggle.toggle-sm {
+            width: 32px;
+            height: 18px;
+            border-radius: 99px;
+        }
+        .toggle.toggle-sm .toggle-knob {
+            width: 12px;
+            height: 12px;
+            top: 2px;
+            right: 2px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+        }
+        .toggle.toggle-sm.active .toggle-knob {
+            transform: translateX(-14px) !important;
+        }
+        #appContainer.classic-mode .toggle.toggle-sm {
+            border-radius: 4px;
+        }
+        .liquid-glass-mode .toggle.toggle-sm {
+            border-radius: 12px !important;
+        }
+
+        /* Notification Row 3-Column Layout */
+        .notif-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 9px 0;
+        }
+        .notif-left {
+            flex: 1 1 auto;
+            min-width: 110px;
+            display: flex;
+            flex-direction: column;
+        }
+        .notif-center {
+            flex: 0 0 auto;
+            width: 110px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .notif-right {
+            flex: 0 0 auto;
+            min-width: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+        .notif-right .sound-pill-btn {
+            max-width: 118px;
+            padding: 2px 6px 2px 8px;
+        }
+        .notif-right .sound-pill-name {
+            font-size: 11px;
+            max-width: 74px;
+        }
+        .notif-input {
+            width: 36px !important;
+            padding: 3px 2px !important;
+            font-size: 13px !important;
+            text-align: center;
+        }
+        .notif-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        /* Hide all sound pills when sound is disabled */
+        #notificationOptions.sounds-off .sound-pill-btn,
+        .sounds-off .sound-pill-btn {
+            display: none !important;
+        }
+
         /* ===== SETTINGS ITEMS ===== */
         .settings-item {
             display: flex;
@@ -3401,6 +3640,22 @@
                             </div>
                         </div>
                     <div class="section-divider"></div>
+                    <!-- Window Toggles: Pop up before darken & Minimize window -->
+                    <div class="settings-item">
+                        <div class="label-group">
+                            <span class="item-label" data-i18n="focus_countdown">Pop up window before darken</span>
+                            <span class="item-sub" data-i18n="focus_countdown_sub">10 seconds before darkening</span>
+                        </div>
+                        <div class="toggle" id="focusToggle"><div class="toggle-knob"></div></div>
+                    </div>
+                    <div class="settings-item" style="border-bottom:none !important;padding-bottom:0 !important;">
+                        <div class="label-group">
+                            <span class="item-label" data-i18n="minimize_window">Minimize Window</span>
+                            <span class="item-sub" data-i18n="minimize_window_sub">10 seconds after countdown start</span>
+                        </div>
+                        <div class="toggle" id="minimizeToggle"><div class="toggle-knob"></div></div>
+                    </div>
+                    <div class="section-divider"></div>
                     <!-- Darken Method Selection -->
                         <div class="label-group" style="margin-bottom:12px;">
                             <span class="item-label" data-i18n="darken_method_title">Darken Method</span>
@@ -3559,21 +3814,6 @@
                             </div>
                         </div>
                     </div>
-                        <div class="section-divider" style="margin:16px 0 6px 0;"></div>
-                        <div class="settings-item">
-                            <div class="label-group">
-                                <span class="item-label" data-i18n="focus_countdown">Pop up window before darken</span>
-                                <span class="item-sub" data-i18n="focus_countdown_sub">10 seconds before darkening</span>
-                            </div>
-                            <div class="toggle" id="focusToggle"><div class="toggle-knob"></div></div>
-                        </div>
-                        <div class="settings-item" style="border-bottom:none !important;padding-bottom:0 !important;">
-                            <div class="label-group">
-                                <span class="item-label" data-i18n="minimize_window">Minimize Window</span>
-                                <span class="item-sub" data-i18n="minimize_window_sub">10 seconds after countdown start</span>
-                            </div>
-                            <div class="toggle" id="minimizeToggle"><div class="toggle-knob"></div></div>
-                        </div>
                     </div><!-- end unified card -->
 
                 </div>
@@ -3865,25 +4105,142 @@
                     </div>
                     <div class="collapsible" id="notificationOptions">
                         <div class="collapsible-inner">
-                            <div class="settings-item">
-                                <div class="label-group"><span class="item-label" data-i18n="system_sounds">Play system sounds</span></div>
-                                <div class="toggle" id="soundToggle"><div class="toggle-knob"></div></div>
+                            <!-- 1. Play sounds master switch + general sound picker pill -->
+                            <div class="settings-item notif-row">
+                                <div class="notif-left">
+                                    <span class="item-label" data-i18n="system_sounds">Play notification sounds</span>
+                                    <span class="item-sub" data-i18n="general_sound_title">Default Notification Sound</span>
+                                </div>
+                                <div class="notif-center"></div>
+                                <div class="notif-right">
+                                    <div class="sound-pill-btn" id="soundPillGeneral" data-sound-key="selectedSound" title="Choose default sound">
+                                        <span class="sound-pill-name" id="soundPillNameGeneral">System Sound</span>
+                                        <button type="button" class="sound-pill-preview-btn" id="soundPreviewGeneral" title="Preview sound">
+                                            <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                        </button>
+                                    </div>
+                                    <div class="toggle" id="soundToggle"><div class="toggle-knob"></div></div>
+                                </div>
                             </div>
-                            <div class="settings-item">
-                                <div class="label-group"><span class="item-label" data-i18n="break_reminder">Break reminder</span></div>
-                                <div class="input-row">
-                                    <div class="input-wrapper">
-                                        <input id="breakHours" type="number" class="input-field" min="0">
+
+                            <!-- 2. Break Reminder -->
+                            <div class="settings-item notif-row">
+                                <div class="notif-left">
+                                    <span class="item-label" data-i18n="break_reminder">Break reminder</span>
+                                    <span class="item-sub" data-i18n="break_interval">Reminder interval</span>
+                                </div>
+                                <div class="notif-center">
+                                    <div class="input-wrapper notif-input-wrapper">
+                                        <input id="breakHours" type="number" class="input-field notif-input" min="0" max="23">
                                         <span class="input-label" data-i18n="hours">hrs</span>
                                     </div>
                                     <span class="input-sep">:</span>
-                                    <div class="input-wrapper">
-                                        <input id="breakMinutes" type="number" class="input-field" min="1" max="59">
+                                    <div class="input-wrapper notif-input-wrapper">
+                                        <input id="breakMinutes" type="number" class="input-field notif-input" min="1" max="59">
                                         <span class="input-label" data-i18n="minutes">min</span>
                                     </div>
                                 </div>
+                                <div class="notif-right">
+                                    <div class="sound-pill-btn" id="soundPillBreak" data-sound-key="soundBreak" title="Choose break reminder sound">
+                                        <span class="sound-pill-name" id="soundPillNameBreak">System Sound</span>
+                                        <button type="button" class="sound-pill-preview-btn" id="soundPreviewBreak" title="Preview sound">
+                                            <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                        </button>
+                                    </div>
+                                    <div class="toggle toggle-sm" id="breakReminderToggle"><div class="toggle-knob"></div></div>
+                                </div>
+                            </div>
+
+                            <!-- 3. Darken Warning Cue -->
+                            <div class="settings-item notif-row">
+                                <div class="notif-left">
+                                    <span class="item-label" data-i18n="darken_warning_title">Darken Warning Cue</span>
+                                    <span class="item-sub" data-i18n="darken_warning_sub">Warn before screen darkens</span>
+                                </div>
+                                <div class="notif-center">
+                                    <div class="input-wrapper notif-input-wrapper">
+                                        <input id="darkenWarningSeconds" type="number" class="input-field notif-input" min="10" max="120" value="30">
+                                        <span class="input-label" data-i18n="seconds">sec</span>
+                                    </div>
+                                </div>
+                                <div class="notif-right">
+                                    <div class="sound-pill-btn" id="soundPillDarken" data-sound-key="soundDarkenWarning" title="Choose darken warning sound">
+                                        <span class="sound-pill-name" id="soundPillNameDarken">System Sound</span>
+                                        <button type="button" class="sound-pill-preview-btn" id="soundPreviewDarken" title="Preview sound">
+                                            <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                        </button>
+                                    </div>
+                                    <div class="toggle toggle-sm" id="darkenWarningToggle"><div class="toggle-knob"></div></div>
+                                </div>
+                            </div>
+
+                            <!-- 4. Schedule Transitions -->
+                            <div class="settings-item notif-row">
+                                <div class="notif-left">
+                                    <span class="item-label" data-i18n="schedule_alerts_title">Schedule Transitions</span>
+                                    <span class="item-sub" data-i18n="schedule_alerts_sub">Alert when a profile starts or ends</span>
+                                </div>
+                                <div class="notif-center"></div>
+                                <div class="notif-right">
+                                    <div class="sound-pill-btn" id="soundPillSchedule" data-sound-key="soundScheduleTransition" title="Choose schedule transition sound">
+                                        <span class="sound-pill-name" id="soundPillNameSchedule">System Sound</span>
+                                        <button type="button" class="sound-pill-preview-btn" id="soundPreviewSchedule" title="Preview sound">
+                                            <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                        </button>
+                                    </div>
+                                    <div class="toggle toggle-sm" id="scheduleTransitionToggle"><div class="toggle-knob"></div></div>
+                                </div>
+                            </div>
+
+                            <!-- 5. Uptime Milestones -->
+                            <div class="settings-item notif-row">
+                                <div class="notif-left">
+                                    <span class="item-label" data-i18n="uptime_milestones_title">Uptime Milestones</span>
+                                    <span class="item-sub" data-i18n="uptime_milestones_sub">Continuous activity reminder</span>
+                                </div>
+                                <div class="notif-center">
+                                    <div class="input-wrapper notif-input-wrapper">
+                                        <input id="uptimeMilestoneHours" type="number" class="input-field notif-input" min="1" max="24" value="2">
+                                        <span class="input-label" data-i18n="hours">hrs</span>
+                                    </div>
+                                </div>
+                                <div class="notif-right">
+                                    <div class="sound-pill-btn" id="soundPillUptime" data-sound-key="soundUptimeMilestone" title="Choose uptime milestone sound">
+                                        <span class="sound-pill-name" id="soundPillNameUptime">System Sound</span>
+                                        <button type="button" class="sound-pill-preview-btn" id="soundPreviewUptime" title="Preview sound">
+                                            <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                        </button>
+                                    </div>
+                                    <div class="toggle toggle-sm" id="uptimeMilestoneToggle"><div class="toggle-knob"></div></div>
+                                </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5b. Sound Selection Quick-Menu Modal -->
+        <div class="popup-overlay" id="soundPickerPopup" role="dialog" aria-modal="true" style="z-index: 9999;">
+            <div class="popup-modal" style="max-width: 420px; max-height: 85vh; display: flex; flex-direction: column;">
+                <div class="popup-header" style="padding-bottom: 12px;">
+                    <div class="popup-header-title-wrap">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px;">🎵</span>
+                            <h3 class="popup-title" id="soundPickerModalTitle" data-i18n="choose_sound">Choose Sound</h3>
+                        </div>
+                        <p class="popup-desc" id="soundPickerModalSub">Select an alert sound or preview it with ▶</p>
+                    </div>
+                    <button type="button" class="popup-close-btn" data-close-target="soundPickerPopup" aria-label="Close" title="Close">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="popup-body" style="padding: 12px 18px 18px; flex: 1; overflow-y: auto;">
+                    <div class="sound-picker-list" id="soundPickerList">
+                        <!-- Populated dynamically with all 25 sounds -->
                     </div>
                 </div>
             </div>
@@ -4141,6 +4498,19 @@
                     updateDarkenMethodBadge(activeDarkenMethod);
                 }
                 updateBadges();
+                if (fresh.soundEnabled !== undefined) {
+                    const notifOptions = document.getElementById('notificationOptions');
+                    if (notifOptions) notifOptions.classList.toggle('sounds-off', !fresh.soundEnabled);
+                }
+                if (fresh.darkenWarningSeconds !== undefined) {
+                    const el = document.getElementById('darkenWarningSeconds');
+                    if (el) el.value = fresh.darkenWarningSeconds;
+                }
+                if (fresh.uptimeMilestoneHours !== undefined) {
+                    const el = document.getElementById('uptimeMilestoneHours');
+                    if (el) el.value = fresh.uptimeMilestoneHours;
+                }
+                if (typeof updateAllPills === 'function') updateAllPills();
             } catch (e) { }
         };
 
@@ -4885,13 +5255,169 @@
             setupToggle('focusToggle', 'focusOnCountdown', false);
             setupToggle('minimizeToggle', 'minimizeOnDarken', false);
             setupToggle('notificationsToggle', 'notificationsEnabled', true, setNotificationOptionsVisible);
-            setupToggle('soundToggle', 'soundEnabled', false);
+            setupToggle('soundToggle', 'soundEnabled', false, (on) => {
+                const notifOptions = document.getElementById('notificationOptions');
+                if (notifOptions) notifOptions.classList.toggle('sounds-off', !on);
+            });
             setupToggle('lockOnCountdownToggle', 'lockOnCountdown', false);
+
+            // --- New per-notification toggles ---
+            setupToggle('breakReminderToggle', 'breakReminderEnabled', true);
+            setupToggle('darkenWarningToggle', 'darkenWarningEnabled', false);
+            setupToggle('scheduleTransitionToggle', 'scheduleTransitionEnabled', false);
+            setupToggle('uptimeMilestoneToggle', 'uptimeMilestoneEnabled', false);
 
             setupInput('defaultDarkenHours', 'darkenHours', 0);
             setupInput('defaultDarkenMinutes', 'darkenMinutes', 10);
             setupInput('breakHours', 'breakHours', 1);
             setupInput('breakMinutes', 'breakMinutes', 0);
+            setupInput('darkenWarningSeconds', 'darkenWarningSeconds', 30);
+            setupInput('uptimeMilestoneHours', 'uptimeMilestoneHours', 2);
+
+            // --- Sound library ---
+            const SOUND_LIBRARY = [
+                { id: 'system',              label: 'System Sound (Default)', i18n: 'sound_system_default', type: 'system' },
+                { id: 'AnimeWow.m4a',        label: 'Anime Wow',              type: 'custom' },
+                { id: 'Bruh.m4a',            label: 'Bruh',                   type: 'custom' },
+                { id: 'Cosmic.m4a',          label: 'Cosmic',                 type: 'custom' },
+                { id: 'Crystals.m4a',        label: 'Crystals',               type: 'custom' },
+                { id: 'DirectedBy.m4a',      label: 'Directed By',            type: 'custom' },
+                { id: 'EmotionalDamage.m4a', label: 'Emotional Damage',       type: 'custom' },
+                { id: 'Faah.m4a',            label: 'Faah',                   type: 'custom' },
+                { id: 'HuhCat.m4a',          label: 'Huh Cat',                type: 'custom' },
+                { id: 'Illuminate.m4a',      label: 'Illuminate',             type: 'custom' },
+                { id: 'Illuminati.m4a',      label: 'Illuminati',             type: 'custom' },
+                { id: 'Mario1Up.m4a',        label: 'Mario 1-Up',             type: 'custom' },
+                { id: 'MarioJump.m4a',       label: 'Mario Jump',             type: 'custom' },
+                { id: 'MarioPipe.m4a',       label: 'Mario Pipe',             type: 'custom' },
+                { id: 'MarioPowerUp.m4a',    label: 'Mario Power-Up',         type: 'custom' },
+                { id: 'Quack.m4a',           label: 'Quack',                  type: 'custom' },
+                { id: 'RobloxOof.m4a',       label: 'Roblox Oof',             type: 'custom' },
+                { id: 'Sheesh.m4a',          label: 'Sheesh',                 type: 'custom' },
+                { id: 'TacoBell.m4a',        label: 'Taco Bell',              type: 'custom' },
+                { id: 'Tada.m4a',            label: 'Tada',                   type: 'custom' },
+                { id: 'VineBoom.m4a',        label: 'Vine Boom',              type: 'custom' },
+                { id: 'WhatTheDogDoin.m4a',  label: 'What The Dog Doin',      type: 'custom' },
+                { id: 'Wilhelm.m4a',         label: 'Wilhelm Scream',         type: 'custom' },
+                { id: 'WindowsError.m4a',    label: 'Windows Error',          type: 'custom' },
+                { id: 'Yeet.m4a',            label: 'Yeet',                   type: 'custom' },
+            ];
+
+            // Active audio element for preview
+            let _previewAudio = null;
+            function previewSound(soundId) {
+                if (_previewAudio) { _previewAudio.pause(); _previewAudio = null; }
+                if (!soundId || soundId === 'system') {
+                    if (window.__TAURI__) window.__TAURI__.invoke('play_sys_sound').catch(() => {});
+                    return;
+                }
+                try {
+                    _previewAudio = new Audio('sounds/' + soundId);
+                    _previewAudio.volume = 1.0;
+                    _previewAudio.play().catch(() => {
+                        if (window.__TAURI__) window.__TAURI__.invoke('play_sys_sound').catch(() => {});
+                    });
+                } catch(e) {
+                    if (window.__TAURI__) window.__TAURI__.invoke('play_sys_sound').catch(() => {});
+                }
+            }
+
+            // Map: settings key -> pill display-name element id
+            const PILL_MAP = {
+                selectedSound:          { name: 'soundPillNameGeneral',  pill: 'soundPillGeneral',  preview: 'soundPreviewGeneral' },
+                soundBreak:             { name: 'soundPillNameBreak',    pill: 'soundPillBreak',    preview: 'soundPreviewBreak' },
+                soundDarkenWarning:     { name: 'soundPillNameDarken',   pill: 'soundPillDarken',   preview: 'soundPreviewDarken' },
+                soundScheduleTransition:{ name: 'soundPillNameSchedule', pill: 'soundPillSchedule', preview: 'soundPreviewSchedule' },
+                soundUptimeMilestone:   { name: 'soundPillNameUptime',   pill: 'soundPillUptime',   preview: 'soundPreviewUptime' },
+            };
+
+            function getSoundLabel(soundId) {
+                if (!soundId || soundId === 'system') return 'System Sound';
+                const found = SOUND_LIBRARY.find(s => s.id === soundId);
+                return found ? found.label : soundId.replace('.m4a', '');
+            }
+
+            function updateAllPills() {
+                for (const [key, ids] of Object.entries(PILL_MAP)) {
+                    const el = document.getElementById(ids.name);
+                    if (el) el.textContent = getSoundLabel(settings[key] || 'system');
+                }
+            }
+
+            // Build sound picker list in the modal
+            function buildSoundPickerList(currentSoundId) {
+                const list = document.getElementById('soundPickerList');
+                if (!list) return;
+                list.innerHTML = '';
+                for (const sound of SOUND_LIBRARY) {
+                    const isActive = (sound.id === currentSoundId) || (!currentSoundId && sound.id === 'system');
+                    const card = document.createElement('div');
+                    card.className = 'sound-card-item' + (isActive ? ' active' : '');
+                    card.dataset.soundId = sound.id;
+                    const label = sound.i18n ? (translations?.[settings.language || 'en']?.[sound.i18n] || sound.label) : sound.label;
+                    card.innerHTML = `
+                        <div class="sound-card-item-left">
+                            <div class="sound-card-radio"></div>
+                            <div>
+                                <div class="sound-card-title">${label}</div>
+                                <div class="sound-card-type">${sound.type === 'system' ? '🔔 Windows System' : '🎵 Custom'}</div>
+                            </div>
+                        </div>
+                        <button type="button" class="sound-card-play-btn" title="Preview" data-sound-id="${sound.id}">
+                            <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        </button>`;
+                    list.appendChild(card);
+                }
+            }
+
+            // Track which settings key is being edited in the modal
+            let _activeSoundKey = 'selectedSound';
+
+            function openSoundPicker(soundKey) {
+                _activeSoundKey = soundKey;
+                buildSoundPickerList(settings[soundKey] || 'system');
+                const popup = document.getElementById('soundPickerPopup');
+                if (popup) popup.classList.add('active');
+            }
+
+            // Sound picker list interactions (delegated)
+            document.getElementById('soundPickerList')?.addEventListener('click', (e) => {
+                const playBtn = e.target.closest('.sound-card-play-btn');
+                if (playBtn) {
+                    e.stopPropagation();
+                    previewSound(playBtn.dataset.soundId);
+                    return;
+                }
+                const card = e.target.closest('.sound-card-item');
+                if (!card) return;
+                const soundId = card.dataset.soundId;
+                // Deactivate all cards
+                document.querySelectorAll('#soundPickerList .sound-card-item').forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                // Persist selection
+                settings[_activeSoundKey] = soundId;
+                updateAllPills();
+                saveSettings();
+            });
+
+            // Wire up each pill button and its inline preview
+            for (const [key, ids] of Object.entries(PILL_MAP)) {
+                document.getElementById(ids.pill)?.addEventListener('click', (e) => {
+                    if (e.target.closest('.sound-pill-preview-btn')) return; // handled by preview button
+                    openSoundPicker(key);
+                });
+                document.getElementById(ids.preview)?.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    previewSound(settings[key] || 'system');
+                });
+            }
+
+            // Initial state for sounds-off
+            const notifOptions = document.getElementById('notificationOptions');
+            if (notifOptions) notifOptions.classList.toggle('sounds-off', !settings.soundEnabled);
+
+            // Initial pill labels
+            updateAllPills();
 
             // Time Profiles logic
             let loadedProfiles = settings.timeProfiles || [];
@@ -6086,6 +6612,17 @@
                 minimizeOnDarken: getToggle('minimizeToggle'),
                 notificationsEnabled: getToggle('notificationsToggle'),
                 soundEnabled: getToggle('soundToggle'),
+                selectedSound: settings.selectedSound || 'system',
+                breakReminderEnabled: getToggle('breakReminderToggle'),
+                soundBreak: settings.soundBreak || 'system',
+                darkenWarningEnabled: getToggle('darkenWarningToggle'),
+                soundDarkenWarning: settings.soundDarkenWarning || 'system',
+                darkenWarningSeconds: Math.min(120, Math.max(10, getVal('darkenWarningSeconds') || 30)),
+                scheduleTransitionEnabled: getToggle('scheduleTransitionToggle'),
+                soundScheduleTransition: settings.soundScheduleTransition || 'system',
+                uptimeMilestoneEnabled: getToggle('uptimeMilestoneToggle'),
+                soundUptimeMilestone: settings.soundUptimeMilestone || 'system',
+                uptimeMilestoneHours: Math.max(1, getVal('uptimeMilestoneHours') || 2),
                 lockOnCountdown: getToggle('timeProfilesEnabledToggle') && getToggle('lockOnCountdownToggle'),
                 autostartMinimized: getToggle('autostartMinimizedToggle'),
                 showTrayQuickToggles: getToggle('trayQuickTogglesToggle'),

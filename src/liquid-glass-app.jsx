@@ -122,7 +122,7 @@ export function LiquidGlassApp({ initialProps = {} }) {
       ref={appRef}
       onPointerMove={handlePointerMove}
       style={{
-        width: 500,
+        width: 430,
         height: 190,
         position: 'relative',
         userSelect: 'none',
@@ -222,7 +222,7 @@ export function LiquidGlassApp({ initialProps = {} }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '0 16px',
+              padding: '0 12px',
               position: 'relative',
               zIndex: 10
             }}
@@ -356,23 +356,23 @@ export function LiquidGlassApp({ initialProps = {} }) {
               flex: 1,
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
-              gap: 12,
-              padding: '0 12px 14px',
+              gap: 10,
+              padding: '0 10px 12px',
               boxSizing: 'border-box'
             }}
           >
             {/* Left Glass Surface (Keep Screen / Status or Darken Timer) */}
             <div
-              style={{ position: 'relative', height: '100%', borderRadius: 22, overflow: 'hidden' }}
+              style={{ position: 'relative', height: '100%', borderRadius: 20, overflow: 'hidden' }}
               data-tauri-drag-region
             >
               <GlassSurface
                 interactive
-                radius={22}
+                radius={20}
                 style={{
                   width: '100%',
                   height: '100%',
-                  padding: '14px 16px',
+                  padding: '11px 13px',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
@@ -380,7 +380,7 @@ export function LiquidGlassApp({ initialProps = {} }) {
                   cursor: 'default',
                   background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 255, 255, 0.65)',
                   border: isDark ? '1px solid rgba(255, 255, 255, 0.16)' : '1px solid rgba(0, 0, 0, 0.08)',
-                  borderRadius: 22,
+                  borderRadius: 20,
                   position: 'relative'
                 }}
                 data-tauri-drag-region
@@ -398,7 +398,7 @@ export function LiquidGlassApp({ initialProps = {} }) {
                 >
                   <span
                     style={{
-                      fontSize: 14,
+                      fontSize: 13.5,
                       fontWeight: 600,
                       letterSpacing: -0.2,
                       color: textColor
@@ -478,9 +478,9 @@ export function LiquidGlassApp({ initialProps = {} }) {
                       >
                         <div
                           style={{
-                            fontSize: 27,
+                            fontSize: 25,
                             fontWeight: 700,
-                            letterSpacing: -0.6,
+                            letterSpacing: -0.5,
                             fontVariantNumeric: 'tabular-nums',
                             color: activeAccent,
                             textShadow: isDark ? `0 2px 14px ${activeAccent}55` : 'none',
@@ -558,16 +558,16 @@ export function LiquidGlassApp({ initialProps = {} }) {
 
             {/* Right Glass Surface (Schedule / Time Left — clickable like Coffee theme) */}
             <div
-              style={{ position: 'relative', height: '100%', borderRadius: 22, overflow: 'hidden' }}
+              style={{ position: 'relative', height: '100%', borderRadius: 20, overflow: 'hidden' }}
               data-tauri-drag-region
             >
               <GlassSurface
                 interactive
-                radius={22}
+                radius={20}
                 style={{
                   width: '100%',
                   height: '100%',
-                  padding: '14px 16px',
+                  padding: '11px 13px',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
@@ -575,7 +575,7 @@ export function LiquidGlassApp({ initialProps = {} }) {
                   cursor: 'default',
                   background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 255, 255, 0.65)',
                   border: isDark ? '1px solid rgba(255, 255, 255, 0.16)' : '1px solid rgba(0, 0, 0, 0.08)',
-                  borderRadius: 22,
+                  borderRadius: 20,
                   position: 'relative'
                 }}
                 data-tauri-drag-region
@@ -595,7 +595,7 @@ export function LiquidGlassApp({ initialProps = {} }) {
                     onClick={handleOpenSchedule}
                     title="Open Schedule Settings"
                     style={{
-                      fontSize: 14,
+                      fontSize: 13.5,
                       fontWeight: 600,
                       letterSpacing: -0.2,
                       color: textColor,
@@ -645,9 +645,9 @@ export function LiquidGlassApp({ initialProps = {} }) {
                     </div>
                     <div
                       style={{
-                        fontSize: 27,
+                        fontSize: 24,
                         fontWeight: 700,
-                        letterSpacing: -0.6,
+                        letterSpacing: -0.5,
                         fontVariantNumeric: 'tabular-nums',
                         color: isDark ? 'rgba(255, 255, 255, 0.95)' : '#111113',
                         textShadow: isDark ? '0 2px 10px rgba(0,0,0,0.4)' : 'none'
